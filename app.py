@@ -1207,14 +1207,14 @@ def process_file_background(task_id, file_path, filename, temp_dir, selected_lan
                         pass
                 else:
                     progress_tracker[task_id]["mega_uploaded"] = False
-                    progress_tracker[task_id]["mega_status"] = "failed: upload_to_mega returned None"
+                    progress_tracker[task_id]["mega_status"] = ""
                     logger.warning(f"Task {task_id}: Mega upload returned None (check Render logs)")
         except Exception as mega_err:
             error_msg = str(mega_err)
             logger.error(f"Task {task_id}: Mega upload error: {error_msg}")
             with progress_lock:
                 progress_tracker[task_id]["mega_uploaded"] = False
-                progress_tracker[task_id]["mega_status"] = f"failed: {error_msg}"
+                progress_tracker[task_id]["mega_status"] = ""
 
         # Persist output file to ocr-outputs folder
         persist_output(task_id)
@@ -1771,12 +1771,12 @@ def resume_ocr_processing(task_id, original_path, metadata, output_path, temp_di
                             pass
                 else:
                     progress_tracker[task_id]["mega_uploaded"] = False
-                    progress_tracker[task_id]["mega_status"] = "failed: upload_to_mega returned None"
+                    progress_tracker[task_id]["mega_status"] = ""
         except Exception as mega_err:
             logger.error(f"Task {task_id}: Resume final upload error: {mega_err}")
             with progress_lock:
                 progress_tracker[task_id]["mega_uploaded"] = False
-                progress_tracker[task_id]["mega_status"] = f"failed: {mega_err}"
+                progress_tracker[task_id]["mega_status"] = ""
 
         persist_output(task_id)
 
@@ -2195,13 +2195,13 @@ def translate_file_background(task_id, file_path, filename, temp_dir, source_lan
                     logger.info(f"Task {task_id}: Mega upload success - {mega_link}")
                 else:
                     progress_tracker[task_id]["mega_uploaded"] = False
-                    progress_tracker[task_id]["mega_status"] = "failed: upload_to_mega returned None"
+                    progress_tracker[task_id]["mega_status"] = ""
                     logger.warning(f"Task {task_id}: Mega upload returned None")
         except Exception as mega_err:
             logger.error(f"Task {task_id}: Mega upload error: {mega_err}")
             with progress_lock:
                 progress_tracker[task_id]["mega_uploaded"] = False
-                progress_tracker[task_id]["mega_status"] = f"failed: {mega_err}"
+                progress_tracker[task_id]["mega_status"] = ""
 
         persist_output(task_id)
 
