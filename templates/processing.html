@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -62,6 +62,7 @@
             </div>
             <nav class="nav-links">
                 <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/gallery" class="nav-link"><i class="fas fa-images"></i> Meow Gallery</a>
                 <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
                 <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
                 <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
@@ -536,15 +537,18 @@
             document.querySelectorAll('.submit-btn, .cta-btn, a[href="/"]').forEach(function (el) {
                 el.addEventListener('click', function (ev) { pawBurst(ev.clientX, ev.clientY); });
             });
-            var last = 0;
-            document.addEventListener('mousemove', function (e) {
-                var n = Date.now(); if (n - last < 260) return; last = n;
+            var driftEm = ['🐾', '🐱', '⭐', '✨'];
+            function spawnDrift() {
                 var p = document.createElement('span');
-                p.className = 'paw-cursor'; p.textContent = '🐾';
-                p.style.left = (e.clientX - 14) + 'px'; p.style.top = (e.clientY - 14) + 'px';
+                p.className = 'paw-drift';
+                p.textContent = driftEm[Math.floor(Math.random() * driftEm.length)];
+                p.style.left = (Math.random() * 90 + 4) + '%';
+                p.style.animationDuration = (Math.random() * 5 + 7) + 's';
                 document.body.appendChild(p);
-                anime({ targets: p, translateY: [-14, 0], opacity: [0.8, 0], scale: [0.6, 1.1], duration: 650, easing: 'easeOutQuad', complete: function () { p.remove(); } });
-            });
+                setTimeout(function () { p.remove(); }, 13000);
+            }
+            spawnDrift(); spawnDrift();
+            setInterval(spawnDrift, 2800);
         });
     </script>
 </body>

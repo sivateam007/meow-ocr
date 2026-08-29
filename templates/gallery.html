@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meow Gallery - Funny Cats &amp; Cute Kittens | Meow OCR</title>
+    <meta name="description" content="A purr-fect gallery of funny cats, cute kittens and sleepy felines. Relax, smile and enjoy our beautiful cat collection at Meow OCR.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/animejs@3.2.2/lib/anime.min.js"></script>
+    <script>
+        window.FIREBASE_CONFIG = {
+            apiKey: "{{ firebase_api_key }}",
+            authDomain: "{{ firebase_auth_domain }}",
+            projectId: "{{ firebase_project_id }}",
+            storageBucket: "{{ firebase_storage_bucket }}",
+            messagingSenderId: "",
+            appId: "{{ firebase_app_id }}",
+            measurementId: "{{ firebase_measurement_id }}"
+        };
+        window.SCANNER_USER = {{ current_user_json|safe }};
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/gallery" class="nav-link active"><i class="fas fa-images"></i> Meow Gallery</a>
+                <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
+                <span class="user-badge" id="user-badge" style="display:none;">
+                    <img id="user-avatar" class="user-avatar" alt="" />
+                    <span id="user-name"></span>
+                    <a href="#" class="logout-btn" id="logout-btn" title="Sign out"><i class="fas fa-sign-out-alt"></i></a>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="content-section gallery-page">
+            <h1 class="page-main-title"><i class="fas fa-images"></i> The Meow Gallery</h1>
+            <div class="page-cat-chip"><img src="{{ url_for('static', filename='images/meow-cute.jpg') }}" alt="Meow OCR gallery cat"><span class="heading-cat">Paw-fect vibes &amp; endless cuteness 🐱</span></div>
+            <p class="page-subtitle">A gallery of our fluffiest coworkers. Click any cat for a closer look — they're very photogenic.</p>
+
+            <div class="gallery-grid" id="gallery-grid">
+                {% for img in gallery_images %}
+                <figure class="gallery-card" data-src="{{ url_for('static', filename='images/' ~ img) }}" data-caption="{{ captions[loop.index0] }}">
+                    <img src="{{ url_for('static', filename='images/' ~ img) }}" alt="{{ captions[loop.index0] }}" loading="lazy">
+                    <figcaption><span class="g-paw">🐾</span> {{ captions[loop.index0] }}</figcaption>
+                </figure>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" id="lightbox-close" title="Close"><i class="fas fa-times"></i></button>
+        <button class="lightbox-nav lightbox-prev" id="lightbox-prev" title="Previous"><i class="fas fa-chevron-left"></i></button>
+        <img id="lightbox-img" src="" alt="Enlarged cat">
+        <p id="lightbox-cap"></p>
+        <button class="lightbox-nav lightbox-next" id="lightbox-next" title="Next"><i class="fas fa-chevron-right"></i></button>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <h4>Meow OCR</h4>
+                <p>Free online OCR — extract text from PDF, images &amp; documents. 19+ languages.</p>
+                <p class="meow-tagline"><i class="fas fa-cat"></i> Powered by curious cats <i class="fas fa-paw"></i></p>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <a href="/"><i class="fas fa-home"></i> Home</a>
+                <a href="/gallery"><i class="fas fa-images"></i> Meow Gallery</a>
+                <a href="/how-to-use"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads"><i class="fas fa-download"></i> My Downloads</a>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <a href="/privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                <a href="/terms"><i class="fas fa-file-contract"></i> Terms of Service</a>
+            </div>
+            <div class="footer-note">
+                <h4>Your Result</h4>
+                <p>Results are stored securely in the cloud and auto-deleted after 2 days by default.</p>
+                <p class="copyright">&copy; 2026 Meow OCR. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            var title = document.querySelector('.page-main-title');
+            if (title) anime({ targets: title, translateY: [20, 0], opacity: [0, 1], duration: 600, easing: 'easeOutExpo' });
+            var subtitle = document.querySelector('.page-subtitle');
+            if (subtitle) anime({ targets: subtitle, translateY: [20, 0], opacity: [0, 1], delay: 150, duration: 600, easing: 'easeOutExpo' });
+            var chip = document.querySelector('.page-cat-chip');
+            if (chip) anime({ targets: chip, scale: [0.8, 1], opacity: [0, 1], delay: 200, duration: 600, easing: 'easeOutBack' });
+
+            // Staggered entrance of gallery cards
+            var cards = document.querySelectorAll('.gallery-card');
+            anime({ targets: cards, scale: [0.5, 1], opacity: [0, 1], rotate: [4, 0], delay: anime.stagger(55, { start: 250 }), duration: 600, easing: 'easeOutBack' });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+
+            var em = ['🐾', '🐱', '⭐', '✨'];
+            function pawBurst(x, y) {
+                for (var i = 0; i < 7; i++) (function (i) {
+                    var p = document.createElement('span');
+                    p.className = 'paw-confetti';
+                    p.textContent = em[i % em.length];
+                    p.style.left = x + 'px'; p.style.top = y + 'px';
+                    document.body.appendChild(p);
+                    anime({ targets: p, translateX: [0, (Math.random() - 0.5) * 160], translateY: [0, -(Math.random() * 110 + 40)], rotate: [0, Math.random() * 360 - 180], opacity: [1, 0], duration: 800 + Math.random() * 500, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+                })(i);
+            }
+            document.querySelectorAll('.gallery-card').forEach(function (el) {
+                el.addEventListener('click', function (ev) { pawBurst(ev.clientX, ev.clientY); });
+            });
+
+            // Ambient floating cat emojis (no pointer needed, works on mobile too)
+            var driftEm = ['🐾', '🐱', '⭐', '✨', '😻'];
+            function spawnDrift() {
+                var p = document.createElement('span');
+                p.className = 'paw-drift';
+                p.textContent = driftEm[Math.floor(Math.random() * driftEm.length)];
+                p.style.left = (Math.random() * 90 + 4) + '%';
+                p.style.animationDuration = (Math.random() * 5 + 7) + 's';
+                document.body.appendChild(p);
+                setTimeout(function () { p.remove(); }, 13000);
+            }
+            spawnDrift(); spawnDrift();
+            setInterval(spawnDrift, 2800);
+
+            // 3D tilt on hover (desktop) + gentle idle float
+            var cards = document.querySelectorAll('.gallery-card');
+            cards.forEach(function (card) {
+                var img = card.querySelector('img');
+                var resting = anime({ targets: card, translateY: [0, -6, 0], rotate: [0, 0.6, -0.6, 0], duration: 4000, loop: true, easing: 'easeInOutSine', delay: Math.random() * 2000 });
+                card.addEventListener('mouseenter', function () {
+                    resting.pause();
+                    anime({ targets: card, scale: 1.06, rotate: 0, translateY: -4, duration: 300, easing: 'easeOutQuad' });
+                    if (img) anime({ targets: img, scale: 1.12, duration: 500, easing: 'easeInOutQuad' });
+                });
+                card.addEventListener('mouseleave', function () {
+                    anime({ targets: card, scale: 1, translateY: 0, duration: 350, easing: 'easeOutQuad' });
+                    if (img) anime({ targets: img, scale: 1, duration: 400, easing: 'easeInOutQuad' });
+                    resting.play();
+                });
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var cards = Array.prototype.slice.call(document.querySelectorAll('.gallery-card'));
+            var overlay = document.getElementById('lightbox');
+            var lbImg = document.getElementById('lightbox-img');
+            var lbCap = document.getElementById('lightbox-cap');
+            var lbClose = document.getElementById('lightbox-close');
+            var lbPrev = document.getElementById('lightbox-prev');
+            var lbNext = document.getElementById('lightbox-next');
+            var current = 0;
+
+            function show(idx) {
+                idx = (idx + cards.length) % cards.length;
+                current = idx;
+                lbImg.src = cards[idx].getAttribute('data-src');
+                lbCap.textContent = cards[idx].getAttribute('data-caption');
+                overlay.classList.add('open');
+                if (window.anime) {
+                    anime({ targets: lbImg, scale: [0.6, 1], opacity: [0, 1], rotate: [-3, 0], duration: 450, easing: 'easeOutBack' });
+                    anime({ targets: lbCap, translateY: [10, 0], opacity: [0, 1], delay: 250, duration: 400, easing: 'easeOutQuad' });
+                }
+            }
+
+            cards.forEach(function (c, i) {
+                c.addEventListener('click', function () { show(i); });
+            });
+            lbClose.addEventListener('click', function () { overlay.classList.remove('open'); });
+            overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.classList.remove('open'); });
+            lbPrev.addEventListener('click', function (ev) { ev.stopPropagation(); show(current - 1); });
+            lbNext.addEventListener('click', function (ev) { ev.stopPropagation(); show(current + 1); });
+            document.addEventListener('keydown', function (ev) {
+                if (!overlay.classList.contains('open')) return;
+                if (ev.key === 'Escape') overlay.classList.remove('open');
+                if (ev.key === 'ArrowLeft') show(current - 1);
+                if (ev.key === 'ArrowRight') show(current + 1);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -39,6 +39,7 @@
             </div>
             <nav class="nav-links">
                 <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/gallery" class="nav-link"><i class="fas fa-images"></i> Meow Gallery</a>
                 <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
                 <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
                 <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
@@ -850,23 +851,6 @@
                 setTimeout(function () { paw.remove(); }, 12000);
             }
             setInterval(spawnPaw, 3500);
-
-            // 9. Cute paw prints trail the cursor (throttled)
-            var lastPaw = 0;
-            document.addEventListener('mousemove', function (e) {
-                var now = Date.now();
-                if (now - lastPaw < 220) return;
-                lastPaw = now;
-                var paw = document.createElement('span');
-                paw.className = 'paw-cursor';
-                paw.textContent = Math.random() > 0.5 ? '🐾' : '🐾';
-                paw.style.left = (e.clientX - 14) + 'px';
-                paw.style.top = (e.clientY - 14) + 'px';
-                document.body.appendChild(paw);
-                if (window.anime) {
-                    anime({ targets: paw, translateY: [-16, 0], opacity: [0.9, 0], scale: [0.6, 1.1], duration: 700, easing: 'easeOutQuad', complete: function () { paw.remove(); } });
-                }
-            });
 
             // 10. Confetti paw-burst on primary CTA & format chips
             function burstPaws(x, y) {

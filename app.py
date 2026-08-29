@@ -2644,6 +2644,32 @@ def terms_page():
     return render_template('terms.html')
 
 
+@app.route('/gallery')
+def gallery_page():
+    """Cat photo gallery — a fun collection of curious, sleepy and silly cats."""
+    gallery_images = [
+        "meow-g01.jpg", "meow-g02.jpg", "meow-g03.jpg", "meow-g04.jpg",
+        "meow-g05.jpg", "meow-g06.jpg", "meow-g07.jpg", "meow-g08.jpg",
+        "meow-g09.jpg", "meow-g10.jpg", "meow-g11.jpg", "meow-g12.jpg",
+        "meow-g13.jpg", "meow-g14.jpg", "meow-g15.jpg", "meow-g16.jpg",
+        "meow-g17.jpg", "meow-g18.jpg", "meow-g19.jpg", "meow-g20.jpg",
+        "meow-g21.jpg", "meow-g22.jpg", "meow-g23.jpg", "meow-g24.jpg",
+        "meow-g25.jpg", "meow-g26.jpg",
+    ]
+    captions = [
+        "Caught mid-blink", "Napping on the job", "Born to judge",
+        "Professional loafer", "Zoomies check", "Thinks about tuna",
+        "Window watcher", "Master of the flop", "Box inspector",
+        "Curiosity level: cat", "Sunscreen not needed", "Midnight zoom",
+        "The observer", "Tiny lion (no mane)", "Thinker of deep thoughts",
+        "Furry speed bump", "Feet: mine now", "Professional napper",
+        "Stealth mode failed", "Best seat in the house", "Bird watcher, very serious",
+        "Freshly flopped", "Patrol complete", "Judge of all biscuits",
+        "Cozy corner loaf", "Ready for belly rubs",
+    ]
+    return render_template('gallery.html', gallery_images=gallery_images, captions=captions)
+
+
 def get_user():
     """Return the logged-in user dict, or None."""
     uid = session.get("uid")
