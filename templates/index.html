@@ -99,6 +99,8 @@
             </div>
         </section>
 
+        {% set slot = 'leaderboard' %}{% include 'ads.html' %}
+
         <!-- ===== UPLOAD ===== -->
         <section class="content-section" id="upload">
             <h2><i class="fas fa-cloud-upload-alt"></i> Upload</h2>
@@ -437,6 +439,8 @@
                 <p>Absolutely. The whole tool is mobile-responsive and works great on phones and tablets.</p>
             </details>
         </section>
+
+        {% set slot = 'inpage' %}{% include 'ads.html' %}
 
         <!-- ===== CTA BANNER ===== -->
         <section class="cta-banner" id="cta">
@@ -935,5 +939,7 @@
             anime({ targets: '.meow-tagline', rotate: [-3, 3, -3], duration: 1400, delay: 2200, loop: true, easing: 'easeInOutSine' });
         });
     </script>
+
+    {% set slot = 'popunder' %}{% include 'ads.html' %}
 </body>
 </html>

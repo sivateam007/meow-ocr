@@ -49,6 +49,7 @@
     </header>
 
     <main class="container">
+        {% set slot = 'leaderboard' %}{% include 'ads.html' %}
         <section class="content-section info-page">
             <h1 class="page-main-title"><i class="fas fa-graduation-cap"></i> How to Use Meow OCR</h1>
             <div class="page-cat-chip"><img src="{{ url_for('static', filename='images/cat-tabby.jpg') }}" alt="Meow OCR cat guide"><span class="heading-cat">Paw-fect guide by our senior cat engineer 🐱</span></div>

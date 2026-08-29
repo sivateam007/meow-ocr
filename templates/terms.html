@@ -48,6 +48,7 @@
     </header>
 
     <main class="container">
+        {% set slot = 'leaderboard' %}{% include 'ads.html' %}
         <section class="content-section info-page">
             <h1 class="page-main-title"><i class="fas fa-file-contract"></i> Terms of Service</h1>
             <div class="page-cat-chip"><img src="{{ url_for('static', filename='images/cat-orange.jpg') }}" alt="Meow OCR terms cat"><span class="heading-cat">Short, fair, and cat-approved 🐾</span></div>

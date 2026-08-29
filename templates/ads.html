@@ -1,0 +1,9 @@
+{# Ad slot renderer. Usage:
+   {% set slot = 'leaderboard' %}{% include 'ads.html' %}
+   Only renders when the matching Adsterra slot code is configured (ads_enabled). #}
+{% if ads_enabled and ads is defined and ads.get(slot) %}
+<div class="ad-container ad-{{ slot }}">
+    <span class="ad-label">Advertisement</span>
+    <div class="ad-inner">{{ ads.get(slot) | safe }}</div>
+</div>
+{% endif %}
