@@ -12,6 +12,11 @@ ENV/
 instance/
 .webassets-cache
 
+# Secrets
+.env
+.env.*
+!.env.example
+
 # Temp files
 tmp/
 temp/

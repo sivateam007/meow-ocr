@@ -42,6 +42,16 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24).hex())
 
+# Security hardening for session cookies
+# Detect production (Render) so Secure cookie is only set over HTTPS.
+_IS_PRODUCTION = bool(
+    os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("RENDER_URL")
+    or os.environ.get("RENDER_SERVICE_NAME")
+)
+app.config['SESSION_COOKIE_HTTPONLY'] = True          # not readable by JS (anti-XSS)
+app.config['SESSION_COOKIE_SAMESITE'] = "Lax"         # anti-CSRF for cross-site POSTs
+app.config['SESSION_COOKIE_SECURE'] = _IS_PRODUCTION  # HTTPS-only in production
+
 # Jinja filter: Unix timestamp to readable date
 @app.template_filter('datetimeformat')
 def datetimeformat(timestamp):
