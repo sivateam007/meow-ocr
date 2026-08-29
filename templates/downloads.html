@@ -65,55 +65,55 @@
                 <button onclick="clearDownloads()" style="padding: 0.6rem 1.2rem; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;"><i class="fas fa-trash-alt"></i> Clear All</button>
                 <button id="clear-selected-btn" onclick="clearSelected()" disabled style="padding: 0.6rem 1.2rem; background: #999; color: white; border: none; border-radius: 6px; cursor: not-allowed; font-weight: 600;"><i class="fas fa-check-double"></i> Clear Selected</button>
             </div>
-            <div style="overflow-x: auto; margin-top: 1rem;">
-                <table style="width: 100%; border-collapse: collapse;">
+            <div class="downloads-wrap">
+                <table class="downloads-table">
                     <thead>
-                        <tr style="border-bottom: 2px solid var(--git-color);">
-                            <th style="padding: 1rem; text-align: left; width: 40px;"><input type="checkbox" id="select-all" onchange="toggleAll(this)"></th>
-                            <th style="padding: 1rem; text-align: left;">#</th>
-                            <th style="padding: 1rem; text-align: left;">File</th>
-                            <th style="padding: 1rem; text-align: left;">Date</th>
-                            <th style="padding: 1rem; text-align: left;">Type</th>
-                            <th style="padding: 1rem; text-align: left;">Pages / Chunks</th>
-                            <th style="padding: 1rem; text-align: left;">ETA</th>
-                            <th style="padding: 1rem; text-align: left;">Checkpoint</th>
-                            <th style="padding: 1rem; text-align: left;">Status</th>
-                            <th style="padding: 1rem; text-align: left;">DL</th>
-                            <th style="padding: 1rem; text-align: left;">Action</th>
+                        <tr>
+                            <th class="col-check"><input type="checkbox" id="select-all" onchange="toggleAll(this)"></th>
+                            <th class="col-num">#</th>
+                            <th class="col-file">File</th>
+                            <th class="col-date">Date</th>
+                            <th class="col-type">Type</th>
+                            <th class="col-pages">Pages</th>
+                            <th class="col-eta">ETA</th>
+                            <th class="col-checkpoint">Checkpoint</th>
+                            <th class="col-status">Status</th>
+                            <th class="col-dl">DL</th>
+                            <th class="col-action">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for d in downloads %}
-                        <tr style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 1rem; text-align: center;"><input type="checkbox" class="task-checkbox" value="{{ d.task_id }}" onchange="updateClearSelected()"></td>
-                            <td style="padding: 1rem;">{{ loop.index }}</td>
-                            <td style="padding: 1rem;">{{ d.filename }}</td>
-                            <td style="padding: 1rem; white-space: nowrap;">
+                        <tr>
+                            <td class="col-check"><input type="checkbox" class="task-checkbox" value="{{ d.task_id }}" onchange="updateClearSelected()"></td>
+                            <td class="col-num">{{ loop.index }}</td>
+                            <td class="col-file" title="{{ d.filename }}">{{ d.filename }}</td>
+                            <td class="col-date">
                                 {%- if d.status == 'completed' and d.completed_at -%}
                                     {{ d.completed_at | int | datetimeformat }}
                                 {%- elif d.status in ('processing', 'starting', 'detecting_language', 'getting_page_count', 'resuming', 'translating') -%}
-                                    <span style="color: #f59e0b;">In progress...</span>
+                                    <span class="st-inprog">In progress...</span>
                                 {%- elif d.status == 'error' -%}
-                                    <span style="color: #dc2626;">Failed</span>
+                                    <span class="st-fail">Failed</span>
                                 {%- else -%}
                                     {{ d.created_at | int | datetimeformat if d.created_at else '' }}
                                 {%- endif -%}
                             </td>
-                            <td style="padding: 1rem;">
+                            <td class="col-type">
                                 {%- if d.translating -%}
-                                <span style="color: #11998e;"><i class="fas fa-language"></i> Translation</span>
+                                <span class="st-translate"><i class="fas fa-language"></i> Translation</span>
                                 {%- else -%}
                                 {{ d.file_type.upper() }}
                                 {%- endif -%}
                             </td>
-                            <td style="padding: 1rem;">
+                            <td class="col-pages">
                                 {%- if d.translating -%}
                                 Chunk {{ d.current_chunk }}/{{ d.total_chunks if d.total_chunks else '...' }}
                                 {%- else -%}
                                 {{ d.pages_processed }}
                                 {%- endif -%}
                             </td>
-                            <td style="padding: 1rem; white-space: nowrap;">
+                            <td class="col-eta">
                                 {%- if d.status in ('processing', 'resuming') and d.eta -%}
                                     {%- if d.eta < 60 -%}{{ d.eta }}s
                                     {%- elif d.eta < 3600 -%}{{ (d.eta / 60)|int }}m {{ d.eta % 60 }}s
@@ -122,7 +122,7 @@
                                 {%- else -%}-
                                 {%- endif -%}
                             </td>
-                            <td style="padding: 1rem;">
+                            <td class="col-checkpoint">
                                 {%- if d.last_checkpoint_page -%}
                                     Pg {{ d.last_checkpoint_page }}
                                 {%- elif d.status == 'completed' -%}
@@ -130,74 +130,74 @@
                                 {%- else -%}-
                                 {%- endif -%}
                             </td>
-                            <td style="padding: 1rem;">
+                            <td class="col-status">
                                 {% if d.status == 'completed' and d.mega_uploaded %}
-                                <span style="color: var(--git-color);">Cloud (Mega.nz)</span>
+                                <span class="st-good">Cloud (Mega.nz)</span>
                                 {% elif d.status == 'completed' and d.mega_status and 'failed' in d.mega_status %}
-                                <span style="color: #dc2626;" title="{{ d.mega_status }}">Upload Failed</span>
+                                <span class="st-fail" title="{{ d.mega_status }}">Upload Failed</span>
                                 {% elif d.status == 'completed' and d.translating %}
-                                <span style="color: #11998e;"><i class="fas fa-check"></i> Translated</span>
+                                <span class="st-translate"><i class="fas fa-check"></i> Translated</span>
                                 {% elif d.status == 'completed' %}
-                                <span style="color: #666;">Local Only</span>
+                                <span class="st-local">Local Only</span>
                                 {% elif d.status in ('processing', 'resuming') %}
-                                <span style="color: #f59e0b;">{{ d.percentage }}%</span>
+                                <span class="st-prog">{{ d.percentage }}%</span>
                                 {% elif d.status in ('starting', 'detecting_language', 'getting_page_count') %}
-                                <span style="color: #f59e0b;">Starting...</span>
+                                <span class="st-prog">Starting...</span>
                                 {% elif d.status == 'translating' %}
-                                <span style="color: #11998e;">{{ d.percentage }}%</span>
+                                <span class="st-translate">{{ d.percentage }}%</span>
                                 {% elif d.status == 'error' %}
-                                <span style="color: #dc2626;">Error</span>
+                                <span class="st-fail">Error</span>
                                 {% elif d.status == 'interrupted' %}
-                                <span style="color: #f59e0b;">Interrupted</span>
+                                <span class="st-prog">Interrupted</span>
                                 {% else %}
-                                <span style="color: #666;">{{ d.status }}</span>
+                                <span class="st-muted">{{ d.status }}</span>
                                 {% endif %}
                             </td>
-                            <td style="padding: 1rem; text-align: center;">{{ d.download_count }}</td>
-                            <td style="padding: 1rem; white-space: nowrap;">
+                            <td class="col-dl">{{ d.download_count }}</td>
+                            <td class="col-action">
                                 {% if d.status == 'completed' and d.download_link %}
-                                <a href="{{ d.download_link }}" target="_blank" onclick="trackDownload('{{ d.task_id }}')" style="color: var(--git-color); font-weight: 600; text-decoration: none; margin-right: 0.5rem;">
+                                <a href="{{ d.download_link }}" target="_blank" onclick="trackDownload('{{ d.task_id }}')" class="act-link" title="Download">
                                     <i class="fas fa-cloud-download-alt"></i>
                                 </a>
-                                <button onclick="shareTask('{{ d.task_id }}', this)" style="background: none; border: 1px solid var(--git-color); border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 13px; color: var(--git-color);">
+                                <button onclick="shareTask('{{ d.task_id }}', this)" class="act-btn">
                                     <i class="fas fa-share-alt"></i> Share
                                 </button>
                                 {% elif d.status == 'completed' and d.mega_uploaded %}
-                                <button onclick="getMegaLink('{{ d.task_id }}', this)" style="color: var(--git-color); font-weight: 600; background: none; border: 1px solid var(--git-color); border-radius: 4px; padding: 0.25rem 0.75rem; cursor: pointer; font-size: 13px;">
+                                <button onclick="getMegaLink('{{ d.task_id }}', this)" class="act-btn act-link">
                                     <i class="fas fa-link"></i> Get Link
                                 </button>
-                                <button onclick="shareTask('{{ d.task_id }}', this)" style="background: none; border: 1px solid var(--git-color); border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 13px; color: var(--git-color);">
+                                <button onclick="shareTask('{{ d.task_id }}', this)" class="act-btn">
                                     <i class="fas fa-share-alt"></i> Share
                                 </button>
                                 {% elif d.status == 'completed' %}
-                                <a href="/download/{{ d.task_id }}" style="color: var(--git-color); font-weight: 600; text-decoration: none; margin-right: 0.5rem;">
+                                <a href="/download/{{ d.task_id }}" class="act-link act-btn">
                                     <i class="fas fa-download"></i> Download
                                 </a>
-                                <button onclick="shareTask('{{ d.task_id }}', this)" style="background: none; border: 1px solid var(--git-color); border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 13px; color: var(--git-color);">
+                                <button onclick="shareTask('{{ d.task_id }}', this)" class="act-btn">
                                     <i class="fas fa-share-alt"></i> Share
                                 </button>
                                 {% elif d.status in ('error', 'interrupted') and not d.translating %}
-                                <button onclick="retryTask('{{ d.task_id }}')" style="color: var(--git-color); font-weight: 600; background: none; border: 1px solid var(--git-color); border-radius: 4px; padding: 0.25rem 0.75rem; cursor: pointer; font-size: 13px;">
+                                <button onclick="retryTask('{{ d.task_id }}')" class="act-btn act-link">
                                     <i class="fas fa-redo"></i> Retry
                                 </button>
                                 {% elif d.status in ('error', 'interrupted') and d.translating %}
-                                <a href="/" style="color: var(--git-color); font-weight: 600; text-decoration: none;">
+                                <a href="/" class="act-link">
                                     <i class="fas fa-upload"></i> Re-upload
                                 </a>
                                 {% elif d.status in ('cancelling', 'cancelled') %}
-                                <span style="color: #999;">Cancelled</span>
+                                <span class="st-muted">Cancelled</span>
                                 {% elif d.status == 'translating' %}
-                                <a href="/check/{{ d.task_id }}" style="color: #11998e; font-weight: 600; text-decoration: none; margin-right: 0.5rem;">
+                                <a href="/check/{{ d.task_id }}" class="act-link act-trans">
                                     <i class="fas fa-spinner fa-pulse"></i> Translating...
                                 </a>
-                                <button onclick="cancelTask('{{ d.task_id }}')" style="color: #dc2626; background: none; border: 1px solid #dc2626; border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 13px;">
+                                <button onclick="cancelTask('{{ d.task_id }}')" class="act-btn act-danger">
                                     <i class="fas fa-times"></i> Cancel
                                 </button>
                                 {% else %}
-                                <a href="/check/{{ d.task_id }}" style="color: #f59e0b; font-weight: 600; text-decoration: none; margin-right: 0.5rem;">
+                                <a href="/check/{{ d.task_id }}" class="act-link act-progclass">
                                     <i class="fas fa-spinner fa-pulse"></i> Check Progress
                                 </a>
-                                <button onclick="cancelTask('{{ d.task_id }}')" style="color: #dc2626; background: none; border: 1px solid #dc2626; border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 13px;">
+                                <button onclick="cancelTask('{{ d.task_id }}')" class="act-btn act-danger">
                                     <i class="fas fa-times"></i> Cancel
                                 </button>
                                 {% endif %}

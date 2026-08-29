@@ -1854,3 +1854,91 @@ body {
     min-width: 0;
 }
 
+
+/* ===== Downloads table ===== */
+.downloads-wrap {
+    overflow-x: auto;
+    margin-top: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.downloads-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+    background: #fff;
+}
+
+.downloads-table thead th {
+    padding: 0.8rem 0.9rem;
+    text-align: left;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #4b5563;
+    background: #f1f5f9;
+    border-bottom: 2px solid var(--git-color);
+    white-space: nowrap;
+}
+
+.downloads-table tbody tr {
+    border-bottom: 1px solid #eef2f7;
+    transition: background 0.15s ease;
+}
+.downloads-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.downloads-table td {
+    padding: 0.8rem 0.9rem;
+    vertical-align: middle;
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+.downloads-table .col-check { width: 42px; text-align: center; }
+.downloads-table .col-num  { width: 52px; text-align: center; color: #9ca3af; }
+.downloads-table .col-file { max-width: 240px; min-width: 160px; font-weight: 600; color: #1f2937; overflow-wrap: anywhere; word-break: break-all; }
+.downloads-table .col-date { width: 150px; white-space: nowrap; }
+.downloads-table .col-type { width: 110px; }
+.downloads-table .col-pages{ text-align: center; }
+.downloads-table .col-eta  { width: 110px; white-space: nowrap; }
+.downloads-table .col-checkpoint { width: 100px; white-space: nowrap; }
+.downloads-table .col-status { width: 150px; }
+.downloads-table .col-dl   { width: 60px; text-align: center; }
+.downloads-table .col-action { white-space: nowrap; }
+
+.downloads-table .st-prog      { color: #f59e0b; font-weight: 600; }
+.downloads-table .st-inprog    { color: #f59e0b; font-weight: 600; }
+.downloads-table .st-fail      { color: #dc2626; font-weight: 600; }
+.downloads-table .st-translate { color: #11998e; font-weight: 600; }
+.downloads-table .st-good      { color: var(--git-color); font-weight: 600; }
+.downloads-table .st-local     { color: #6b7280; }
+.downloads-table .st-muted     { color: #9ca3af; }
+
+.downloads-table .act-link {
+    color: var(--git-color);
+    font-weight: 600;
+    text-decoration: none;
+    margin-right: 0.5rem;
+}
+.downloads-table .act-btn {
+    background: #fff;
+    border: 1px solid #d1d5db;
+    color: #4b5563;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.15s ease;
+}
+.downloads-table .act-btn:hover {
+    border-color: var(--git-color);
+    color: var(--git-color);
+}
+.downloads-table .act-link.act-btn { border-color: var(--git-color); color: var(--git-color); }
+.downloads-table .act-trans     { color: #11998e; font-weight: 600; text-decoration: none; margin-right: 0.5rem; }
+.downloads-table .act-danger    { color: #dc2626; border-color: #dc2626; }
+.downloads-table .act-danger:hover { background: #dc2626; color: #fff; }
+.downloads-table .act-progclass { color: #f59e0b; font-weight: 600; text-decoration: none; margin-right: 0.5rem; }
