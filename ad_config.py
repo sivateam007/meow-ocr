@@ -21,10 +21,35 @@ def _env_or(name, default=""):
 
 
 # Each value is raw HTML/JS injected as-is into the template (use |safe).
+# Keys are public Adsterra ad keys (safe to embed); env vars can override.
+_DEFAULT_CODES = {
+    "leaderboard": """<script>
+  atOptions = {
+    'key' : '8e11da306a8403463a573608363e6d88',
+    'format' : 'iframe',
+    'height' : 90,
+    'width' : 728,
+    'params' : {}
+  };
+</script>
+<script src="https://commercialhalftime.com/8e11da306a8403463a573608363e6d88/invoke.js"></script>""",
+    "inpage": """<script>
+  atOptions = {
+    'key' : 'efba19609d11bf438955d5a5d2968d45',
+    'format' : 'iframe',
+    'height' : 250,
+    'width' : 300,
+    'params' : {}
+  };
+</script>
+<script src="https://commercialhalftime.com/efba19609d11bf438955d5a5d2968d45/invoke.js"></script>""",
+    "popunder": "",
+}
+
 ADSTERRA_CODES = {
-    "leaderboard": _env_or("ADSTERRA_LEADERBOARD"),
-    "inpage": _env_or("ADSTERRA_INPAGE"),
-    "popunder": _env_or("ADSTERRA_POPUNDER"),
+    "leaderboard": _env_or("ADSTERRA_LEADERBOARD", _DEFAULT_CODES["leaderboard"]),
+    "inpage": _env_or("ADSTERRA_INPAGE", _DEFAULT_CODES["inpage"]),
+    "popunder": _env_or("ADSTERRA_POPUNDER", _DEFAULT_CODES["popunder"]),
 }
 
 
