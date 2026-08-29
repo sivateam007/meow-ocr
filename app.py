@@ -1807,21 +1807,45 @@ _uptime_thread = None
 _uptime_lock = threading.Lock()
 
 
+def _candidate_external_urls():
+    """Return ordered candidate public URLs to ping so the app wakes itself up.
+    Uses Render env vars if present, otherwise derives the .onrender.com URL
+    from the service name so this works even if an env var is missing."""
+    cands = []
+    for var in ("RENDER_EXTERNAL_URL", "RENDER_URL", "RANDOM_ENV_URL"):
+        val = (os.environ.get(var) or "").strip().rstrip("/")
+        if val and val not in cands:
+            cands.append(val)
+    # Derive default from service name (Render sets RENDER_SERVICE_NAME)
+    svc = (os.environ.get("RENDER_SERVICE_NAME") or "").strip().lower()
+    if svc:
+        default = f"https://{svc}.onrender.com"
+        if default not in cands:
+            cands.append(default)
+    return cands
+
+
 def _uptime_keepalive_loop():
     local_url = f"http://localhost:{os.environ.get('PORT', 8080)}"
-    render_url = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("RENDER_URL", "")
-    logger.info("Uptime keepalive loop started (interval=%ss)", _uptime_interval)
+    external_urls = _candidate_external_urls()
+    logger.info(
+        "Uptime keepalive loop started (interval=%ss, external=%s)",
+        _uptime_interval,
+        external_urls or "none (localhost only)",
+    )
     while True:
         success = False
-        if render_url:
+        for url in external_urls:
             try:
-                requests.get(f"{render_url}/health", timeout=15)
+                requests.get(f"{url}/healthz", timeout=15)
                 success = True
+                break
             except Exception:
-                pass
-        if not success:
+                continue
+        if not success and external_urls:
+            # Last-resort: the local endpoint (keeps dev/dev-desktop alive too)
             try:
-                requests.get(f"{local_url}/health", timeout=5)
+                requests.get(f"{local_url}/healthz", timeout=5)
                 success = True
             except Exception:
                 pass
@@ -2566,6 +2590,15 @@ def ads_txt():
         "# Example: google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0\n"
     )
     return app.response_class(content, mimetype='text/plain')
+
+
+@app.route('/healthz')
+def healthz():
+    """Lightweight liveness endpoint used by the self-keepalive thread.
+    Does NOT spawn a Tesseract subprocess, so it always responds in a few
+    ms. External uptime monitors (UptimeRobot, cron-job.org, etc.) should
+    ping /healthz for the cheapest possible check."""
+    return {'status': 'ok'}, 200
 
 
 @app.route('/health')
