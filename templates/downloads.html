@@ -33,7 +33,6 @@
             </div>
             <nav class="nav-links">
                 <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
-                <a href="/gallery" class="nav-link"><i class="fas fa-images"></i> Meow Gallery</a>
                 <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
                 <a href="/downloads" class="nav-link active"><i class="fas fa-download"></i> My Downloads</a>
                 <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
@@ -62,15 +61,10 @@
             {% endif %}
 
             {% if downloads %}
-            <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <button onclick="clearDownloads()" style="padding: 0.6rem 1.2rem; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;"><i class="fas fa-trash-alt"></i> Clear All</button>
-                <button id="clear-selected-btn" onclick="clearSelected()" disabled style="padding: 0.6rem 1.2rem; background: #999; color: white; border: none; border-radius: 6px; cursor: not-allowed; font-weight: 600;"><i class="fas fa-check-double"></i> Clear Selected</button>
-            </div>
             <div class="downloads-wrap">
                 <table class="downloads-table">
                     <thead>
                         <tr>
-                            <th class="col-check"><input type="checkbox" id="select-all" onchange="toggleAll(this)"></th>
                             <th class="col-num">#</th>
                             <th class="col-file">File</th>
                             <th class="col-date">Date</th>
@@ -86,7 +80,6 @@
                     <tbody>
                         {% for d in downloads %}
                         <tr>
-                            <td class="col-check"><input type="checkbox" class="task-checkbox" value="{{ d.task_id }}" onchange="updateClearSelected()"></td>
                             <td class="col-num">{{ loop.index }}</td>
                             <td class="col-file" title="{{ d.filename }}">{{ d.filename }}</td>
                             <td class="col-date">
@@ -254,46 +247,6 @@
                 });
         }
 
-        function toggleAll(src) {
-            document.querySelectorAll('.task-checkbox').forEach(cb => cb.checked = src.checked);
-            updateClearSelected();
-        }
-
-        function updateClearSelected() {
-            var checked = document.querySelectorAll('.task-checkbox:checked').length;
-            var btn = document.getElementById('clear-selected-btn');
-            if (checked > 0) {
-                btn.disabled = false;
-                btn.style.background = '#dc2626';
-                btn.style.cursor = 'pointer';
-                btn.innerHTML = '<i class="fas fa-check-double"></i> Clear Selected (' + checked + ')';
-            } else {
-                btn.disabled = true;
-                btn.style.background = '#999';
-                btn.style.cursor = 'not-allowed';
-                btn.innerHTML = '<i class="fas fa-check-double"></i> Clear Selected';
-            }
-        }
-
-        function clearDownloads() {
-            if (!confirm('Clear ALL downloads? This cannot be undone.')) return;
-            fetch('/clear-downloads', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({}) })
-                .then(r => r.json())
-                .then(d => { if (d.cleared > 0) location.reload(); })
-                .catch(function(){});
-        }
-
-        function clearSelected() {
-            var checked = document.querySelectorAll('.task-checkbox:checked');
-            if (checked.length === 0) return;
-            if (!confirm('Clear ' + checked.length + ' selected download' + (checked.length > 1 ? 's' : '') + '? This cannot be undone.')) return;
-            var ids = Array.from(checked).map(cb => cb.value);
-            fetch('/clear-downloads', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({task_ids: ids}) })
-                .then(r => r.json())
-                .then(d => { if (d.cleared > 0) location.reload(); })
-                .catch(function(){});
-        }
-
         function shareTask(taskId, btn) {
             var orig = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Loading...';
@@ -417,6 +370,16 @@
             }
             spawnDrift(); spawnDrift();
             setInterval(spawnDrift, 2800);
+            // Cute paw prints stream along the cursor (throttled)
+            var lastPaw = 0;
+            document.addEventListener('mousemove', function (e) {
+                var n = Date.now(); if (n - lastPaw < 220) return; lastPaw = n;
+                var p = document.createElement('span');
+                p.className = 'paw-cursor'; p.textContent = '🐾';
+                p.style.left = (e.clientX - 14) + 'px'; p.style.top = (e.clientY - 14) + 'px';
+                document.body.appendChild(p);
+                anime({ targets: p, translateY: [-14, 0], opacity: [0.8, 0], scale: [0.6, 1.1], duration: 650, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+            });
         });
     </script>
 </body>

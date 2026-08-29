@@ -32,7 +32,6 @@
             </div>
             <nav class="nav-links">
                 <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
-                <a href="/gallery" class="nav-link"><i class="fas fa-images"></i> Meow Gallery</a>
                 <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
                 <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
                 <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
@@ -177,6 +176,16 @@
             }
             spawnDrift(); spawnDrift();
             setInterval(spawnDrift, 2800);
+            // Cute paw prints stream along the cursor (throttled)
+            var lastPaw = 0;
+            document.addEventListener('mousemove', function (e) {
+                var n = Date.now(); if (n - lastPaw < 220) return; lastPaw = n;
+                var p = document.createElement('span');
+                p.className = 'paw-cursor'; p.textContent = '🐾';
+                p.style.left = (e.clientX - 14) + 'px'; p.style.top = (e.clientY - 14) + 'px';
+                document.body.appendChild(p);
+                anime({ targets: p, translateY: [-14, 0], opacity: [0.8, 0], scale: [0.6, 1.1], duration: 650, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+            });
         });
     </script>
 </body>
