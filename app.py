@@ -8,6 +8,7 @@ import os
 import tempfile
 import threading
 import uuid
+from functools import wraps
 import re
 import logging
 import time
@@ -51,6 +52,51 @@ _IS_PRODUCTION = bool(
 app.config['SESSION_COOKIE_HTTPONLY'] = True          # not readable by JS (anti-XSS)
 app.config['SESSION_COOKIE_SAMESITE'] = "Lax"         # anti-CSRF for cross-site POSTs
 app.config['SESSION_COOKIE_SECURE'] = _IS_PRODUCTION  # HTTPS-only in production
+
+
+# =====================================================================
+# Lightweight in-memory rate limiter (per IP) to blunt resource-exhaustion
+# / brute-force abuse on the free tier. Entries are pruned lazily.
+# NOTE: in-memory only — not a substitute for a CDN/WAF, but free + effective,
+# and resets across restarts (which is acceptable for this threat model).
+# =====================================================================
+_rate_buckets = {}
+_rate_lock = threading.Lock()
+
+
+def _rate_limit(limit, window_seconds):
+    """Decorator: allow up to `limit` requests per `window_seconds` per IP.
+    Returns HTTP 429 when exceeded."""
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            ip = request.remote_addr or "unknown"
+            now = time.time()
+            with _rate_lock:
+                bucket = [t for t in _rate_buckets.get(ip, []) if now - t < window_seconds]
+                bucket.append(now)
+                _rate_buckets[ip] = bucket
+                exceed = len(bucket) > limit
+            if exceed:
+                return jsonify({"error": "Too many requests, please slow down."}), 429
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def _check_rate(limit, window_seconds):
+    """Inline rate-limit check (True = allowed, False = over limit).
+    Returns the same error response the decorator would, or None if allowed."""
+    ip = request.remote_addr or "unknown"
+    now = time.time()
+    with _rate_lock:
+        bucket = [t for t in _rate_buckets.get(ip, []) if now - t < window_seconds]
+        bucket.append(now)
+        _rate_buckets[ip] = bucket
+        exceed = len(bucket) > limit
+    if exceed:
+        return jsonify({"error": "Too many requests, please slow down."}), 429
+    return None
 
 # Jinja filter: Unix timestamp to readable date
 @app.template_filter('datetimeformat')
@@ -2152,6 +2198,10 @@ def translate_file_background(task_id, file_path, filename, temp_dir, source_lan
 @app.route('/translate', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
+        # Upload rate limit (uploads are the expensive path — blunt abuse)
+        _rl = _check_rate(6, 60)  # max ~6 uploads per minute per IP
+        if _rl is not None:
+            return _rl
         # Check if translation request
         is_translate = request.path == '/translate'
         if is_translate or request.form.get('mode') == 'translate':
@@ -2729,6 +2779,7 @@ def verify_firebase_token(id_token):
 
 
 @app.route('/api/auth', methods=['POST'])
+@_rate_limit(20, 60)
 def api_auth():
     """Verify Google (Firebase) ID token and start a server session."""
     data = request.get_json(silent=True) or {}
