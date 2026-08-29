@@ -1869,13 +1869,26 @@ _uptime_lock = threading.Lock()
 
 def _candidate_external_urls():
     """Return ordered candidate public URLs to ping so the app wakes itself up.
-    Uses Render env vars if present, otherwise derives the .onrender.com URL
-    from the service name so this works even if an env var is missing."""
+
+    Tries, in order:
+      1. An explicitly configured UPTIME_KEEPALIVE_URL (most reliable if set).
+      2. Render-provided env URLs (RENDER_EXTERNAL_URL / RENDER_URL / RANDOM_ENV_URL).
+      3. The known custom domain(s) for this app (app.meowocr.work.gd and root).
+      4. A .onrender.com URL derived from RENDER_SERVICE_NAME.
+    """
     cands = []
+    explicit = (os.environ.get("UPTIME_KEEPALIVE_URL") or "").strip().rstrip("/")
+    if explicit and explicit not in cands:
+        cands.append(explicit)
     for var in ("RENDER_EXTERNAL_URL", "RENDER_URL", "RANDOM_ENV_URL"):
         val = (os.environ.get(var) or "").strip().rstrip("/")
         if val and val not in cands:
             cands.append(val)
+    # Known custom domain(s) for this deployment (www is the confirmed live URL)
+    for host in ("www.meowocr.work.gd", "meowocr.work.gd"):
+        url = f"https://{host}"
+        if url not in cands:
+            cands.append(url)
     # Derive default from service name (Render sets RENDER_SERVICE_NAME)
     svc = (os.environ.get("RENDER_SERVICE_NAME") or "").strip().lower()
     if svc:
@@ -1886,33 +1899,48 @@ def _candidate_external_urls():
 
 
 def _uptime_keepalive_loop():
-    local_url = f"http://localhost:{os.environ.get('PORT', 8080)}"
+    port = os.environ.get("PORT", "8080")
+    local_http = f"http://localhost:{port}/healthz"
+    local_https_guess = f"https://localhost:{port}/healthz"
     external_urls = _candidate_external_urls()
     logger.info(
         "Uptime keepalive loop started (interval=%ss, external=%s)",
         _uptime_interval,
         external_urls or "none (localhost only)",
     )
+    _last_err = ""
+    loops = 0
     while True:
         success = False
-        for url in external_urls:
+        for base in external_urls:
+            url = f"{base}/healthz"
             try:
-                requests.get(f"{url}/healthz", timeout=15)
+                requests.get(url, timeout=15, verify=True)
                 success = True
+                if url != _last_err:
+                    logger.debug("Uptime keepalive OK: %s", url)
+                _last_err = ""
                 break
-            except Exception:
+            except Exception as exc:  # noqa: BLE001
+                _last_err = f"{url} -> {exc}"
                 continue
         if not success and external_urls:
-            # Last-resort: the local endpoint (keeps dev/dev-desktop alive too)
-            try:
-                requests.get(f"{local_url}/healthz", timeout=5)
-                success = True
-            except Exception:
-                pass
+            # Last-resort local checks keep local/dev instances alive too.
+            for url in (local_http, local_https_guess):
+                try:
+                    requests.get(url, timeout=5, verify=False)
+                    success = True
+                    break
+                except Exception:
+                    continue
         if not success:
-            logger.warning("Uptime keepalive: health endpoint unreachable")
+            logger.warning("Uptime keepalive: no reachable endpoint (%s)", _last_err)
         # Guard against a pathological zero/negative interval
         interval = _uptime_interval if _uptime_interval > 20 else 240
+        loops += 1
+        # Periodically surface a progress heartbeat so it's visible in logs
+        if loops % (24 * 60 * 60 // interval) == 0:  # ~once per day
+            logger.info("Uptime keepalive heartbeat: still running (interval=%ss)", interval)
         time.sleep(interval)
 
 
