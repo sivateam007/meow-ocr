@@ -22,27 +22,13 @@ def _env_or(name, default=""):
 
 # Each value is raw HTML/JS injected as-is into the template (use |safe).
 # Keys are public Adsterra ad keys (safe to embed); env vars can override.
+# IMPORTANT: Do NOT put old keys here — paste your new account's raw ad-unit
+# HTML/JS codes as environment variables on Render (ADSTERRA_LEADERBOARD,
+# ADSTERRA_INPAGE, ADSTERRA_POPUNDER). Keep popunder empty unless you
+# explicitly need it, and keep "Show adult ads" OFF in the Adsterra dashboard.
 _DEFAULT_CODES = {
-    "leaderboard": """<script>
-  atOptions = {
-    'key' : '8e11da306a8403463a573608363e6d88',
-    'format' : 'iframe',
-    'height' : 90,
-    'width' : 728,
-    'params' : {}
-  };
-</script>
-<script src="https://commercialhalftime.com/8e11da306a8403463a573608363e6d88/invoke.js"></script>""",
-    "inpage": """<script>
-  atOptions = {
-    'key' : 'efba19609d11bf438955d5a5d2968d45',
-    'format' : 'iframe',
-    'height' : 250,
-    'width' : 300,
-    'params' : {}
-  };
-</script>
-<script src="https://commercialhalftime.com/efba19609d11bf438955d5a5d2968d45/invoke.js"></script>""",
+    "leaderboard": "",
+    "inpage": "",
     "popunder": "",
 }
 
