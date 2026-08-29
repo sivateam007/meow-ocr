@@ -202,5 +202,22 @@
             });
         });
     </script>
+
+    <script>
+        (function () {
+            function initAdFallback() {
+                document.querySelectorAll('.ad-container[data-ad-slot]').forEach(function (box) {
+                    var inner = box.querySelector('.ad-inner');
+                    var fb = box.querySelector('.ad-fallback');
+                    if (!inner || !fb) return;
+                    setTimeout(function () {
+                        if (!inner.querySelector('iframe')) { fb.style.display = 'flex'; }
+                    }, 2500);
+                });
+            }
+            if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initAdFallback); }
+            else { initAdFallback(); }
+        })();
+    </script>
 </body>
 </html>

@@ -2,8 +2,14 @@
    {% set slot = 'leaderboard' %}{% include 'ads.html' %}
    Only renders when the matching Adsterra slot code is configured (ads_enabled). #}
 {% if ads_enabled and ads is defined and ads.get(slot) %}
-<div class="ad-container ad-{{ slot }}">
+<div class="ad-container ad-{{ slot }}" data-ad-slot="{{ slot }}">
     <span class="ad-label">Advertisement</span>
     <div class="ad-inner">{{ ads.get(slot) | safe }}</div>
+    <div class="ad-fallback" style="display:none;">
+        <i class="fas fa-paw"></i> Meow OCR is 100% free. If you're enjoying it, please disable your ad blocker (or buy us cat treats 🐾) so we can keep it running for everyone!
+    </div>
 </div>
+{% endif %}
+{% if ads_enabled and slot == 'popunder' and ads.get('popunder') %}
+<div class="ad-container ad-popunder">{{ ads.get('popunder') | safe }}</div>
 {% endif %}
