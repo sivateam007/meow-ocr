@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Downloads - Meow OCR</title>
+    <meta name="description" content="View and download your OCR results from Meow OCR. Recover text from PDF, images and documents.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% if restoring %}<meta http-equiv="refresh" content="5">{% endif %}
+    <script>
+        window.FIREBASE_CONFIG = {
+            apiKey: "{{ firebase_api_key }}",
+            authDomain: "{{ firebase_auth_domain }}",
+            projectId: "{{ firebase_project_id }}",
+            storageBucket: "{{ firebase_storage_bucket }}",
+            messagingSenderId: "",
+            appId: "{{ firebase_app_id }}",
+            measurementId: "{{ firebase_measurement_id }}"
+        };
+        window.SCANNER_USER = {{ current_user_json|safe }};
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+    <script src="https://unpkg.com/animejs@3.2.2/lib/anime.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads" class="nav-link active"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
+                <span class="user-badge" id="user-badge" style="display:none;">
+                    <img id="user-avatar" class="user-avatar" alt="" />
+                    <span id="user-name"></span>
+                    <a href="#" class="logout-btn" id="logout-btn" title="Sign out"><i class="fas fa-sign-out-alt"></i></a>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="content-section">
+            <h2><i class="fas fa-download"></i> My Downloads <span class="heading-cat">🐱</span></h2>
+
+            {% if restoring %}
+            <div style="text-align: center; padding: 2rem; margin-bottom: 1rem; border: 1px solid var(--git-color); border-radius: 8px; background: #f0fdf4;">
+                <i class="fas fa-cloud-download-alt" style="font-size: 2rem; color: var(--git-color);"></i>
+                <p style="font-size: 1.1rem; margin: 0.5rem 0; color: #333;">
+                    Restoring your files from cloud storage...
+                    <i class="fas fa-spinner fa-pulse" style="margin-left: 0.5rem;"></i>
+                </p>
+                <p style="font-size: 0.9rem; color: #666;">This page refreshes automatically once complete.</p>
+            </div>
+            {% endif %}
+
+            {% if downloads %}
+            <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button onclick="clearDownloads()" style="padding: 0.6rem 1.2rem; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;"><i class="fas fa-trash-alt"></i> Clear All</button>
+                <button id="clear-selected-btn" onclick="clearSelected()" disabled style="padding: 0.6rem 1.2rem; background: #999; color: white; border: none; border-radius: 6px; cursor: not-allowed; font-weight: 600;"><i class="fas fa-check-double"></i> Clear Selected</button>
+            </div>
+            <div style="overflow-x: auto; margin-top: 1rem;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--git-color);">
+                            <th style="padding: 1rem; text-align: left; width: 40px;"><input type="checkbox" id="select-all" onchange="toggleAll(this)"></th>
+                            <th style="padding: 1rem; text-align: left;">#</th>
+                            <th style="padding: 1rem; text-align: left;">File</th>
+                            <th style="padding: 1rem; text-align: left;">Date</th>
+                            <th style="padding: 1rem; text-align: left;">Type</th>
+                            <th style="padding: 1rem; text-align: left;">Pages / Chunks</th>
+                            <th style="padding: 1rem; text-align: left;">ETA</th>
+                            <th style="padding: 1rem; text-align: left;">Checkpoint</th>
+                            <th style="padding: 1rem; text-align: left;">Status</th>
+                            <th style="padding: 1rem; text-align: left;">DL</th>
+                            <th style="padding: 1rem; text-align: left;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in downloads %}
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 1rem; text-align: center;"><input type="checkbox" class="task-checkbox" value="{{ d.task_id }}" onchange="updateClearSelected()"></td>
+                            <td style="padding: 1rem;">{{ loop.index }}</td>
+                            <td style="padding: 1rem;">{{ d.filename }}</td>
+                            <td style="padding: 1rem; white-space: nowrap;">
+                                {%- if d.status == 'completed' and d.completed_at -%}
+                                    {{ d.completed_at | int | datetimeformat }}
+                                {%- elif d.status in ('processing', 'starting', 'detecting_language', 'getting_page_count', 'resuming', 'translating') -%}
+                                    <span style="color: #f59e0b;">In progress...</span>
+                                {%- elif d.status == 'error' -%}
+                                    <span style="color: #dc2626;">Failed</span>
+                                {%- else -%}
+                                    {{ d.created_at | int | datetimeformat if d.created_at else '' }}
+                                {%- endif -%}
+                            </td>
+                            <td style="padding: 1rem;">
+                                {%- if d.translating -%}
+                                <span style="color: #11998e;"><i class="fas fa-language"></i> Translation</span>
+                                {%- else -%}
+                                {{ d.file_type.upper() }}
+                                {%- endif -%}
+                            </td>
+                            <td style="padding: 1rem;">
+                                {%- if d.translating -%}
+                                Chunk {{ d.current_chunk }}/{{ d.total_chunks if d.total_chunks else '...' }}
+                                {%- else -%}
+                                {{ d.pages_processed }}
+                                {%- endif -%}
+                            </td>
+                            <td style="padding: 1rem; white-space: nowrap;">
+                                {%- if d.status in ('processing', 'resuming') and d.eta -%}
+                                    {%- if d.eta < 60 -%}{{ d.eta }}s
+                                    {%- elif d.eta < 3600 -%}{{ (d.eta / 60)|int }}m {{ d.eta % 60 }}s
+                                    {%- else -%}{{ (d.eta / 3600)|int }}h {{ ((d.eta % 3600) / 60)|int }}m
+                                    {%- endif -%}
+                                {%- else -%}-
+                                {%- endif -%}
+                            </td>
+                            <td style="padding: 1rem;">
+                                {%- if d.last_checkpoint_page -%}
+                                    Pg {{ d.last_checkpoint_page }}
+                                {%- elif d.status == 'completed' -%}
+                                    Done
+                                {%- else -%}-
+                                {%- endif -%}
+                            </td>
+                            <td style="padding: 1rem;">
+                                {% if d.status == 'completed' and d.mega_uploaded %}
+                                <span style="color: var(--git-color);">Cloud (Mega.nz)</span>
+                                {% elif d.status == 'completed' and d.mega_status and 'failed' in d.mega_status %}
+                                <span style="color: #dc2626;" title="{{ d.mega_status }}">Upload Failed</span>
+                                {% elif d.status == 'completed' and d.translating %}
+                                <span style="color: #11998e;"><i class="fas fa-check"></i> Translated</span>
+                                {% elif d.status == 'completed' %}
+                                <span style="color: #666;">Local Only</span>
+                                {% elif d.status in ('processing', 'resuming') %}
+                                <span style="color: #f59e0b;">{{ d.percentage }}%</span>
+                                {% elif d.status in ('starting', 'detecting_language', 'getting_page_count') %}
+                                <span style="color: #f59e0b;">Starting...</span>
+                                {% elif d.status == 'translating' %}
+                                <span style="color: #11998e;">{{ d.percentage }}%</span>
+                                {% elif d.status == 'error' %}
+                                <span style="color: #dc2626;">Error</span>
+                                {% elif d.status == 'interrupted' %}
+                                <span style="color: #f59e0b;">Interrupted</span>
+                                {% else %}
+                                <span style="color: #666;">{{ d.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 1rem; text-align: center;">{{ d.download_count }}</td>
+                            <td style="padding: 1rem; white-space: nowrap;">
+                                {% if d.status == 'completed' and d.download_link %}
+                                <a href="{{ d.download_link }}" target="_blank" onclick="trackDownload('{{ d.task_id }}')" style="color: var(--git-color); font-weight: 600; text-decoration: none; margin-right: 0.5rem;">
+                                    <i class="fas fa-cloud-download-alt"></i>
+                                </a>
+                                <button onclick="shareTask('{{ d.task_id }}', this)" style="background: none; border: 1px solid var(--git-color); border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 13px; color: var(--git-color);">
+                                    <i class="fas fa-share-alt"></i> Share
+                                </button>
+                                {% elif d.status == 'completed' and d.mega_uploaded %}
+                                <button onclick="getMegaLink('{{ d.task_id }}', this)" style="color: var(--git-color); font-weight: 600; background: none; border: 1px solid var(--git-color); border-radius: 4px; padding: 0.25rem 0.75rem; cursor: pointer; font-size: 13px;">
+                                    <i class="fas fa-link"></i> Get Link
+                                </button>
+                                <button onclick="shareTask('{{ d.task_id }}', this)" style="background: none; border: 1px solid var(--git-color); border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 13px; color: var(--git-color);">
+                                    <i class="fas fa-share-alt"></i> Share
+                                </button>
+                                {% elif d.status == 'completed' %}
+                                <a href="/download/{{ d.task_id }}" style="color: var(--git-color); font-weight: 600; text-decoration: none; margin-right: 0.5rem;">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                                <button onclick="shareTask('{{ d.task_id }}', this)" style="background: none; border: 1px solid var(--git-color); border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 13px; color: var(--git-color);">
+                                    <i class="fas fa-share-alt"></i> Share
+                                </button>
+                                {% elif d.status in ('error', 'interrupted') and not d.translating %}
+                                <button onclick="retryTask('{{ d.task_id }}')" style="color: var(--git-color); font-weight: 600; background: none; border: 1px solid var(--git-color); border-radius: 4px; padding: 0.25rem 0.75rem; cursor: pointer; font-size: 13px;">
+                                    <i class="fas fa-redo"></i> Retry
+                                </button>
+                                {% elif d.status in ('error', 'interrupted') and d.translating %}
+                                <a href="/" style="color: var(--git-color); font-weight: 600; text-decoration: none;">
+                                    <i class="fas fa-upload"></i> Re-upload
+                                </a>
+                                {% elif d.status in ('cancelling', 'cancelled') %}
+                                <span style="color: #999;">Cancelled</span>
+                                {% elif d.status == 'translating' %}
+                                <a href="/check/{{ d.task_id }}" style="color: #11998e; font-weight: 600; text-decoration: none; margin-right: 0.5rem;">
+                                    <i class="fas fa-spinner fa-pulse"></i> Translating...
+                                </a>
+                                <button onclick="cancelTask('{{ d.task_id }}')" style="color: #dc2626; background: none; border: 1px solid #dc2626; border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 13px;">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                                {% else %}
+                                <a href="/check/{{ d.task_id }}" style="color: #f59e0b; font-weight: 600; text-decoration: none; margin-right: 0.5rem;">
+                                    <i class="fas fa-spinner fa-pulse"></i> Check Progress
+                                </a>
+                                <button onclick="cancelTask('{{ d.task_id }}')" style="color: #dc2626; background: none; border: 1px solid #dc2626; border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 13px;">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% elif not restoring %}
+            <div style="text-align: center; padding: 4rem 2rem; color: #666;">
+                <div class="result-cat" style="justify-content: center; margin-bottom: 1.2rem;">
+                    <img src="{{ url_for('static', filename='images/cat-sleepy.jpg') }}" alt="Meow OCR cat">
+                    <span>No files tucked under the couch yet!</span>
+                </div>
+                <p style="font-size: 1.2rem; margin-top: 0.5rem;">No downloads yet.</p>
+                <p>Upload a file to get started — we'll keep it safe until it purrs into your hands.</p>
+                <a href="/" style="display: inline-block; margin-top: 1.5rem; padding: 0.8rem 2rem; background: var(--git-color); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                    <i class="fas fa-upload"></i> Upload a File
+                </a>
+            </div>
+            {% endif %}
+        </section>
+    </main>
+
+
+    <script>
+        function trackDownload(taskId) {
+            fetch('/track-download/' + taskId, { method: 'POST' }).catch(function(){});
+        }
+
+        function getMegaLink(taskId, btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Loading...';
+            fetch('/mega-link/' + taskId, { method: 'POST' })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.link) {
+                        window.open(d.link, '_blank');
+                        trackDownload(taskId);
+                        btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i>';
+                        btn.onclick = function(){ window.open(d.link, '_blank'); trackDownload(taskId); };
+                    } else {
+                        alert('Failed to get link: ' + (d.error || 'unknown error'));
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-link"></i> Get Link';
+                    }
+                })
+                .catch(function(){
+                    alert('Failed to get link');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-link"></i> Get Link';
+                });
+        }
+
+        function toggleAll(src) {
+            document.querySelectorAll('.task-checkbox').forEach(cb => cb.checked = src.checked);
+            updateClearSelected();
+        }
+
+        function updateClearSelected() {
+            var checked = document.querySelectorAll('.task-checkbox:checked').length;
+            var btn = document.getElementById('clear-selected-btn');
+            if (checked > 0) {
+                btn.disabled = false;
+                btn.style.background = '#dc2626';
+                btn.style.cursor = 'pointer';
+                btn.innerHTML = '<i class="fas fa-check-double"></i> Clear Selected (' + checked + ')';
+            } else {
+                btn.disabled = true;
+                btn.style.background = '#999';
+                btn.style.cursor = 'not-allowed';
+                btn.innerHTML = '<i class="fas fa-check-double"></i> Clear Selected';
+            }
+        }
+
+        function clearDownloads() {
+            if (!confirm('Clear ALL downloads? This cannot be undone.')) return;
+            fetch('/clear-downloads', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({}) })
+                .then(r => r.json())
+                .then(d => { if (d.cleared > 0) location.reload(); })
+                .catch(function(){});
+        }
+
+        function clearSelected() {
+            var checked = document.querySelectorAll('.task-checkbox:checked');
+            if (checked.length === 0) return;
+            if (!confirm('Clear ' + checked.length + ' selected download' + (checked.length > 1 ? 's' : '') + '? This cannot be undone.')) return;
+            var ids = Array.from(checked).map(cb => cb.value);
+            fetch('/clear-downloads', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({task_ids: ids}) })
+                .then(r => r.json())
+                .then(d => { if (d.cleared > 0) location.reload(); })
+                .catch(function(){});
+        }
+
+        function shareTask(taskId, btn) {
+            var orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Loading...';
+            fetch('/share-link/' + taskId)
+                .then(r => r.json())
+                .then(d => {
+                    if (d.link) {
+                        navigator.clipboard.writeText(d.link).then(function() {
+                            btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                            btn.style.borderColor = '#11998e';
+                            btn.style.color = '#11998e';
+                            setTimeout(function() {
+                                btn.innerHTML = orig;
+                                btn.style.borderColor = 'var(--git-color)';
+                                btn.style.color = 'var(--git-color)';
+                            }, 2000);
+                        }).catch(function() {
+                            prompt('Copy this link:', d.link);
+                            btn.innerHTML = orig;
+                        });
+                    } else {
+                        alert('Share link not available');
+                        btn.innerHTML = orig;
+                    }
+                })
+                .catch(function() {
+                    alert('Failed to get share link');
+                    btn.innerHTML = orig;
+                });
+        }
+
+        function cancelTask(taskId) {
+            if (!confirm('Cancel this running task?')) return;
+            fetch('/cancel/' + taskId, { method: 'POST' })
+                .then(r => r.json())
+                .then(d => { if (d.status === 'cancelling') location.reload(); })
+                .catch(() => {});
+        }
+
+        function retryTask(taskId) {
+            if (!confirm('Retry this failed task?')) return;
+            fetch('/retry/' + taskId, { method: 'POST' })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.task_id) {
+                        window.location.href = '/check/' + d.task_id;
+                    } else {
+                        alert('Retry failed: ' + (d.error || 'unknown error'));
+                    }
+                })
+                .catch(() => alert('Retry request failed'));
+        }
+
+
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            var rows = document.querySelectorAll('tbody tr');
+            anime({ targets: rows, opacity: [0, 1], translateY: [14, 0], delay: anime.stagger(60), duration: 500, easing: 'easeOutQuad' });
+            var resCat = document.querySelector('.result-cat img');
+            if (resCat) anime({ targets: resCat, scale: [0, 1], rotate: [360, 0], duration: 900, easing: 'easeOutBack' });
+            var heading = document.querySelector('.content-section h2');
+            if (heading) anime({ targets: heading, translateY: [20, 0], opacity: [0, 1], duration: 600, easing: 'easeOutExpo' });
+        });
+    </script>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <h4>Meow OCR</h4>
+                <p>Free online OCR — extract text from PDF, images &amp; documents. 19+ languages.</p>
+                <p class="meow-tagline"><i class="fas fa-cat"></i> Powered by curious cats <i class="fas fa-paw"></i></p>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <a href="/"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads"><i class="fas fa-download"></i> My Downloads</a>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <a href="/privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                <a href="/terms"><i class="fas fa-file-contract"></i> Terms of Service</a>
+            </div>
+            <div class="footer-note">
+                <h4>Your Result</h4>
+                <p>Results are stored securely in the cloud and auto-deleted after 2 days by default.</p>
+                <p class="copyright">&copy; 2026 Meow OCR. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            var em = ['🐾', '🐱', '⭐', '✨'];
+            function pawBurst(x, y) {
+                for (var i = 0; i < 7; i++) (function (i) {
+                    var p = document.createElement('span');
+                    p.className = 'paw-confetti';
+                    p.textContent = em[i % em.length];
+                    p.style.left = x + 'px'; p.style.top = y + 'px';
+                    document.body.appendChild(p);
+                    anime({ targets: p, translateX: [0, (Math.random() - 0.5) * 160], translateY: [0, -(Math.random() * 110 + 40)], rotate: [0, Math.random() * 360 - 180], opacity: [1, 0], duration: 800 + Math.random() * 500, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+                })(i);
+            }
+            document.querySelectorAll('.submit-btn, .cta-btn, a[href="/"]').forEach(function (el) {
+                el.addEventListener('click', function (ev) { pawBurst(ev.clientX, ev.clientY); });
+            });
+            var last = 0;
+            document.addEventListener('mousemove', function (e) {
+                var n = Date.now(); if (n - last < 260) return; last = n;
+                var p = document.createElement('span');
+                p.className = 'paw-cursor'; p.textContent = '🐾';
+                p.style.left = (e.clientX - 14) + 'px'; p.style.top = (e.clientY - 14) + 'px';
+                document.body.appendChild(p);
+                anime({ targets: p, translateY: [-14, 0], opacity: [0.8, 0], scale: [0.6, 1.1], duration: 650, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+            });
+        });
+    </script>
+</body>
+</html>

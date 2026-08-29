@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Meow OCR</title>
+    <meta name="description" content="Meow OCR privacy policy: how we handle, store and protect your uploaded documents and personal data. Files auto-delete after 2 days.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        window.FIREBASE_CONFIG = {
+            apiKey: "{{ firebase_api_key }}",
+            authDomain: "{{ firebase_auth_domain }}",
+            projectId: "{{ firebase_project_id }}",
+            storageBucket: "{{ firebase_storage_bucket }}",
+            messagingSenderId: "",
+            appId: "{{ firebase_app_id }}",
+            measurementId: "{{ firebase_measurement_id }}"
+        };
+        window.SCANNER_USER = {{ current_user_json|safe }};
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+    <script src="https://unpkg.com/animejs@3.2.2/lib/anime.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
+                <span class="user-badge" id="user-badge" style="display:none;">
+                    <img id="user-avatar" class="user-avatar" alt="" />
+                    <span id="user-name"></span>
+                    <a href="#" class="logout-btn" id="logout-btn" title="Sign out"><i class="fas fa-sign-out-alt"></i></a>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="content-section info-page">
+            <h1 class="page-main-title"><i class="fas fa-shield-alt"></i> Privacy Policy</h1>
+            <div class="page-cat-chip"><img src="{{ url_for('static', filename='images/cat-grey.jpg') }}" alt="Meow OCR privacy cat"><span class="heading-cat">We keep your data safe as a cat keeps its treats 🐱</span></div>
+            <p class="page-subtitle">Last updated: 2026. Your privacy matters to us. Here's exactly how Meow OCR handles your data.</p>
+
+            <div class="info-page-box">
+                <h2>1. What We Collect</h2>
+                <p><b>Files you upload</b> — the documents, PDFs and images you convert for OCR processing.</p>
+                <p><b>Basic usage data</b> — anonymous stats like file type and page count used to improve service quality.</p>
+                <p><b>Optional account info</b> — if you sign in with Google, we store your name, email and profile picture (from your Google account) to provide unlimited conversions and save your download history.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>2. How We Use Your Files</h2>
+                <p>Uploaded files are processed <b>only to extract text</b> for you. We never read, view, sell, share or use your content for any other purpose. Files are processed server-side and the extracted text is delivered back to you as a downloadable file.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>3. Auto-Delete &amp; Storage</h2>
+                <p>By default, uploaded files and their extracted results are <b>automatically deleted from our cloud storage after 2 days</b>. You can choose a different auto-delete window (1, 7, 30 days or keep forever) when uploading. You can also manually clear downloads at any time from the My Downloads page.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>4. Cookies &amp; Local Storage</h2>
+                <p>We use a small cookie to track your anonymous usage counter (so guests get one free scan before optional login) and local storage to remember your preferences. No tracking or advertising cookies are served by us directly.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>5. Data Security</h2>
+                <p>All data is transferred over encrypted HTTPS. Files are stored in secure cloud storage (Mega.nz) with restricted access keys. We implement reasonable technical safeguards to protect your information.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>6. Third-Party Services</h2>
+                <p>We use Google Firebase (for optional sign-in), Mega.nz (for secure cloud file storage) and may serve third-party advertising. These providers have their own privacy policies. Please review them for details on their data practices.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>7. Your Rights</h2>
+                <p>You may request deletion of your account and associated data at any time by contacting us. You can also delete individual or all downloads yourself from the My Downloads page without contacting us.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>8. Contact</h2>
+                <p>If you have questions about this privacy policy or your data, please reach out through our contact channels. We will respond promptly.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <h4>Meow OCR</h4>
+                <p>Free online OCR — extract text from PDF, images &amp; documents. 19+ languages.</p>
+                <p class="meow-tagline"><i class="fas fa-cat"></i> Powered by curious cats <i class="fas fa-paw"></i></p>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <a href="/"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads"><i class="fas fa-download"></i> My Downloads</a>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <a href="/privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                <a href="/terms"><i class="fas fa-file-contract"></i> Terms of Service</a>
+            </div>
+            <div class="footer-note">
+                <h4>Your Result</h4>
+                <p>Results are stored securely in the cloud and auto-deleted after 2 days by default.</p>
+                <p class="copyright">&copy; 2026 Meow OCR. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            var title = document.querySelector('.page-main-title');
+            if (title) anime({ targets: title, translateY: [20, 0], opacity: [0, 1], duration: 600, easing: 'easeOutExpo' });
+            var chip = document.querySelector('.page-cat-chip img');
+            if (chip) anime({ targets: chip, scale: [0, 1], rotate: [360, 0], duration: 900, easing: 'easeOutBack' });
+            var boxes = document.querySelectorAll('.info-page-box');
+            anime({ targets: boxes, translateY: [22, 0], opacity: [0, 1], delay: anime.stagger(70), duration: 600, easing: 'easeOutExpo' });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            var em = ['🐾', '🐱', '⭐', '✨'];
+            function pawBurst(x, y) {
+                for (var i = 0; i < 7; i++) (function (i) {
+                    var p = document.createElement('span');
+                    p.className = 'paw-confetti';
+                    p.textContent = em[i % em.length];
+                    p.style.left = x + 'px'; p.style.top = y + 'px';
+                    document.body.appendChild(p);
+                    anime({ targets: p, translateX: [0, (Math.random() - 0.5) * 160], translateY: [0, -(Math.random() * 110 + 40)], rotate: [0, Math.random() * 360 - 180], opacity: [1, 0], duration: 800 + Math.random() * 500, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+                })(i);
+            }
+            document.querySelectorAll('.submit-btn, .cta-btn, a[href="/"]').forEach(function (el) {
+                el.addEventListener('click', function (ev) { pawBurst(ev.clientX, ev.clientY); });
+            });
+            var last = 0;
+            document.addEventListener('mousemove', function (e) {
+                var n = Date.now(); if (n - last < 260) return; last = n;
+                var p = document.createElement('span');
+                p.className = 'paw-cursor'; p.textContent = '🐾';
+                p.style.left = (e.clientX - 14) + 'px'; p.style.top = (e.clientY - 14) + 'px';
+                document.body.appendChild(p);
+                anime({ targets: p, translateY: [-14, 0], opacity: [0.8, 0], scale: [0.6, 1.1], duration: 650, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+            });
+        });
+    </script>
+</body>
+</html>

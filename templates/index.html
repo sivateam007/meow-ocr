@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meow OCR - Extract Text From PDF & Images Online (Free OCR)</title>
+    <meta name="description" content="Meow OCR: free online OCR to extract and download text from PDF, images (JPG, PNG, TIFF), Word, Excel and PPT. 19+ languages, no watermark, auto-delete in 2 days.">
+    <meta name="keywords" content="OCR, scan text, extract text from PDF, text from image, Tamil OCR, free OCR tool, convert PDF to text, Meow OCR">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="Meow OCR - Extract Text From PDF & Images Online (Free OCR)">
+    <meta property="og:description" content="Free online OCR tool. Extract and download text from PDF, images and documents in seconds. Supports 19+ languages.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0a6cff">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        window.FIREBASE_CONFIG = {
+            apiKey: "{{ firebase_api_key }}",
+            authDomain: "{{ firebase_auth_domain }}",
+            projectId: "{{ firebase_project_id }}",
+            storageBucket: "{{ firebase_storage_bucket }}",
+            messagingSenderId: "",
+            appId: "{{ firebase_app_id }}",
+            measurementId: "{{ firebase_measurement_id }}"
+        };
+        window.SCANNER_USER = {{ current_user_json|safe }};
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
+                <span class="user-badge" id="user-badge" style="display:none;">
+                    <img id="user-avatar" class="user-avatar" alt="" />
+                    <span id="user-name"></span>
+                    <a href="#" class="logout-btn" id="logout-btn" title="Sign out"><i class="fas fa-sign-out-alt"></i></a>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- ===== HERO ===== -->
+        <section class="hero" id="hero">
+            <div class="hero-blob blob-1"></div>
+            <div class="hero-blob blob-2"></div>
+            <div class="hero-blob blob-3"></div>
+            <span class="float-icon fi-1"><i class="fas fa-file-pdf"></i></span>
+            <span class="float-icon fi-2"><i class="fas fa-file-word"></i></span>
+            <span class="float-icon fi-3"><i class="fas fa-file-alt"></i></span>
+            <span class="float-icon fi-4"><i class="fas fa-language"></i></span>
+
+            <div class="hero-grid">
+                <!-- LEFT: text + stats + CTA -->
+                <div class="hero-text-wrap">
+                    <div class="hero-eyebrow"><i class="fas fa-paw"></i> Free Online OCR Tool <i class="fas fa-paw"></i></div>
+                    <h1 class="hero-title">Extract Text From <span class="gradient-text" id="gradient-word">Any Document</span> <span class="meow-paw">🐾</span></h1>
+                    <p class="hero-sub">Meow OCR converts PDF, images &amp; documents to editable text in seconds. 19+ languages, no watermark, auto-delete in 2 days.</p>
+                    <div class="hero-badges">
+                        <span class="hero-badge"><i class="fas fa-check-circle"></i> 100% Free OCR</span>
+                        <span class="hero-badge"><i class="fas fa-check-circle"></i> No Watermark</span>
+                        <span class="hero-badge"><i class="fas fa-check-circle"></i> Private &amp; Secure</span>
+                        <span class="hero-badge"><i class="fas fa-shield-alt"></i> Auto-Delete 2 Days</span>
+                    </div>
+                    <div class="hero-actions">
+                        <a href="#upload" class="hero-cta"><i class="fas fa-arrow-down"></i> Get Started — It's Free <span class="cat-dance">🐱</span></a>
+                        <a href="/how-to-use" class="hero-cta ghost"><i class="fas fa-graduation-cap"></i> How It Works</a>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="stat-item"><span class="stat-num" data-count="19">0</span><span class="stat-label">Languages</span></div>
+                        <div class="stat-item"><span class="stat-num" data-count="10">0</span><span class="stat-label">File Types</span></div>
+                        <div class="stat-item"><span class="stat-num" data-count="1200">0</span><span class="stat-label">Happy Users</span></div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: fun cat collage -->
+                <div class="hero-cats">
+                    <img src="{{ url_for('static', filename='images/meow-hero.jpg') }}" alt="Meow OCR's curious cat mascot" class="hero-cat-photo main" loading="eager">
+                    <img src="{{ url_for('static', filename='images/meow-cute.jpg') }}" alt="Meow OCR's happy cat" class="hero-cat-photo-sm cute" loading="lazy">
+                    <img src="{{ url_for('static', filename='images/meow-silly.jpg') }}" alt="Meow OCR's silly cat" class="hero-cat-photo-sm silly" loading="lazy">
+                    <img src="{{ url_for('static', filename='images/meow-yawn.jpg') }}" alt="Meow OCR's yawning cat" class="hero-cat-photo-sm yawn" loading="lazy">
+                    <div class="hero-speech-bubble"><i class="fas fa-quote-left"></i> "Purr-fect OCR! I scanned 100 pages in seconds." <span class="bubble-tail"></span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== UPLOAD ===== -->
+        <section class="content-section" id="upload">
+            <h2><i class="fas fa-cloud-upload-alt"></i> Upload</h2>
+
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for message in messages %}
+                            <div class="flash">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <div class="upload-tabs" style="display: flex; gap: 1rem; margin-bottom: 2rem; justify-content: center; flex-wrap: wrap;">
+                <button type="button" class="tab-btn active" id="pdf-tab" style="padding: 1rem 2rem; border: 2px solid var(--git-color); background: var(--git-color); color: white; border-radius: 10px; cursor: pointer; font-weight: 600; font-family: 'Segoe UI', sans-serif; transition: all 0.3s;">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </button>
+                <button type="button" class="tab-btn" id="image-tab" style="padding: 1rem 2rem; border: 2px solid #ddd; background: white; color: var(--dark); border-radius: 10px; cursor: pointer; font-weight: 600; font-family: 'Segoe UI', sans-serif; transition: all 0.3s;">
+                    <i class="fas fa-image"></i> Images
+                </button>
+                <button type="button" class="tab-btn" id="doc-tab" style="padding: 1rem 2rem; border: 2px solid #ddd; background: white; color: var(--dark); border-radius: 10px; cursor: pointer; font-weight: 600; font-family: 'Segoe UI', sans-serif; transition: all 0.3s;">
+                    <i class="fas fa-file-word"></i> Documents
+                </button>
+                <button type="button" class="tab-btn" id="data-tab" style="padding: 1rem 2rem; border: 2px solid #ddd; background: white; color: var(--dark); border-radius: 10px; cursor: pointer; font-weight: 600; font-family: 'Segoe UI', sans-serif; transition: all 0.3s;">
+                    <i class="fas fa-file-excel"></i> Data Files
+                </button>
+                <button type="button" class="tab-btn" id="translate-tab" style="padding: 1rem 2rem; border: 2px solid #ddd; background: white; color: var(--dark); border-radius: 10px; cursor: pointer; font-weight: 600; font-family: 'Segoe UI', sans-serif; transition: all 0.3s;">
+                    <i class="fas fa-language"></i> Translate
+                </button>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" class="upload-form" id="upload-form" action="/">
+                <div class="file-input-wrapper">
+                    <input type="file" name="file" id="pdf-upload" accept=".pdf" required>
+                    <label for="pdf-upload" class="upload-box" id="drop-zone">
+                        <img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo" class="upload-logo">
+                        <div class="upload-text">Click to upload or drag & drop 🐱</div>
+                        <div class="upload-hint">Supports: PDF</div>
+                        <div class="file-name" id="file-name"></div>
+                    </label>
+                </div>
+
+                <div class="options-grid" id="ocr-options">
+                    <div class="option-group">
+                        <label class="option-label">Language</label>
+                        <select name="language" id="language-select" class="select-input">
+                            <option value="auto">Auto-Detect</option>
+                            <option value="tam">Tamil</option>
+                            <option value="eng">English</option>
+                            <option value="hin">Hindi</option>
+                            <option value="tel">Telugu</option>
+                            <option value="ben">Bengali</option>
+                            <option value="kan">Kannada</option>
+                            <option value="mal">Malayalam</option>
+                            <option value="guj">Gujarati</option>
+                            <option value="pan">Punjabi</option>
+                            <option value="mar">Marathi</option>
+                            <option value="ara">Arabic</option>
+                            <option value="spa">Spanish</option>
+                            <option value="fra">French</option>
+                            <option value="deu">German</option>
+                            <option value="ita">Italian</option>
+                            <option value="rus">Russian</option>
+                            <option value="chi_sim">Chinese Simplified</option>
+                            <option value="jpn">Japanese</option>
+                            <option value="kor">Korean</option>
+                        </select>
+                    </div>
+
+                    <div class="option-group">
+                        <label class="option-label"><i class="fas fa-cloud"></i> Auto-Delete</label>
+                        <select name="auto_delete" id="auto-delete-select" class="select-input">
+                            <option value="2" selected>2 Days (Recommended)</option>
+                            <option value="1">1 Day</option>
+                            <option value="7">7 Days</option>
+                            <option value="30">30 Days</option>
+                            <option value="0">Keep Forever</option>
+                        </select>
+                    </div>
+
+                    <div class="option-group">
+                        <label class="option-label">Page Range</label>
+                        <select name="page_range" id="page-range-select" class="select-input">
+                            <option value="all">All Pages</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+
+                    <div class="option-group" id="start-page-group" style="display: none;">
+                        <label class="option-label">Start Page</label>
+                        <input type="number" name="start_page" id="start-page" class="page-input" min="1" value="1" placeholder="From">
+                    </div>
+
+                    <div class="option-group" id="end-page-group" style="display: none;">
+                        <label class="option-label">End Page</label>
+                        <input type="number" name="end_page" id="end-page" class="page-input" min="1" placeholder="To (empty = all)">
+                    </div>
+                </div>
+
+                <div class="options-grid" id="translate-options" style="display: none;">
+                    <input type="hidden" name="mode" value="translate" id="mode-input" disabled>
+                    <div class="option-group">
+                        <label class="option-label">Source Language</label>
+                        <select name="source_language" id="source-language-select" class="select-input">
+                            <option value="auto">Auto-Detect</option>
+                            <option value="en">English</option>
+                            <option value="ta">Tamil</option>
+                            <option value="hi">Hindi</option>
+                            <option value="te">Telugu</option>
+                            <option value="bn">Bengali</option>
+                            <option value="kn">Kannada</option>
+                            <option value="ml">Malayalam</option>
+                            <option value="gu">Gujarati</option>
+                            <option value="pa">Punjabi</option>
+                            <option value="mr">Marathi</option>
+                            <option value="ar">Arabic</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                            <option value="it">Italian</option>
+                            <option value="ru">Russian</option>
+                            <option value="zh-cn">Chinese (Simplified)</option>
+                            <option value="ja">Japanese</option>
+                            <option value="ko">Korean</option>
+                            <option value="pt">Portuguese</option>
+                            <option value="tr">Turkish</option>
+                            <option value="vi">Vietnamese</option>
+                        </select>
+                    </div>
+
+                    <div class="option-group">
+                        <label class="option-label">Target Language</label>
+                        <select name="target_language" id="target-language-select" class="select-input">
+                            <option value="en">English</option>
+                            <option value="ta">Tamil</option>
+                            <option value="hi">Hindi</option>
+                            <option value="te">Telugu</option>
+                            <option value="bn">Bengali</option>
+                            <option value="kn">Kannada</option>
+                            <option value="ml">Malayalam</option>
+                            <option value="gu">Gujarati</option>
+                            <option value="pa">Punjabi</option>
+                            <option value="mr">Marathi</option>
+                            <option value="ar">Arabic</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                            <option value="it">Italian</option>
+                            <option value="ru">Russian</option>
+                            <option value="zh-cn">Chinese (Simplified)</option>
+                            <option value="ja">Japanese</option>
+                            <option value="ko">Korean</option>
+                            <option value="pt">Portuguese</option>
+                            <option value="tr">Turkish</option>
+                            <option value="vi">Vietnamese</option>
+                            <option value="id">Indonesian</option>
+                            <option value="ms">Malay</option>
+                            <option value="nl">Dutch</option>
+                            <option value="pl">Polish</option>
+                            <option value="sv">Swedish</option>
+                            <option value="da">Danish</option>
+                            <option value="fi">Finnish</option>
+                            <option value="cs">Czech</option>
+                            <option value="ro">Romanian</option>
+                            <option value="uk">Ukrainian</option>
+                            <option value="hu">Hungarian</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submit-btn">
+                    <span id="btn-text">Extract Text</span>
+                </button>
+            </form>
+
+            <div class="info-box" id="ocr-info-box">
+                <h4><i class="fas fa-lightbulb"></i> Pro Tip:</h4>
+                <p>Select language manually to skip auto-detection delay. For PDF and Image files, OCR will be used. For other documents, text will be extracted directly.</p>
+            </div>
+
+            <div class="info-box" id="translate-info-box" style="display: none; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <h4 style="color: #fff;"><i class="fas fa-globe"></i> Translate Text</h4>
+                <p>Upload a .txt file, select source and target languages, and get a translated file. Powered by Google Translate.</p>
+            </div>
+
+            <p class="language-note" id="ocr-note">Supports: PDF, Images (JPG, PNG, BMP, TIFF), Documents (DOCX, PPTX, RTF, ODT), Data (XLSX, CSV, XML, JSON, HTML)</p>
+            <p class="language-note" id="translate-note" style="display: none;">Upload a .txt file to translate. Multiple languages supported.</p>
+        </section>
+
+        <!-- ===== HOW IT WORKS ===== -->
+        <section class="content-section info-page" id="how">
+            <h2><i class="fas fa-cogs"></i> How It Works <span class="heading-cat">🐱</span></h2>
+            <p class="page-subtitle">Three easy steps to turn any document into editable text — with a happy cat on duty the whole time.</p>
+            <div class="steps-grid">
+                <div class="step-card cat-step">
+                    <img src="{{ url_for('static', filename='images/cat-reading.jpg') }}" alt="Meow OCR cat reading" class="step-cat" loading="lazy">
+                    <div class="step-icon"><i class="fas fa-upload"></i></div>
+                    <h3>1. Upload</h3>
+                    <p>Drag &amp; drop a PDF, image or document, or browse from your device. Large documents are processed in batches to stay fast.</p>
+                    <div class="tip-box"><i class="fas fa-paw"></i> Sir Reads-a-Lot approves this step.</div>
+                </div>
+                <div class="step-card cat-step">
+                    <img src="{{ url_for('static', filename='images/cat-thinking.jpg') }}" alt="Meow OCR cat thinking" class="step-cat" loading="lazy">
+                    <div class="step-icon"><i class="fas fa-magic"></i></div>
+                    <h3>2. Convert</h3>
+                    <p>Our engine automatically detects the language (19+ supported) and extracts text from every page, image or cell.</p>
+                    <div class="tip-box"><i class="fas fa-paw"></i> Captain Purr is on the job, thinking hard.</div>
+                </div>
+                <div class="step-card cat-step">
+                    <img src="{{ url_for('static', filename='images/cat-working.jpg') }}" alt="Meow OCR cat working" class="step-cat" loading="lazy">
+                    <div class="step-icon"><i class="fas fa-download"></i></div>
+                    <h3>3. Download</h3>
+                    <p>Grab your editable .txt file instantly. Results auto-delete from the cloud after 2 days by default.</p>
+                    <div class="tip-box"><i class="fas fa-paw"></i> Miss Extract hand-delivers your file.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== WHY CHOOSE ===== -->
+        <section class="content-section info-page" id="features">
+            <h2><i class="fas fa-star"></i> Why Choose Meow OCR <span class="heading-cat">🐾</span></h2>
+            <div class="feature-grid">
+                <div class="feature-card"><img src="{{ url_for('static', filename='images/meow-cute.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-language"></i><h3>Auto Detect</h3><p>19+ languages detected automatically — Tamil, English, Hindi, Arabic and more.</p></div>
+                <div class="feature-card"><img src="{{ url_for('static', filename='images/meow-smile.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-bolt"></i><h3>Super Fast</h3><p>Batch page processing keeps large PDFs quick and memory-efficient.</p></div>
+                <div class="feature-card"><img src="{{ url_for('static', filename='images/meow-yawn.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-shield-alt"></i><h3>Private &amp; Secure</h3><p>No account needed for basic use. Files auto-delete after your chosen time.</p></div>
+                <div class="feature-card"><img src="{{ url_for('static', filename='images/meow-silly.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-th-list"></i><h3>Many Formats</h3><p>PDF, images, DOCX, PPTX, XLSX, CSV, RTF, ODT, HTML, XML, JSON &amp; more.</p></div>
+                <div class="feature-card"><img src="{{ url_for('static', filename='images/meow-footpath.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-globe"></i><h3>Translate Too</h3><p>Upload a text file and translate it between 30+ languages in one step.</p></div>
+                <div class="feature-card"><img src="{{ url_for('static', filename='images/cat-thinking.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-mobile-alt"></i><h3>Works Everywhere</h3><p>Fully mobile-responsive. Use it on your phone, tablet or desktop.</p></div>
+                <div class="feature-card"><img src="{{ url_for('static', filename='images/cat-working.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-cloud"></i><h3>Cloud Auto-Delete</h3><p>Results are stored securely in the cloud and automatically deleted after 2 days — total privacy.</p></div>
+                <div class="feature-card"><img src="{{ url_for('static', filename='images/cat-reading.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-unlock-alt"></i><h3>Unlimited with Login</h3><p>Try one free scan instantly. Sign in with Google for unlimited conversions and recall.</p></div>
+            </div>
+        </section>
+
+        <!-- ===== SUPPORTED FORMATS ===== -->
+        <section class="content-section info-page" id="formats">
+            <h2><i class="fas fa-th-list"></i> Supported Formats</h2>
+            <div class="format-chip-row">
+                <span class="format-chip"><i class="fas fa-file-pdf"></i> PDF</span>
+                <span class="format-chip"><i class="fas fa-image"></i> JPG / JPEG</span>
+                <span class="format-chip"><i class="fas fa-image"></i> PNG</span>
+                <span class="format-chip"><i class="fas fa-image"></i> BMP</span>
+                <span class="format-chip"><i class="fas fa-image"></i> TIFF</span>
+                <span class="format-chip"><i class="fas fa-image"></i> GIF</span>
+                <span class="format-chip"><i class="fas fa-file-word"></i> DOCX / DOC</span>
+                <span class="format-chip"><i class="fas fa-file-powerpoint"></i> PPTX / PPT</span>
+                <span class="format-chip"><i class="fas fa-file-excel"></i> XLSX / XLS / CSV</span>
+                <span class="format-chip"><i class="fas fa-file-alt"></i> RTF</span>
+                <span class="format-chip"><i class="fas fa-file"></i> ODT / ODS / ODP</span>
+                <span class="format-chip"><i class="fas fa-code"></i> HTML / XML / JSON</span>
+                <span class="format-chip"><i class="fas fa-font"></i> TXT / MD</span>
+            </div>
+        </section>
+
+        <!-- ===== CUSTOMER REVIEWS ===== -->
+        <section class="content-section info-page" id="reviews">
+            <h2><i class="fas fa-comments"></i> What Our Users Say <span class="heading-cat">🐱</span></h2>
+            <p class="page-subtitle">Real (metaphorically purring) customers love Meow OCR.</p>
+            <div class="rating-summary">
+                <span class="big">4.9</span>
+                <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
+                <span class="count">Rated 4.9 / 5 by <b>1,200+</b> users worldwide</span>
+            </div>
+            <div class="reviews-grid">
+                <div class="review-card">
+                    <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <img src="{{ url_for('static', filename='images/meow-hero.jpg') }}" alt="happy cat customer avatar" class="review-cat" loading="lazy">
+                    <p class="review-text">"Amazing free tool! Extracted text from a 80-page Tamil PDF perfectly in minutes, no signup needed. Saved me hours of typing."</p>
+                    <div class="review-author"><span class="avatar">P</span><div class="who"><b>Priya R.</b><span>Chennai, India</span></div></div>
+                    <span class="review-verified"><i class="fas fa-check-circle"></i> Verified User</span>
+                </div>
+                <div class="review-card">
+                    <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <img src="{{ url_for('static', filename='images/meow-smile.jpg') }}" alt="happy cat customer avatar" class="review-cat" loading="lazy">
+                    <p class="review-text">"The auto language detection is spot-on. I convert invoices and receipts to editable text every day. Fast and private."</p>
+                    <div class="review-author"><span class="avatar">A</span><div class="who"><b>Arun K.</b><span>Coimbatore, India</span></div></div>
+                    <span class="review-verified"><i class="fas fa-check-circle"></i> Verified User</span>
+                </div>
+                <div class="review-card">
+                    <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <img src="{{ url_for('static', filename='images/meow-cute.jpg') }}" alt="happy cat customer avatar" class="review-cat" loading="lazy">
+                    <p class="review-text">"Clean, professional and genuinely unlimited after signing in. I love that my files auto-delete from cloud storage after 2 days — very secure."</p>
+                    <div class="review-author"><span class="avatar">S</span><div class="who"><b>Selvi M.</b><span>Madurai, India</span></div></div>
+                    <span class="review-verified"><i class="fas fa-check-circle"></i> Verified User</span>
+                </div>
+                <div class="review-card">
+                    <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
+                    <img src="{{ url_for('static', filename='images/meow-yawn.jpg') }}" alt="happy cat customer avatar" class="review-cat" loading="lazy">
+                    <p class="review-text">"Works on my phone, supports Hindi and English, and there's no watermark. Definitely my go-to OCR website now."</p>
+                    <div class="review-author"><span class="avatar">V</span><div class="who"><b>Vikram S.</b><span>Hyderabad, India</span></div></div>
+                    <span class="review-verified"><i class="fas fa-check-circle"></i> Verified User</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== MEOW GALLERY (fun, shareable) ===== -->
+        <section class="content-section info-page" id="meow">
+            <h2><i class="fas fa-cat"></i> The Meow Gallery <span class="cat-bubble"><img src="{{ url_for('static', filename='images/meow-yawn.jpg') }}" alt="yawn"> Our furry staff</span></h2>
+            <p class="page-subtitle">Just like our mascots, Meow OCR extracts every word — and keeps your documents purr-fectly private. 🐾</p>
+            <div class="cat-gallery">
+                <div class="cat-card"><img src="{{ url_for('static', filename='images/meow-hero.jpg') }}" alt="Meow OCR hero cat" loading="lazy"><div class="cat-card-name"><i class="fas fa-paw"></i> Sir Reads-a-Lot</div></div>
+                <div class="cat-card"><img src="{{ url_for('static', filename='images/meow-cute.jpg') }}" alt="Meow OCR cute cat" loading="lazy"><div class="cat-card-name"><i class="fas fa-paw"></i> Miss Extract</div></div>
+                <div class="cat-card"><img src="{{ url_for('static', filename='images/meow-yawn.jpg') }}" alt="Meow OCR yawning cat" loading="lazy"><div class="cat-card-name"><i class="fas fa-paw"></i> Captain Purr</div></div>
+                <div class="cat-card"><img src="{{ url_for('static', filename='images/meow-smile.jpg') }}" alt="Meow OCR smiling cat" loading="lazy"><div class="cat-card-name"><i class="fas fa-paw"></i> Doc Upload</div></div>
+                <div class="cat-card"><img src="{{ url_for('static', filename='images/meow-silly.jpg') }}" alt="Meow OCR silly cat" loading="lazy"><div class="cat-card-name"><i class="fas fa-paw"></i> Prof. Scrappy</div></div>
+                <div class="cat-card"><img src="{{ url_for('static', filename='images/meow-footpath.jpg') }}" alt="Meow OCR wandering cat" loading="lazy"><div class="cat-card-name"><i class="fas fa-paw"></i> Meow… Fixed Now</div></div>
+            </div>
+        </section>
+
+        <!-- ===== FAQ ===== -->
+        <section class="content-section info-page" id="faq">
+            <h2><i class="fas fa-question-circle"></i> Frequently Asked Questions <span class="heading-cat">🐾</span></h2>
+            <img src="{{ url_for('static', filename='images/cat-thinking.jpg') }}" alt="Meow OCR FAQ cat thinking" class="faq-cat" loading="lazy">
+            <details class="faq-item" open>
+                <summary>Is Meow OCR really free?</summary>
+                <p>Yes. Converting files to text is completely free with no signup for your first scan, and unlimited after a free Google sign-in.</p>
+            </details>
+            <details class="faq-item">
+                <summary>Which languages are supported?</summary>
+                <p>Tamil, English, Hindi, Telugu, Bengali, Kannada, Malayalam, Gujarati, Punjabi, Marathi, Arabic, Spanish, French, German, Italian, Russian, Chinese, Japanese and Korean — with auto-detection.</p>
+            </details>
+            <details class="faq-item">
+                <summary>Can I upload large files?</summary>
+                <p>Yes. Large multi-page PDFs are processed in batches to stay fast, so even big documents convert smoothly.</p>
+            </details>
+            <details class="faq-item">
+                <summary>Are my files kept private?</summary>
+                <p>Files are processed securely on the server and automatically deleted from cloud storage after 2 days (privacy auto-delete). No account or personal details are needed for basic use.</p>
+            </details>
+            <details class="faq-item">
+                <summary>Can I use Meow OCR on mobile?</summary>
+                <p>Absolutely. The whole tool is mobile-responsive and works great on phones and tablets.</p>
+            </details>
+        </section>
+
+        <!-- ===== CTA BANNER ===== -->
+        <section class="cta-banner" id="cta">
+            <div class="cta-inner">
+                <div>
+                    <h3>Not sure where to start?</h3>
+                    <p>Follow our simple step-by-step guide to convert any document in seconds.</p>
+                </div>
+                <a href="/how-to-use" class="cta-btn"><i class="fas fa-graduation-cap"></i> Read the Guide</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <h4>Meow OCR</h4>
+                <p>Free online OCR — extract text from PDF, images &amp; documents. 19+ languages.</p>
+                <p class="meow-tagline"><i class="fas fa-cat"></i> Powered by curious cats <i class="fas fa-paw"></i></p>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <a href="/"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads"><i class="fas fa-download"></i> My Downloads</a>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <a href="/privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                <a href="/terms"><i class="fas fa-file-contract"></i> Terms of Service</a>
+            </div>
+            <div class="footer-note">
+                <h4>Your Result</h4>
+                <p>Results are stored securely in the cloud and auto-deleted after 2 days by default.</p>
+                <p class="copyright">&copy; 2026 Meow OCR. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="meow-loader"><span class="loading-text" id="loading-text">Submitting for processing 🐱...</span></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('pdf-upload');
+        const fileName = document.getElementById('file-name');
+        const dropZone = document.getElementById('drop-zone');
+        const uploadForm = document.getElementById('upload-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.getElementById('loading-text');
+        const pageRangeSelect = document.getElementById('page-range-select');
+        const startPageGroup = document.getElementById('start-page-group');
+        const endPageGroup = document.getElementById('end-page-group');
+        const ocrOptions = document.getElementById('ocr-options');
+        const translateOptions = document.getElementById('translate-options');
+        const ocrInfoBox = document.getElementById('ocr-info-box');
+        const translateInfoBox = document.getElementById('translate-info-box');
+        const ocrNote = document.getElementById('ocr-note');
+        const translateNote = document.getElementById('translate-note');
+
+        let currentTab = 'pdf';
+        const pdfTab = document.getElementById('pdf-tab');
+        const imageTab = document.getElementById('image-tab');
+        const docTab = document.getElementById('doc-tab');
+        const dataTab = document.getElementById('data-tab');
+        const translateTab = document.getElementById('translate-tab');
+        const modeInput = document.getElementById('mode-input');
+
+        function switchTab(tab) {
+            const allTabs = [pdfTab, imageTab, docTab, dataTab, translateTab];
+            allTabs.forEach(t => {
+                t.style.background = 'white';
+                t.style.color = 'var(--dark)';
+                t.style.borderColor = '#ddd';
+                t.classList.remove('active');
+            });
+
+            const uploadHint = document.querySelector('.upload-hint');
+            let accept = '';
+            let hint = '';
+
+            if (tab === 'pdf') {
+                pdfTab.style.background = 'var(--git-color)';
+                pdfTab.style.color = 'white';
+                pdfTab.style.borderColor = 'var(--git-color)';
+                pdfTab.classList.add('active');
+                accept = '.pdf';
+                hint = 'Supports: PDF';
+                currentTab = 'pdf';
+                uploadForm.action = '/';
+                btnText.textContent = 'Extract Text';
+                ocrOptions.style.display = 'grid';
+                translateOptions.style.display = 'none';
+                ocrInfoBox.style.display = 'block';
+                translateInfoBox.style.display = 'none';
+                ocrNote.style.display = 'block';
+                translateNote.style.display = 'none';
+                modeInput.disabled = true;
+            } else if (tab === 'image') {
+                imageTab.style.background = 'var(--git-color)';
+                imageTab.style.color = 'white';
+                imageTab.style.borderColor = 'var(--git-color)';
+                imageTab.classList.add('active');
+                accept = '.jpg,.jpeg,.png,.bmp,.tiff,.gif';
+                hint = 'Supports: JPG, PNG, BMP, TIFF, GIF';
+                currentTab = 'image';
+                uploadForm.action = '/';
+                btnText.textContent = 'Extract Text';
+                ocrOptions.style.display = 'grid';
+                translateOptions.style.display = 'none';
+                ocrInfoBox.style.display = 'block';
+                translateInfoBox.style.display = 'none';
+                ocrNote.style.display = 'block';
+                translateNote.style.display = 'none';
+                modeInput.disabled = true;
+            } else if (tab === 'doc') {
+                docTab.style.background = 'var(--git-color)';
+                docTab.style.color = 'white';
+                docTab.style.borderColor = 'var(--git-color)';
+                docTab.classList.add('active');
+                accept = '.docx,.doc,.pptx,.ppt,.rtf,.odt,.ods,.odp,.html,.htm,.txt,.md';
+                hint = 'Supports: DOCX, DOC, PPTX, PPT, RTF, ODT, HTML, TXT';
+                currentTab = 'doc';
+                uploadForm.action = '/';
+                btnText.textContent = 'Extract Text';
+                ocrOptions.style.display = 'grid';
+                translateOptions.style.display = 'none';
+                ocrInfoBox.style.display = 'block';
+                translateInfoBox.style.display = 'none';
+                ocrNote.style.display = 'block';
+                translateNote.style.display = 'none';
+                modeInput.disabled = true;
+            } else if (tab === 'data') {
+                dataTab.style.background = 'var(--git-color)';
+                dataTab.style.color = 'white';
+                dataTab.style.borderColor = 'var(--git-color)';
+                dataTab.classList.add('active');
+                accept = '.xlsx,.xls,.csv,.xml,.json';
+                hint = 'Supports: XLSX, XLS, CSV, XML, JSON';
+                currentTab = 'data';
+                uploadForm.action = '/';
+                btnText.textContent = 'Extract Text';
+                ocrOptions.style.display = 'grid';
+                translateOptions.style.display = 'none';
+                ocrInfoBox.style.display = 'block';
+                translateInfoBox.style.display = 'none';
+                ocrNote.style.display = 'block';
+                translateNote.style.display = 'none';
+                modeInput.disabled = true;
+            } else if (tab === 'translate') {
+                translateTab.style.background = 'var(--git-color)';
+                translateTab.style.color = 'white';
+                translateTab.style.borderColor = 'var(--git-color)';
+                translateTab.classList.add('active');
+                accept = '.txt,.md';
+                hint = 'Supports: TXT, MD';
+                currentTab = 'translate';
+                uploadForm.action = '/translate';
+                btnText.textContent = 'Translate';
+                ocrOptions.style.display = 'none';
+                translateOptions.style.display = 'grid';
+                ocrInfoBox.style.display = 'none';
+                translateInfoBox.style.display = 'block';
+                ocrNote.style.display = 'none';
+                translateNote.style.display = 'block';
+                modeInput.disabled = false;
+            }
+
+            fileInput.accept = accept;
+            uploadHint.textContent = hint;
+        }
+
+        pdfTab.addEventListener('click', () => switchTab('pdf'));
+        imageTab.addEventListener('click', () => switchTab('image'));
+        docTab.addEventListener('click', () => switchTab('doc'));
+        dataTab.addEventListener('click', () => switchTab('data'));
+        translateTab.addEventListener('click', () => switchTab('translate'));
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                fileName.textContent = this.files[0].name;
+            } else {
+                fileName.textContent = '';
+            }
+        });
+
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', function() {
+            this.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                const ext = file.name.split('.').pop().toLowerCase();
+
+                let allowed = [];
+                if (currentTab === 'pdf') {
+                    allowed = ['pdf'];
+                } else if (currentTab === 'image') {
+                    allowed = ['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'gif'];
+                } else if (currentTab === 'doc') {
+                    allowed = ['docx', 'doc', 'pptx', 'ppt', 'rtf', 'odt', 'ods', 'odp', 'html', 'htm', 'txt', 'md'];
+                } else if (currentTab === 'data') {
+                    allowed = ['xlsx', 'xls', 'csv', 'xml', 'json'];
+                } else if (currentTab === 'translate') {
+                    allowed = ['txt', 'md'];
+                }
+
+                if (allowed.includes(ext)) {
+                    fileInput.files = e.dataTransfer.files;
+                    fileName.textContent = file.name;
+                } else {
+                    const names = {
+                        pdf: 'PDF', image: 'Image', doc: 'Document',
+                        data: 'Data', translate: 'Text'
+                    };
+                    alert(`Please upload a ${names[currentTab] || 'valid'} file`);
+                }
+            }
+        });
+
+        pageRangeSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                startPageGroup.style.display = 'flex';
+                endPageGroup.style.display = 'flex';
+            } else {
+                startPageGroup.style.display = 'none';
+                endPageGroup.style.display = 'none';
+            }
+        });
+
+        uploadForm.addEventListener('submit', function() {
+            submitBtn.disabled = true;
+            btnText.textContent = currentTab === 'translate' ? 'Translating...' : 'Processing...';
+            loadingText.textContent = currentTab === 'translate' ? 'Translating file...' : 'Submitting for processing...';
+            loadingOverlay.classList.add('active');
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                // Gradient word letter reveal
+                var gw = document.getElementById('gradient-word');
+                if (gw && window.anime) {
+                    var text = gw.textContent;
+                    gw.textContent = '';
+                    var letters = text.split('').map(function (ch) {
+                        var s = document.createElement('span');
+                        s.className = 'gl';
+                        s.textContent = ch;
+                        gw.appendChild(s);
+                        return s;
+                    });
+                    anime({ targets: letters, opacity: [0, 1], translateY: ['0.6em', 0], rotateX: [90, 0], delay: anime.stagger(30), duration: 600, easing: 'easeOutExpo' });
+                }
+
+                // Hero entrance timeline
+                if (window.anime) {
+                    var tl = anime.timeline({ easing: 'easeOutExpo' })
+                      .add({ targets: '.hero-title', opacity: [0, 1], translateY: [24, 0], duration: 700 })
+                      .add({ targets: '.hero-sub', opacity: [0, 1], translateY: [14, 0], duration: 500 }, '-=350')
+                      .add({ targets: '.hero-badge', opacity: [0, 1], translateY: [10, 0], scale: [0.9, 1], delay: anime.stagger(90), duration: 500 }, '-=400')
+                      .add({ targets: '.hero-stats .stat-item', opacity: [0, 1], translateY: [20, 0], delay: anime.stagger(120), duration: 500 }, '-=300')
+                      .add({ targets: '.hero-cta', opacity: [0, 1], scale: [0.9, 1], duration: 500 }, '-=300');
+
+                    // Gentle pulse on the CTA
+                    anime({ targets: '.hero-cta', scale: [1, 1.03, 1], duration: 2000, loop: true, easing: 'easeInOutSine' });
+
+                    // Floating blobs + icons (gentle drift)
+                    function drift(sel, x1, y1) {
+                        anime({ targets: sel, translateX: [0, x1], translateY: [0, y1], duration: 6000, direction: 'alternate', loop: true, easing: 'easeInOutSine' });
+                    }
+                    drift('.blob-1', 24, 30);
+                    drift('.blob-2', -28, -22);
+                    drift('.blob-3', 18, -26);
+                    drift('.fi-1', 12, -20);
+                    drift('.fi-2', -14, 18);
+                    drift('.fi-3', 16, 14);
+                    drift('.fi-4', -12, -16);
+
+                    // Hero cat photos: gentle pop-in + shady tilt
+                    var heroPhotos = document.querySelectorAll('.hero-cat-photo, .hero-cat-photo-sm');
+                    anime({ targets: heroPhotos, opacity: [0, 1], scale: [0.5, 1], rotate: [-8, 0], duration: 900, delay: 300, easing: 'easeOutBack' });
+
+                    // Gentle floating on the upload box
+                    anime({ targets: '#drop-zone', translateY: [0, -8, 0], duration: 2500, loop: true, easing: 'easeInOutSine' });
+
+                    // Animated stat counters
+                    var stats = document.querySelectorAll('.stat-num');
+                    stats.forEach(function (el) {
+                        var target = +el.getAttribute('data-count');
+                        anime({ targets: el, innerHTML: [0, target], round: 1, duration: 1200, delay: 600, easing: 'easeOutExpo', update: function (anim) { el.textContent = Math.round(anim.animations[0].currentValue); } });
+                    });
+
+                    // Upload tab fade-in stagger
+                    var tabs = document.querySelectorAll('.tab-btn');
+                    anime({ targets: tabs, translateY: [30, 0], opacity: [0, 1], delay: anime.stagger(80), duration: 600, easing: 'easeOutQuad' });
+
+                    // Cat photos pop-in on the How It Works steps
+                    var stepCats = document.querySelectorAll('.step-cat');
+                    anime({ targets: stepCats, opacity: [0, 1], scale: [0.6, 1], rotate: [-6, 0], delay: anime.stagger(120), duration: 700, easing: 'easeOutBack' });
+
+                    // Gentle continuous wiggle for feature icons' cats
+                    anime({ targets: '.feature-card', scale: [1, 1.01, 1], duration: 4000, delay: anime.stagger(200), loop: true, easing: 'easeInOutSine' });
+                }
+
+                // Scroll-triggered reveal for cards (steps, features, reviews, chips, cats)
+                var reveals = document.querySelectorAll('.step-card, .feature-card, .review-card, .format-chip, .cat-card, .faq-cat, .review-cat');
+                reveals.forEach(function (el) {
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateY(25px)';
+                });
+                var revealOnScroll = function () {
+                    reveals.forEach(function (el) {
+                        if (el.style.opacity === '1') return;
+                        var rect = el.getBoundingClientRect();
+                        if (rect.top < window.innerHeight - 40) {
+                            el.style.opacity = '1';
+                            el.style.transform = 'translateY(0)';
+                            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                        }
+                    });
+                };
+                window.addEventListener('scroll', revealOnScroll);
+                revealOnScroll();
+            } catch (e) {}
+        });
+
+        // =============================================================
+        // Extra anime.js magic layer
+        // =============================================================
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+
+            // 1. Infinite gentle bell-swing on each cat photo in the gallery
+            anime({
+                targets: '.cat-card img',
+                rotate: [-2, 2, -2],
+                translateY: [0, -4, 0],
+                duration: 4000,
+                delay: anime.stagger(180),
+                loop: true,
+                easing: 'easeInOutSine'
+            });
+
+            // 2. Hero heading gradient shimmer (rotateX + a soft breathing scale)
+            anime({
+                targets: '.hero-title',
+                scale: [1, 1.02, 1],
+                duration: 5000,
+                loop: true,
+                easing: 'easeInOutSine'
+            });
+
+            // 3. Feature card icons pop on hover (delegated)
+            document.querySelectorAll('.feature-card').forEach(function (card) {
+                card.addEventListener('mouseenter', function () {
+                    var icon = card.querySelector('i');
+                    if (!icon) return;
+                    anime({ targets: icon, scale: [1, 1.35, 1], rotate: [0, 12, -12, 0], duration: 650, easing: 'easeOutCubic' });
+                });
+            });
+
+            // 4. Step icons bounce on hover
+            document.querySelectorAll('.step-card').forEach(function (card) {
+                card.addEventListener('mouseenter', function () {
+                    var icon = card.querySelector('.step-icon');
+                    if (!icon) return;
+                    anime({ targets: icon, translateY: [-10, 0], scale: [1, 1.12, 1], duration: 600, easing: 'easeOutCubic' });
+                });
+            });
+
+            // 5. Format chips spring-press on click
+            document.querySelectorAll('.format-chip').forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    anime({ targets: chip, scale: [1, 0.9, 1.05, 1], duration: 500, easing: 'easeOutCubic' });
+                });
+            });
+
+            // 6. FAQ open: gentle slide the answer in
+            document.querySelectorAll('.faq-item').forEach(function (item) {
+                item.addEventListener('toggle', function () {
+                    var ans = item.querySelector('p');
+                    if (!ans) return;
+                    anime.remove(ans);
+                    anime({ targets: ans, opacity: [0, 1], translateY: [8, 0], duration: 350, easing: 'easeOutQuad' });
+                });
+            });
+
+            // 7. Speech bubble: periodic wiggle with the cat
+            setInterval(function () {
+                var bubble = document.querySelector('.hero-speech-bubble');
+                if (bubble) {
+                    anime({ targets: bubble, rotate: [-3, 3, 0], duration: 500, easing: 'easeOutSine' });
+                }
+            }, 4000);
+
+            // 8. Floating paw-print that drifts across the page (decorative)
+            function spawnPaw() {
+                var paw = document.createElement('span');
+                paw.className = 'paw-drift';
+                paw.textContent = '🐾';
+                paw.style.left = (Math.random() * 90 + 5) + '%';
+                paw.style.animationDuration = (Math.random() * 4 + 6) + 's';
+                document.body.appendChild(paw);
+                setTimeout(function () { paw.remove(); }, 12000);
+            }
+            setInterval(spawnPaw, 3500);
+
+            // 9. Cute paw prints trail the cursor (throttled)
+            var lastPaw = 0;
+            document.addEventListener('mousemove', function (e) {
+                var now = Date.now();
+                if (now - lastPaw < 220) return;
+                lastPaw = now;
+                var paw = document.createElement('span');
+                paw.className = 'paw-cursor';
+                paw.textContent = Math.random() > 0.5 ? '🐾' : '🐾';
+                paw.style.left = (e.clientX - 14) + 'px';
+                paw.style.top = (e.clientY - 14) + 'px';
+                document.body.appendChild(paw);
+                if (window.anime) {
+                    anime({ targets: paw, translateY: [-16, 0], opacity: [0.9, 0], scale: [0.6, 1.1], duration: 700, easing: 'easeOutQuad', complete: function () { paw.remove(); } });
+                }
+            });
+
+            // 10. Confetti paw-burst on primary CTA & format chips
+            function burstPaws(x, y) {
+                var emojis = ['🐾', '🐱', '⭐', '✨'];
+                for (var i = 0; i < 9; i++) {
+                    (function (idx) {
+                        var p = document.createElement('span');
+                        p.className = 'paw-confetti';
+                        p.textContent = emojis[idx % emojis.length];
+                        p.style.left = x + 'px';
+                        p.style.top = y + 'px';
+                        document.body.appendChild(p);
+                        var dx = (Math.random() - 0.5) * 170;
+                        var dy = -(Math.random() * 120 + 40);
+                        anime({ targets: p, translateX: [0, dx], translateY: [0, dy], rotate: [0, Math.random() * 360 - 180], opacity: [1, 0], duration: 800 + Math.random() * 500, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+                    })(i);
+                }
+            }
+            document.querySelectorAll('.hero-cta, .cta-btn, #drop-zone, .submit-btn').forEach(function (el) {
+                el.addEventListener('click', function (ev) {
+                    burstPaws(ev.clientX, ev.clientY);
+                });
+            });
+
+            // 11. Twinkling stars in the rating summary
+            anime({ targets: '.rating-summary .stars i', scale: [1, 1.35, 1], rotate: [0, 25, -25, 0], delay: anime.stagger(150, { start: 600 }), loop: true, duration: 1600, easing: 'easeInOutSine' });
+
+            // 12. Stat numbers win-bounce then hold
+            var statNums = document.querySelectorAll('.stat-num');
+            anime({ targets: statNums, translateY: [0, -10, 0], scale: [1, 1.18, 1], duration: 1200, delay: 1800, easing: 'easeOutCubic' });
+
+            // 13. Magnetic hero CTA (tug toward cursor)
+            var mag = document.querySelector('.hero-cta:not(.ghost)');
+            if (mag) {
+                mag.addEventListener('mousemove', function (ev) {
+                    var r = mag.getBoundingClientRect();
+                    var x = ev.clientX - (r.left + r.width / 2);
+                    var y = ev.clientY - (r.top + r.height / 2);
+                    anime({ targets: mag, translateX: x * 0.18, translateY: y * 0.18, duration: 220, easing: 'easeOutSine' });
+                });
+                mag.addEventListener('mouseleave', function () {
+                    anime({ targets: mag, translateX: 0, translateY: 0, duration: 400, easing: 'easeOutBack' });
+                });
+            }
+
+            // 14. Orbiting paw pinwheel around the main hero cat
+            var heroMain = document.querySelector('.hero-cat-photo.main');
+            if (heroMain) {
+                var orbit = document.createElement('span');
+                orbit.className = 'paw-orbit';
+                orbit.textContent = '🐾';
+                heroMain.parentElement.appendChild(orbit);
+            }
+
+            // 15. Subtle breathing border pulse on the upload drop zone
+            anime({ targets: '#drop-zone', boxShadow: ['0 0 0 0 rgba(79,124,255,0)', '0 0 0 14px rgba(79,124,255,0)', '0 0 0 0 rgba(79,124,255,0)'], duration: 2600, loop: true, easing: 'easeInOutSine' });
+
+            // 16. Footer cats wave hello
+            anime({ targets: '.meow-tagline', rotate: [-3, 3, -3], duration: 1400, delay: 2200, loop: true, easing: 'easeInOutSine' });
+        });
+    </script>
+</body>
+</html>

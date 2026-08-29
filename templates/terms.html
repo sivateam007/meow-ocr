@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - Meow OCR</title>
+    <meta name="description" content="Terms of service for Meow OCR: the rules and guidelines for using our free online OCR tool to extract text from PDF and images.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        window.FIREBASE_CONFIG = {
+            apiKey: "{{ firebase_api_key }}",
+            authDomain: "{{ firebase_auth_domain }}",
+            projectId: "{{ firebase_project_id }}",
+            storageBucket: "{{ firebase_storage_bucket }}",
+            messagingSenderId: "",
+            appId: "{{ firebase_app_id }}",
+            measurementId: "{{ firebase_measurement_id }}"
+        };
+        window.SCANNER_USER = {{ current_user_json|safe }};
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+    <script src="https://unpkg.com/animejs@3.2.2/lib/anime.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
+                <span class="user-badge" id="user-badge" style="display:none;">
+                    <img id="user-avatar" class="user-avatar" alt="" />
+                    <span id="user-name"></span>
+                    <a href="#" class="logout-btn" id="logout-btn" title="Sign out"><i class="fas fa-sign-out-alt"></i></a>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="content-section info-page">
+            <h1 class="page-main-title"><i class="fas fa-file-contract"></i> Terms of Service</h1>
+            <div class="page-cat-chip"><img src="{{ url_for('static', filename='images/cat-orange.jpg') }}" alt="Meow OCR terms cat"><span class="heading-cat">Short, fair, and cat-approved 🐾</span></div>
+            <p class="page-subtitle">Last updated: 2026. Please read these terms carefully before using Meow OCR.</p>
+
+            <div class="info-page-box">
+                <h2>1. Acceptance of Terms</h2>
+                <p>By accessing or using Meow OCR, you agree to be bound by these Terms of Service. If you do not agree with any part of these terms, please do not use the service.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>2. The Service</h2>
+                <p>Meow OCR provides an online optical character recognition (OCR) tool that extracts text from uploaded PDF, image and document files, and offers a text translation feature. The service is provided "as is" and "as available" without warranties of any kind.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>3. Acceptable Use</h2>
+                <p>You agree to use Meow OCR only for lawful purposes. You must not:</p>
+                <ul style="line-height: 1.9; padding-left: 1.2rem;">
+                    <li>Upload files you do not have the legal right to process;</li>
+                    <li>Upload malicious files, viruses, or content that violates copyright;</li>
+                    <li>Attempt to disrupt, overload or gain unauthorized access to our systems;</li>
+                    <li>Use the service to process illegal or harmful content;</li>
+                    <li>Reverse-engineer or abuse the free usage limits.</li>
+                </ul>
+            </div>
+
+            <div class="info-page-box">
+                <h2>4. Accounts</h2>
+                <p>Optional sign-in (via Google) provides unlimited conversions and download history. You are responsible for maintaining the security of your account and for all activity under it. You may clear your data or request account deletion at any time.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>5. Free Usage &amp; Limits</h2>
+                <p>Basic OCR is free. Guests may process one document without an account. Users who sign in may convert unlimited documents. We reserve the right to adjust limits or features at any time.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>6. Privacy</h2>
+                <p>Your use of the service is governed by our <a href="/privacy" style="color: var(--git-color);">Privacy Policy</a>, which explains how we handle your files and data, including the automatic deletion of results after your chosen retention period.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>7. Intellectual Property</h2>
+                <p>Meow OCR's name, logo, design and software are our property. You retain all rights to your own uploaded files and the extracted text you generate using the service.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>8. Limitation of Liability</h2>
+                <p>To the maximum extent permitted by law, Meow OCR shall not be liable for any indirect, incidental, special, consequential or punitive damages, or for any loss of data, arising from your use of the service.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>9. Changes to These Terms</h2>
+                <p>We may update these terms from time to time. Continued use of the service after changes constitutes acceptance of the revised terms. We encourage you to review this page periodically.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2>10. Contact</h2>
+                <p>For questions about these Terms of Service, please contact us. We're happy to help, and yes — we genuinely like cats. 🐱</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <h4>Meow OCR</h4>
+                <p>Free online OCR — extract text from PDF, images &amp; documents. 19+ languages.</p>
+                <p class="meow-tagline"><i class="fas fa-cat"></i> Powered by curious cats <i class="fas fa-paw"></i></p>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <a href="/"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads"><i class="fas fa-download"></i> My Downloads</a>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <a href="/privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                <a href="/terms"><i class="fas fa-file-contract"></i> Terms of Service</a>
+            </div>
+            <div class="footer-note">
+                <h4>Your Result</h4>
+                <p>Results are stored securely in the cloud and auto-deleted after 2 days by default.</p>
+                <p class="copyright">&copy; 2026 Meow OCR. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            var title = document.querySelector('.page-main-title');
+            if (title) anime({ targets: title, translateY: [20, 0], opacity: [0, 1], duration: 600, easing: 'easeOutExpo' });
+            var chip = document.querySelector('.page-cat-chip img');
+            if (chip) anime({ targets: chip, scale: [0, 1], rotate: [-360, 0], duration: 900, easing: 'easeOutBack' });
+            var boxes = document.querySelectorAll('.info-page-box');
+            anime({ targets: boxes, translateY: [22, 0], opacity: [0, 1], delay: anime.stagger(70), duration: 600, easing: 'easeOutExpo' });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            var em = ['🐾', '🐱', '⭐', '✨'];
+            function pawBurst(x, y) {
+                for (var i = 0; i < 7; i++) (function (i) {
+                    var p = document.createElement('span');
+                    p.className = 'paw-confetti';
+                    p.textContent = em[i % em.length];
+                    p.style.left = x + 'px'; p.style.top = y + 'px';
+                    document.body.appendChild(p);
+                    anime({ targets: p, translateX: [0, (Math.random() - 0.5) * 160], translateY: [0, -(Math.random() * 110 + 40)], rotate: [0, Math.random() * 360 - 180], opacity: [1, 0], duration: 800 + Math.random() * 500, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+                })(i);
+            }
+            document.querySelectorAll('.submit-btn, .cta-btn, a[href="/"]').forEach(function (el) {
+                el.addEventListener('click', function (ev) { pawBurst(ev.clientX, ev.clientY); });
+            });
+            var last = 0;
+            document.addEventListener('mousemove', function (e) {
+                var n = Date.now(); if (n - last < 260) return; last = n;
+                var p = document.createElement('span');
+                p.className = 'paw-cursor'; p.textContent = '🐾';
+                p.style.left = (e.clientX - 14) + 'px'; p.style.top = (e.clientY - 14) + 'px';
+                document.body.appendChild(p);
+                anime({ targets: p, translateY: [-14, 0], opacity: [0.8, 0], scale: [0.6, 1.1], duration: 650, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+            });
+        });
+    </script>
+</body>
+</html>

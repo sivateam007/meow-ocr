@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processing - Meow OCR</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        window.FIREBASE_CONFIG = {
+            apiKey: "{{ firebase_api_key }}",
+            authDomain: "{{ firebase_auth_domain }}",
+            projectId: "{{ firebase_project_id }}",
+            storageBucket: "{{ firebase_storage_bucket }}",
+            messagingSenderId: "",
+            appId: "{{ firebase_app_id }}",
+            measurementId: "{{ firebase_measurement_id }}"
+        };
+        window.SCANNER_USER = {{ current_user_json|safe }};
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+    <script src="https://unpkg.com/animejs@3.2.2/lib/anime.min.js"></script>
+    <style>
+        .task-id-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+        .task-id-box p {
+            margin: 0;
+            font-size: 13px;
+            color: #666;
+        }
+        .task-id-box strong {
+            color: var(--git-color);
+        }
+        .task-id-hint {
+            margin-top: 4px !important;
+            font-size: 12px !important;
+            color: #999 !important;
+        }
+        .progress-link {
+            color: var(--git-color);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .progress-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
+                <span class="user-badge" id="user-badge" style="display:none;">
+                    <img id="user-avatar" class="user-avatar" alt="" />
+                    <span id="user-name"></span>
+                    <a href="#" class="logout-btn" id="logout-btn" title="Sign out"><i class="fas fa-sign-out-alt"></i></a>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="content-section processing-section">
+            <p class="page-info" id="filename"></p>
+
+            <div id="status-box">
+                <img src="{{ url_for('static', filename='images/cat-orange.jpg') }}" alt="Meow OCR working hard" class="cat-loader-photo" style="margin-bottom: 1rem;">
+                <div class="loading-spinner" id="spinner"></div>
+                <div class="progress-text" id="percentage-text">0%</div>
+                <div class="progress-status" id="status-text">Starting processing... <span class="heading-cat">🐱</span></div>
+
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                </div>
+
+                <div class="status-info">
+                    <div class="status-card" id="lang-info-section">
+                        <h4>Language</h4>
+                        <p id="detected-lang">Detecting...</p>
+                    </div>
+                    <div class="status-card" id="page-info-section">
+                        <h4>Progress</h4>
+                        <p id="page-info">Page <span id="current-page">0</span> / <span id="total-pages">...</span></p>
+                    </div>
+                    <div class="status-card" id="chunk-info-section" style="display: none;">
+                        <h4>Chunks</h4>
+                        <p id="chunk-info">Chunk <span id="current-chunk">0</span> / <span id="total-chunks">...</span></p>
+                    </div>
+                    <div class="status-card" id="eta-section">
+                        <h4>ETA</h4>
+                        <p id="eta-text">--</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flash" id="error-box" style="display: none;">
+                <strong>Error:</strong> <span id="error-text"></span>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="/downloads" class="submit-btn" style="text-decoration: none; background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);">
+                    <i class="fas fa-download"></i> My Downloads
+                </a>
+                <a href="#" class="submit-btn" id="download-btn" style="display: none; text-decoration: none;">
+                    Download Result
+                </a>
+                <a href="/" class="submit-btn" id="back-btn" style="display: none; text-decoration: none; background: linear-gradient(135deg, #64748b 0%, #475569 100%);">
+                    Process Another File
+                </a>
+                <button class="submit-btn" id="cancel-btn" onclick="cancelProcessing()" style="display: none; text-decoration: none; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border: none; cursor: pointer;">
+                    <i class="fas fa-times-circle"></i> Cancel
+                </button>
+            </div>
+
+            <div class="task-id-box">
+                <p>
+                    <i class="fas fa-info-circle"></i>
+                    Task ID: <strong>{{ task_id }}</strong>
+                </p>
+                <p class="task-id-hint">
+                    <i class="fas fa-bookmark"></i>
+                    <a href="/check/{{ task_id }}" class="progress-link">Check Progress Page</a>
+                    &mdash; Bookmark this to return later.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const taskId = "{{ task_id }}";
+        const statusBox = document.getElementById('status-box');
+        const statusText = document.getElementById('status-text');
+        const pageInfoSection = document.getElementById('page-info-section');
+        const chunkInfoSection = document.getElementById('chunk-info-section');
+        const currentPage = document.getElementById('current-page');
+        const totalPages = document.getElementById('total-pages');
+        const currentChunk = document.getElementById('current-chunk');
+        const totalChunks = document.getElementById('total-chunks');
+        const percentageText = document.getElementById('percentage-text');
+        const progressFill = document.getElementById('progress-fill');
+        const spinner = document.getElementById('spinner');
+        const errorBox = document.getElementById('error-box');
+        const errorText = document.getElementById('error-text');
+        const downloadBtn = document.getElementById('download-btn');
+        const backBtn = document.getElementById('back-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const filenameEl = document.getElementById('filename');
+        const detectedLang = document.getElementById('detected-lang');
+        const etaText = document.getElementById('eta-text');
+        const etaSection = document.getElementById('eta-section');
+
+        let pollInterval;
+        let simulatedProgress = 0;
+        const simulateInterval = 100;
+        let simulationTimer = null;
+        let currentFileType = null;
+        let isTranslation = false;
+        let currentETA = null;
+        let etaTimer = null;
+
+        function startETACountdown(seconds) {
+            currentETA = seconds;
+            if (etaTimer) clearInterval(etaTimer);
+            etaTimer = setInterval(() => {
+                currentETA = Math.max(0, currentETA - 1);
+                etaText.textContent = formatETA(currentETA);
+                if (currentETA <= 0) {
+                    clearInterval(etaTimer);
+                    etaTimer = null;
+                }
+            }, 1000);
+            etaText.textContent = formatETA(currentETA);
+            etaSection.style.display = 'block';
+        }
+
+        function stopETACountdown() {
+            if (etaTimer) {
+                clearInterval(etaTimer);
+                etaTimer = null;
+            }
+            currentETA = null;
+        }
+
+        function cancelProcessing() {
+            if (!confirm('Cancel this task?')) return;
+            fetch('/cancel/' + taskId, { method: 'POST' })
+                .then(r => r.json())
+                .then(d => {
+                    statusText.textContent = 'Cancelling...';
+                    cancelBtn.style.display = 'none';
+                })
+                .catch(() => {});
+        }
+
+        fetch(`/progress/${taskId}`)
+            .then(response => response.json())
+            .then(data => {
+                currentFileType = data.file_type || 'pdf';
+                isTranslation = data.translating === true;
+
+                if (isTranslation) {
+                    document.querySelector('.progress-status').textContent = 'Translating...';
+                    if (data.target_lang_name) {
+                        detectedLang.textContent = data.source_lang_name + ' → ' + data.target_lang_name;
+                    }
+                    pageInfoSection.style.display = 'none';
+                    chunkInfoSection.style.display = 'block';
+                    if (data.filename) {
+                        filenameEl.textContent = 'File: ' + data.filename;
+                    }
+                } else {
+                    if (data.detected_language && data.detected_language !== 'auto') {
+                        detectedLang.textContent = data.language_name || data.detected_language;
+                    }
+                    if (data.filename) {
+                        filenameEl.textContent = 'File: ' + data.filename;
+                    }
+                    if (currentFileType !== 'pdf') {
+                        pageInfoSection.style.display = 'none';
+                    }
+                }
+
+                if (data.status === 'getting_page_count' || data.status === 'starting' || data.status === 'detecting_language') {
+                    startSimulatedProgress();
+                }
+            })
+            .catch(err => console.error('Initial load error:', err));
+
+        function startSimulatedProgress() {
+            if (simulationTimer) return;
+            simulationTimer = setInterval(() => {
+                simulatedProgress += 1;
+                if (simulatedProgress > 90) {
+                    clearInterval(simulationTimer);
+                    return;
+                }
+                percentageText.textContent = `${simulatedProgress}%`;
+                progressFill.style.width = `${simulatedProgress}%`;
+            }, simulateInterval);
+        }
+
+        function stopSimulatedProgress() {
+            if (simulationTimer) {
+                clearInterval(simulationTimer);
+                simulationTimer = null;
+            }
+        }
+
+        function formatETA(seconds) {
+            if (!seconds || seconds <= 0) return '--';
+            if (seconds < 60) return `${seconds}s`;
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            return `${h}h ${m}m`;
+        }
+
+        function updateProgress() {
+            fetch(`/progress/${taskId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Task not found');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    isTranslation = data.translating === true;
+
+                    if (data.filename) {
+                        filenameEl.textContent = 'File: ' + data.filename;
+                    }
+
+                    if (isTranslation) {
+                        if (data.target_lang_name) {
+                            detectedLang.textContent = data.source_lang_name + ' → ' + data.target_lang_name;
+                        }
+                        pageInfoSection.style.display = 'none';
+                        chunkInfoSection.style.display = 'block';
+
+                        if (data.total_chunks) {
+                            currentChunk.textContent = data.current_chunk || 0;
+                            totalChunks.textContent = data.total_chunks;
+                        }
+
+                        if (data.status === 'starting') {
+                            statusText.textContent = 'Starting translation...';
+                            percentageText.textContent = '0%';
+                            progressFill.style.width = '0%';
+                            cancelBtn.style.display = 'inline-block';
+                        } else if (data.status === 'translating') {
+                            statusText.textContent = 'Translating... (' + data.source_lang_name + ' → ' + data.target_lang_name + ')';
+                            stopSimulatedProgress();
+                            cancelBtn.style.display = 'inline-block';
+                            if (data.percentage > 0) {
+                                percentageText.textContent = data.percentage + '%';
+                                progressFill.style.width = data.percentage + '%';
+                            }
+                        } else if (data.status === 'completed') {
+                            stopSimulatedProgress();
+                            stopETACountdown();
+                            etaSection.style.display = 'none';
+                            cancelBtn.style.display = 'none';
+                            statusText.textContent = 'Translation completed successfully!';
+                            percentageText.textContent = '100%';
+                            progressFill.style.width = '100%';
+                            spinner.style.display = 'none';
+                            errorBox.style.display = 'none';
+                            downloadBtn.style.display = 'inline-block';
+                            downloadBtn.href = `/download/${taskId}`;
+                            backBtn.style.display = 'inline-block';
+                            clearInterval(pollInterval);
+                        } else if (data.status === 'error') {
+                            statusText.textContent = 'Translation failed';
+                            spinner.style.display = 'none';
+                            errorBox.style.display = 'block';
+                            errorText.textContent = data.error || 'Unknown error occurred';
+                            backBtn.style.display = 'inline-block';
+                            cancelBtn.style.display = 'none';
+                            stopETACountdown();
+                            etaSection.style.display = 'none';
+                            clearInterval(pollInterval);
+                        } else if (data.status === 'cancelled') {
+                            statusText.textContent = 'Task cancelled';
+                            spinner.style.display = 'none';
+                            errorBox.style.display = 'block';
+                            errorText.textContent = data.error || 'Cancelled by user';
+                            backBtn.style.display = 'inline-block';
+                            cancelBtn.style.display = 'none';
+                            stopETACountdown();
+                            etaSection.style.display = 'none';
+                            clearInterval(pollInterval);
+                        }
+                        return;
+                    }
+
+                    if (data.language_name) {
+                        detectedLang.textContent = data.language_name;
+                    } else if (data.detected_language) {
+                        detectedLang.textContent = data.detected_language === 'tam' ? 'Tamil' : 'English';
+                    }
+
+                    if (currentFileType === 'pdf') {
+                        currentPage.textContent = data.current_page;
+                        if (data.pdf_total_pages && data.total_pages && data.pdf_total_pages !== data.total_pages) {
+                            totalPages.textContent = data.pdf_total_pages + ` (range: ${data.total_pages} pages)`;
+                        } else if (data.total_pages) {
+                            totalPages.textContent = data.total_pages;
+                        } else {
+                            totalPages.textContent = '...';
+                        }
+                    }
+
+                    if (data.status === 'detecting_language') {
+                        statusText.textContent = 'Detecting language...';
+                        percentageText.textContent = '...';
+                        progressFill.style.width = '5%';
+                        cancelBtn.style.display = 'inline-block';
+                    } else if (data.status === 'getting_page_count') {
+                        statusText.textContent = 'Getting page count...';
+                        percentageText.textContent = '...';
+                        progressFill.style.width = '10%';
+                        cancelBtn.style.display = 'inline-block';
+                    } else if (data.status === 'starting') {
+                        statusText.textContent = 'Starting processing...';
+                        percentageText.textContent = '0%';
+                        progressFill.style.width = '0%';
+                        cancelBtn.style.display = 'inline-block';
+                    } else if (data.status === 'resuming') {
+                        statusText.textContent = 'Resuming ' + currentFileType.toUpperCase() + ' from checkpoint...';
+                        stopSimulatedProgress();
+                        cancelBtn.style.display = 'inline-block';
+                        if (data.percentage > 0) {
+                            percentageText.textContent = data.percentage + '%';
+                            progressFill.style.width = data.percentage + '%';
+                        }
+                        if (data.eta) {
+                            startETACountdown(data.eta);
+                        } else {
+                            stopETACountdown();
+                            etaText.textContent = '--';
+                            etaSection.style.display = 'block';
+                        }
+                        if (data.current_page > 0 && data.total_pages) {
+                            currentPage.textContent = data.current_page;
+                            totalPages.textContent = data.total_pages;
+                        }
+                    } else if (data.status === 'processing') {
+                        statusText.textContent = 'Processing ' + currentFileType.toUpperCase() + '... (' + (data.language_name || 'Detected language') + ')';
+                        stopSimulatedProgress();
+                        cancelBtn.style.display = 'inline-block';
+                        if (data.percentage > 0) {
+                            percentageText.textContent = data.percentage + '%';
+                            progressFill.style.width = data.percentage + '%';
+                        }
+                        if (data.eta) {
+                            startETACountdown(data.eta);
+                        } else {
+                            stopETACountdown();
+                            etaText.textContent = '--';
+                            etaSection.style.display = 'block';
+                        }
+                        if (data.current_page > 0 && data.total_pages) {
+                            currentPage.textContent = data.current_page;
+                            totalPages.textContent = data.total_pages;
+                        }
+                    } else if (data.status === 'completed') {
+                        stopSimulatedProgress();
+                        stopETACountdown();
+                        etaSection.style.display = 'none';
+                        cancelBtn.style.display = 'none';
+                        statusText.textContent = 'Processing completed successfully!';
+                        percentageText.textContent = '100%';
+                        progressFill.style.width = '100%';
+                        spinner.style.display = 'none';
+                        errorBox.style.display = 'none';
+                        downloadBtn.style.display = 'inline-block';
+                        downloadBtn.href = `/download/${taskId}`;
+                        backBtn.style.display = 'inline-block';
+                        clearInterval(pollInterval);
+                    } else if (data.status === 'interrupted') {
+                        statusText.textContent = 'Processing interrupted (server restarted)';
+                        spinner.style.display = 'none';
+                        cancelBtn.style.display = 'none';
+                        backBtn.style.display = 'inline-block';
+                        stopETACountdown();
+                        etaSection.style.display = 'none';
+                        clearInterval(pollInterval);
+                    } else if (data.status === 'error') {
+                        statusText.textContent = 'Processing failed';
+                        spinner.style.display = 'none';
+                        errorBox.style.display = 'block';
+                        errorText.textContent = data.error || 'Unknown error occurred';
+                        backBtn.style.display = 'inline-block';
+                        cancelBtn.style.display = 'none';
+                        stopETACountdown();
+                        etaSection.style.display = 'none';
+                        clearInterval(pollInterval);
+                    } else if (data.status === 'cancelling') {
+                        statusText.textContent = 'Cancelling...';
+                        spinner.style.display = 'none';
+                        cancelBtn.style.display = 'none';
+                        stopETACountdown();
+                        etaText.textContent = '--';
+                        etaSection.style.display = 'block';
+                    } else if (data.status === 'cancelled') {
+                        statusText.textContent = 'Task cancelled';
+                        spinner.style.display = 'none';
+                        errorBox.style.display = 'block';
+                        errorText.textContent = data.error || 'Cancelled by user';
+                        backBtn.style.display = 'inline-block';
+                        cancelBtn.style.display = 'none';
+                        stopETACountdown();
+                        etaSection.style.display = 'none';
+                        clearInterval(pollInterval);
+                    }
+                })
+                .catch(error => {
+                    statusText.textContent = 'Error checking progress';
+                    console.error('Progress check failed:', error);
+                });
+        }
+
+        pollInterval = setInterval(updateProgress, 1000);
+        updateProgress();
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            var box = document.getElementById('status-box');
+            if (box) anime({ targets: box, opacity: [0, 1], translateY: [18, 0], duration: 700, easing: 'easeOutExpo' });
+            var cat = document.querySelector('.cat-loader-photo');
+            if (cat) anime({ targets: cat, scale: [0, 1], rotate: [-8, 0], opacity: [0, 1], duration: 900, easing: 'easeOutBack' });
+            var cards = document.querySelectorAll('.status-card');
+            anime({ targets: cards, translateY: [16, 0], opacity: [0, 1], delay: anime.stagger(90), duration: 500, easing: 'easeOutQuad' });
+        });
+    </script>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <h4>Meow OCR</h4>
+                <p>Free online OCR — extract text from PDF, images &amp; documents. 19+ languages.</p>
+                <p class="meow-tagline"><i class="fas fa-cat"></i> Powered by curious cats <i class="fas fa-paw"></i></p>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <a href="/"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads"><i class="fas fa-download"></i> My Downloads</a>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <a href="/privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                <a href="/terms"><i class="fas fa-file-contract"></i> Terms of Service</a>
+            </div>
+            <div class="footer-note">
+                <h4>Your Result</h4>
+                <p>Results are stored securely in the cloud and auto-deleted after 2 days by default.</p>
+                <p class="copyright">&copy; 2026 Meow OCR. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            var em = ['🐾', '🐱', '⭐', '✨'];
+            function pawBurst(x, y) {
+                for (var i = 0; i < 7; i++) (function (i) {
+                    var p = document.createElement('span');
+                    p.className = 'paw-confetti';
+                    p.textContent = em[i % em.length];
+                    p.style.left = x + 'px'; p.style.top = y + 'px';
+                    document.body.appendChild(p);
+                    anime({ targets: p, translateX: [0, (Math.random() - 0.5) * 160], translateY: [0, -(Math.random() * 110 + 40)], rotate: [0, Math.random() * 360 - 180], opacity: [1, 0], duration: 800 + Math.random() * 500, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+                })(i);
+            }
+            document.querySelectorAll('.submit-btn, .cta-btn, a[href="/"]').forEach(function (el) {
+                el.addEventListener('click', function (ev) { pawBurst(ev.clientX, ev.clientY); });
+            });
+            var last = 0;
+            document.addEventListener('mousemove', function (e) {
+                var n = Date.now(); if (n - last < 260) return; last = n;
+                var p = document.createElement('span');
+                p.className = 'paw-cursor'; p.textContent = '🐾';
+                p.style.left = (e.clientX - 14) + 'px'; p.style.top = (e.clientY - 14) + 'px';
+                document.body.appendChild(p);
+                anime({ targets: p, translateY: [-14, 0], opacity: [0.8, 0], scale: [0.6, 1.1], duration: 650, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+            });
+        });
+    </script>
+</body>
+</html>
