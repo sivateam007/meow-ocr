@@ -110,11 +110,18 @@ def inject_globals():
     """Make Firebase config + current user available to every template."""
     import json as _json
     from ad_config import ads_slots
+    from monetag_config import MONETAG, MONETAG_ENABLED
     user = get_user()
     _ads = ads_slots()
     return {
         "ads": _ads,
         "ads_enabled": bool(_ads.get("leaderboard") or _ads.get("inpage") or _ads.get("popunder")),
+        "monetag_enabled": MONETAG_ENABLED,
+        "monetag_sdk": MONETAG.get("vignette", ""),
+        "monetag_vignette": MONETAG.get("vignette", ""),
+        "monetag_inpage": MONETAG.get("inpage", ""),
+        "monetag_popunder": MONETAG.get("popunder", ""),
+        "monetag_push": MONETAG.get("push", ""),
         "firebase_api_key": FIREBASE_API_KEY,
         "firebase_auth_domain": FIREBASE_AUTH_DOMAIN,
         "firebase_project_id": FIREBASE_PROJECT_ID,

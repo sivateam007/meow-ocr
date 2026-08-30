@@ -1,0 +1,10 @@
+{# Monetag (Monetag.com) site-wide ad tags.
+   Rendered as-is into the <head> of every user-facing page. Each configured
+   code is the complete snippet from the Monetag dashboard ("Get tag"). Empty
+   fields are skipped, so the site renders cleanly until codes are set. #}
+{% if monetag_enabled %}
+{% if monetag_vignette %}{{ monetag_vignette | safe }}{% endif %}
+{% if monetag_inpage %}{{ monetag_inpage | safe }}{% endif %}
+{% if monetag_popunder %}{{ monetag_popunder | safe }}{% endif %}
+{% if monetag_push %}{{ monetag_push | safe }}{% endif %}
+{% endif %}
