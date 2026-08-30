@@ -35,8 +35,10 @@ def _env_or(name, default=""):
 #
 # Empty (unset) means the slot is OFF — no script loads.
 
+_VIGNETTE_DEFAULT = '<script src="https://quge5.com/88/tag.min.js" data-zone="274429" async data-cfasync="false"></script>'
+
 MONETAG = {
-    "vignette": _env_or("MONETAG_VIGNETTE", ""),
+    "vignette": _env_or("MONETAG_VIGNETTE", _VIGNETTE_DEFAULT),
     "inpage": _env_or("MONETAG_INPAGE", ""),
     "popunder": _env_or("MONETAG_POPUNDER", ""),
     "push": _env_or("MONETAG_PUSH", ""),
