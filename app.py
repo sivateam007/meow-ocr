@@ -2787,17 +2787,9 @@ def robots():
 
 @app.route('/google77bfad89af69530a.html')
 def google_verify():
-    """Google Search Console HTML-file ownership verification."""
-    content = (
-        "<html>\n"
-        "<head>\n"
-        '<meta name="google-site-verification" content="google77bfad89af69530a" />\n'
-        "</head>\n"
-        "<body>\n"
-        "</body>\n"
-        "</html>\n"
-    )
-    return app.response_class(content, mimetype='text/html')
+    """Google Search Console ownership verification file (exact byte content)."""
+    content = "google-site-verification: google77bfad89af69530a.html\n"
+    return app.response_class(content, mimetype='text/plain')
 
 
 @app.route('/healthz')
