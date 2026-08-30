@@ -13,7 +13,6 @@ Free, 24x7 online OCR + translation web app that extracts text from PDFs and ima
 - Mobile-responsive web interface
 - Returns downloadable `.txt` output with page separators
 - Keepalive uptime monitoring, SEO-ready (sitemap, robots.txt, canonical URLs, JSON-LD)
-- Monetag + Adsterra ads (fully env-var driven)
 
 ## Project Structure
 ```
@@ -21,16 +20,12 @@ render ocr/
 ├── Dockerfile              # Linux container setup with Tesseract & Poppler
 ├── requirements.txt        # Python dependencies
 ├── app.py                  # Flask web application (OCR + translate + cloud)
-├── ad_config.py            # Adsterra ad codes (env-var driven)
-├── monetag_config.py       # Monetag ad codes (env-var driven)
 ├── render.yaml             # Render service config
 ├── templates/
 │   ├── index.html          # Upload + OCR + Translate UI, Meow gallery
 │   ├── downloads.html      # Download results + cloud recovery panel
 │   ├── processing.html     # Processing/progress page
 │   ├── progress_check.html # Live task progress page
-│   ├── monetag.html        # Monetag head include
-│   ├── ads.html            # Adsterra slots
 │   └── how_to_use.html, privacy.html, terms.html
 ├── static/
 │   ├── style.css
@@ -86,8 +81,6 @@ Render will automatically:
 - `SITE_URL` — canonical site URL (e.g. `https://www.meowocr.work.gd`)
 - `FLASK_SECRET_KEY` — app secret
 - `MEGA_EMAIL` / `MEGA_PWD` — Mega cloud (for cloud recovery)
-- `MONETAG_VIGNETTE` / `MONETAG_INPAGE` / `MONETAG_POPUNDER` / `MONETAG_PUSH` — optional Monetag ad script tags (unset = off)
-- `ADSTERRA_LEADERBOARD` / `ADSTERRA_INPAGE` / `ADSTERRA_POPUNDER` — optional Adsterra ad codes (unset = off)
 - `GA4_ID` / `CLARITY_ID` — optional Google Analytics 4 / Microsoft Clarity (unset = off)
 - `OCR_SPACE_API_KEY` — optional faster external OCR (fallback if set)
 
@@ -95,4 +88,3 @@ Render will automatically:
 - Render free tier has a 30-second request timeout. Large/multi-page PDFs may be slow — OCR is processed in background batched tasks.
 - OCR processing happens entirely on the server using locally installed Tesseract (with optional external OCR API fallback).
 - The `work.gd` free domain may be blocked on some networks; a real domain is recommended for best reliability.
-- Ad code is strictly env-var driven — no ads load until you set the matching env var.
