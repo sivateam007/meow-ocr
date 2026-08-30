@@ -1,33 +1,57 @@
-# Tamil PDF OCR Web App
+# Meow OCR 🐱
 
-Offline, web-based OCR application for extracting Tamil text from PDF files. Hosted on Render, accessible from mobile and desktop.
+**Live site:** https://www.meowocr.work.gd
+
+Free, 24x7 online OCR + translation web app that extracts text from PDFs and images (Tamil தமிழ், English, Hindi, and 19+ languages) and can translate the result. Cat-branded 🐾, mobile-friendly, and hosted on Render.
 
 ## Features
-- Fully offline OCR processing (no external APIs)
-- Supports Tamil language (தமிழ்) by default
-- Processes PDF files up to 100MB
+- PDF & image OCR (Tesseract, on-server — no external APIs)
+- Supports Tamil (தமிழ்), English, Hindi, Telugu, Bengali and 19+ languages with auto-detection
+- Translation of extracted text (Google Translate)
+- Cloud recovery via Mega (recover completed OCR results)
+- Processes PDFs up to 100MB (batched for speed)
 - Mobile-responsive web interface
 - Returns downloadable `.txt` output with page separators
+- Keepalive uptime monitoring, SEO-ready (sitemap, robots.txt, canonical URLs, JSON-LD)
+- Monetag + Adsterra ads (fully env-var driven)
 
 ## Project Structure
 ```
 render ocr/
-├── Dockerfile          # Linux container setup with Tesseract & Poppler
-├── requirements.txt    # Python dependencies
-├── app.py              # Flask web application
+├── Dockerfile              # Linux container setup with Tesseract & Poppler
+├── requirements.txt        # Python dependencies
+├── app.py                  # Flask web application (OCR + translate + cloud)
+├── ad_config.py            # Adsterra ad codes (env-var driven)
+├── monetag_config.py       # Monetag ad codes (env-var driven)
+├── render.yaml             # Render service config
 ├── templates/
-│   └── index.html     # Mobile-friendly upload form
-└── .gitignore         # Excludes unnecessary files
+│   ├── index.html          # Upload + OCR + Translate UI, Meow gallery
+│   ├── downloads.html      # Download results + cloud recovery panel
+│   ├── processing.html     # Processing/progress page
+│   ├── progress_check.html # Live task progress page
+│   ├── monetag.html        # Monetag head include
+│   ├── ads.html            # Adsterra slots
+│   └── how_to_use.html, privacy.html, terms.html
+├── static/
+│   ├── style.css
+│   └── images/             # Meow cat branding & gallery images
+└── .gitignore
 ```
+
+## Live Deployment
+- **URL:** https://www.meowocr.work.gd
+- **Platform:** Render (free Docker plan)
+- **Health check:** `https://www.meowocr.work.gd/healthz`
+- **Uptime monitoring:** UptimeRobot (every 5 min)
 
 ## Deployment to Render
 
 ### Step 1: Create Git Repository
 ```bash
-cd "C:\Users\siva\Desktop\render ocr"
+cd "D:\project"
 git init
 git add .
-git commit -m "Initial commit: Tamil PDF OCR app"
+git commit -m "Initial commit: Meow OCR app"
 ```
 
 ### Step 2: Push to GitHub/GitLab
@@ -49,36 +73,26 @@ git push -u origin main
 
 Render will automatically:
 - Build the Docker image
-- Install Tesseract with Tamil language pack
+- Install Tesseract with Tamil + multi-language packs
 - Install Poppler utilities
 - Start the Flask application
 
 ### Step 4: Test
-- Access your app at the provided Render URL (e.g., `https://your-app.onrender.com`)
-- Upload a Tamil PDF from mobile or desktop
+- Access your app at the provided Render URL (e.g., `https://scantext-ocr.onrender.com` or your custom domain)
+- Upload a PDF/image from mobile or desktop
 - Download the extracted `.txt` file
 
-## Local Testing (Optional)
-```bash
-cd "C:\Users\siva\Desktop\render ocr"
-pip install -r requirements.txt
-
-# Windows: Set Tesseract path if needed
-# set TESSERACT_PATH="C:\Program Files\Tesseract-OCR\tesseract.exe"
-
-# Run the app
-python app.py
-```
-Visit `http://localhost:8080` in your browser.
-
-## Future Extensions
-- Add support for more Tesseract languages (English, Hindi, etc.)
-- Add image file support (PNG, JPG) for mobile document photos
-- Add in-browser text preview alongside download
-- User accounts with OCR history
-- Background task processing for large PDFs (to avoid Render timeout)
+## Env Variables (Render → Environment)
+- `SITE_URL` — canonical site URL (e.g. `https://www.meowocr.work.gd`)
+- `FLASK_SECRET_KEY` — app secret
+- `MEGA_EMAIL` / `MEGA_PWD` — Mega cloud (for cloud recovery)
+- `MONETAG_VIGNETTE` / `MONETAG_INPAGE` / `MONETAG_POPUNDER` / `MONETAG_PUSH` — optional Monetag ad script tags (unset = off)
+- `ADSTERRA_LEADERBOARD` / `ADSTERRA_INPAGE` / `ADSTERRA_POPUNDER` — optional Adsterra ad codes (unset = off)
+- `GA4_ID` / `CLARITY_ID` — optional Google Analytics 4 / Microsoft Clarity (unset = off)
+- `OCR_SPACE_API_KEY` — optional faster external OCR (fallback if set)
 
 ## Notes
-- Render free tier has a 30-second request timeout. Large/multi-page PDFs may timeout.
-- For production use with large files, consider upgrading to a paid Render plan.
-- OCR processing happens entirely on the server using locally installed Tesseract.
+- Render free tier has a 30-second request timeout. Large/multi-page PDFs may be slow — OCR is processed in background batched tasks.
+- OCR processing happens entirely on the server using locally installed Tesseract (with optional external OCR API fallback).
+- The `work.gd` free domain may be blocked on some networks; a real domain is recommended for best reliability.
+- Ad code is strictly env-var driven — no ads load until you set the matching env var.
