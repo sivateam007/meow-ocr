@@ -24,20 +24,22 @@ def _env_or(name, default=""):
     return val if val else default
 
 
-# Default codes (paste new Monetag tags here). Rail-safe: only put codes you
-# actually want live. Env vars always override.
-_DEFAULT = {
-    "vignette": '<script src="https://quge5.com/88/tag.min.js" data-zone="274429" async data-cfasync="false"></script>',
-    "inpage": "",
-    "popunder": "",
-    "push": "",
-}
+# Strictly env-var driven: no code is baked in. A Monetag script only loads when
+# the matching Render environment variable is set. Set these in the Render
+# dashboard (Environment -> Add Environment Variable) to the FULL script tag:
+#
+#     MONETAG_VIGNETTE  -> Vignette/Interstitial zone <script src="..."> snippet
+#     MONETAG_INPAGE    -> In-Page Push / Anchor zone snippet
+#     MONETAG_POPUNDER  -> OnClick (Popunder) zone snippet
+#     MONETAG_PUSH      -> Push Notifications zone snippet
+#
+# Empty (unset) means the slot is OFF — no script loads.
 
 MONETAG = {
-    "vignette": _env_or("MONETAG_VIGNETTE", _DEFAULT["vignette"]),
-    "inpage": _env_or("MONETAG_INPAGE", _DEFAULT["inpage"]),
-    "popunder": _env_or("MONETAG_POPUNDER", _DEFAULT["popunder"]),
-    "push": _env_or("MONETAG_PUSH", _DEFAULT["push"]),
+    "vignette": _env_or("MONETAG_VIGNETTE", ""),
+    "inpage": _env_or("MONETAG_INPAGE", ""),
+    "popunder": _env_or("MONETAG_POPUNDER", ""),
+    "push": _env_or("MONETAG_PUSH", ""),
 }
 
 MONETAG_ENABLED = bool(MONETAG.get("vignette") or MONETAG.get("inpage")
