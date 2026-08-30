@@ -109,11 +109,16 @@ def datetimeformat(timestamp):
 def inject_globals():
     """Make Firebase config + current user available to every template."""
     import json as _json
+    from flask import request as _request
     from ad_config import ads_slots
     from monetag_config import MONETAG, MONETAG_ENABLED
     user = get_user()
     _ads = ads_slots()
+    _path = _request.path if _request else "/"
     return {
+        "canonical_url": (SITE_URL + _path) if SITE_URL else "/",
+        "ga4_id": os.environ.get("GA4_ID", "").strip(),
+        "clarity_id": os.environ.get("CLARITY_ID", "").strip(),
         "ads": _ads,
         "ads_enabled": bool(_ads.get("leaderboard") or _ads.get("inpage") or _ads.get("popunder")),
         "monetag_enabled": MONETAG_ENABLED,
@@ -2738,6 +2743,44 @@ def ads_txt():
     content = (
         "# Replace this with the ads.txt content provided by your ad network\n"
         "# Example: google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0\n"
+    )
+    return app.response_class(content, mimetype='text/plain')
+
+
+# Canonical public address of the site. Keep in sync with Render custom domain.
+SITE_URL = os.environ.get("SITE_URL", "https://www.meowocr.work.gd").rstrip("/")
+
+
+@app.route('/sitemap.xml')
+def sitemap():
+    """XML sitemap so Google can discover and index every static page."""
+    pages = ["", "/how-to-use", "/privacy", "/terms", "/downloads"]
+    today = "2026-08-30"
+    urls = "".join(
+        f"  <url>\n"
+        f"    <loc>{SITE_URL}{p}</loc>\n"
+        f"    <lastmod>{today}</lastmod>\n"
+        f"    <changefreq>weekly</changefreq>\n"
+        f"    <priority>{'1.0' if p == '' else '0.7'}</priority>\n"
+        f"  </url>\n"
+        for p in pages
+    )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{urls}"
+        '</urlset>\n'
+    )
+    return app.response_class(xml, mimetype='application/xml')
+
+
+@app.route('/robots.txt')
+def robots():
+    """robots.txt allowing all crawlers and pointing to the sitemap."""
+    content = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        f"Sitemap: {SITE_URL}/sitemap.xml\n"
     )
     return app.response_class(content, mimetype='text/plain')
 

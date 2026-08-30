@@ -33,8 +33,55 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+    <link rel="canonical" href="{{ canonical_url }}">
+    {% include 'analytics.html' %}
 <meta name="monetag" content="7a72b6f0df920c3a70f08e97ba824d5d">
     {% include 'monetag.html' %}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Meow OCR",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Web",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "description": "Free online OCR tool to extract text from PDF, images (JPG, PNG, TIFF) and documents in 19+ languages. No signup, no watermark.",
+      "url": "{{ canonical_url or 'https://www.meowocr.work.gd/' }}",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "120"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is Meow OCR really free?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes, Meow OCR is completely free to use with no signup required and no watermark on your extracted text." }
+        },
+        {
+          "@type": "Question",
+          "name": "Which languages does Meow OCR support?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Meow OCR supports 19+ languages including English, Tamil, Hindi and many more." }
+        },
+        {
+          "@type": "Question",
+          "name": "What file types can I upload?",
+          "acceptedAnswer": { "@type": "Answer", "text": "You can upload PDF, images (JPG, PNG, BMP, TIFF) and other documents (DOCX, PPTX, RTF, ODT) as well as data files (XLSX, CSV, XML, JSON, HTML)." }
+        },
+        {
+          "@type": "Question",
+          "name": "How long are my files stored?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Your results are stored securely in the cloud and automatically deleted after 2 days by default for your privacy." }
+        }
+      ]
+    }
+    </script>
 </head>
 <body>
     <header>

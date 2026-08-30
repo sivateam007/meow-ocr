@@ -7,6 +7,8 @@
     <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="canonical" href="{{ canonical_url }}">
+    {% include 'analytics.html' %}
     {% include 'monetag.html' %}
     <meta name="description" content="Meow OCR privacy policy: how we handle, store and protect your uploaded documents and personal data. Files auto-delete after 2 days.">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
