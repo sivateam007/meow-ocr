@@ -63,6 +63,41 @@
             </div>
             {% endif %}
 
+            <div class="cloud-panel" style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 0.9rem 1rem; margin-bottom: 1rem; border: 1px solid #d3d9e0; border-radius: 8px; background: #f8fafc;">
+                <span style="font-size: 0.95rem; color: #333; flex: 1 1 auto;">
+                    <i class="fas fa-cloud" style="color: var(--git-color);"></i> Cloud storage:
+                    {% if mega_configured %}
+                        <span style="color: #16a34a;">Connected</span>
+                    {% else %}
+                        <span style="color: #dc2626;">Not configured</span>
+                    {% endif %}
+                </span>
+                <form method="post" action="/refresh-cloud" style="margin: 0;">
+                    <button type="submit" class="act-btn" style="display: inline-flex; align-items: center; gap: 0.4rem;" {% if not mega_configured %}disabled title="Mega cloud storage not configured"{% endif %}>
+                        <i class="fas fa-sync-alt"></i> Refresh Cloud Files
+                    </button>
+                </form>
+            </div>
+
+            {% set msgs = get_flashed_messages() %}
+            {% if msgs %}
+            {% for m in msgs %}
+            <div style="padding: 0.75rem 1rem; margin-bottom: 1rem; border: 1px solid #d3d9e0; border-radius: 8px; background: #fffbeb; color: #92400e; font-size: 0.95rem;">
+                <i class="fas fa-info-circle"></i> {{ m }}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if cloud_restore_error %}
+            <div style="padding: 0.75rem 1rem; margin-bottom: 1rem; border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2; color: #991b1b; font-size: 0.95rem;">
+                <i class="fas fa-exclamation-triangle"></i> Cloud restore issue: {{ cloud_restore_error }}
+            </div>
+            {% elif not mega_configured %}
+            <div style="padding: 0.75rem 1rem; margin-bottom: 1rem; border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2; color: #991b1b; font-size: 0.95rem;">
+                <i class="fas fa-exclamation-triangle"></i> Mega cloud storage is not configured. Set <code>MEGA_EMAIL</code> and <code>MEGA_PWD</code> in your Render environment to store &amp; recover files in the cloud. Your files are still available locally.
+            </div>
+            {% endif %}
+
             {% if downloads %}
             <div class="downloads-wrap">
                 <table class="downloads-table">

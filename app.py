@@ -183,6 +183,7 @@ PROGRESS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "progre
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ocr-outputs")
 _last_save_time = 0
 _mega_restore_done = threading.Event()
+_mega_restore_error = ""
 
 def _save_progress(force=False):
     """Save progress_tracker to JSON file with throttling (max 1 write/sec)."""
@@ -1369,6 +1370,7 @@ def upload_to_mega(local_file_path, remote_filename):
 
 def rebuild_completed_from_mega():
     """Scan Mega ocr-outputs folder and restore completed tasks from _ocr.txt files"""
+    global _mega_restore_error
     email = os.environ.get("MEGA_EMAIL")
     password = os.environ.get("MEGA_PWD")
     if not email or not password:
@@ -1376,8 +1378,11 @@ def rebuild_completed_from_mega():
         return
 
     try:
-        from mega import Mega
-        m = Mega().login(email, password)
+        m = init_mega(retries=2)
+        if not m:
+            _mega_restore_error = "Mega login failed during cloud restore scan"
+            logger.error(_mega_restore_error)
+            return
 
         folder = mega_call(m, "find", "ocr-outputs", timeout=15)
         if isinstance(folder, (list, tuple)):
@@ -1437,9 +1442,11 @@ def rebuild_completed_from_mega():
                 }
                 restored += 1
 
+        _mega_restore_error = ""
         logger.info(f"Mega restore scan complete: {restored} tasks restored")
     except Exception as e:
-        logger.error(f"Failed to scan Mega for completed tasks: {e}")
+        _mega_restore_error = f"Failed to scan Mega for completed tasks: {e}"
+        logger.error(_mega_restore_error)
 
 
 def mega_call(m, method_name, *args, timeout=MEGA_LOGIN_TIMEOUT, **kwargs):
@@ -1456,28 +1463,41 @@ def mega_call(m, method_name, *args, timeout=MEGA_LOGIN_TIMEOUT, **kwargs):
         pool.shutdown(wait=False)
 
 
-def init_mega():
-    """Initialize and login to Mega.nz with timeout. Returns client or None."""
+def init_mega(retries=1, backoff=3.0):
+    """Initialize and login to Mega.nz with timeout. Returns client or None.
+
+    Retries a few times with a short backoff to handle transient/datacenter
+    flakiness (e.g. Render's shared outbound IPs occasionally timing out on
+    first attempt). Pass retries=3 for startup restore paths.
+    """
     email = os.environ.get("MEGA_EMAIL")
     password = os.environ.get("MEGA_PWD")
     if not email or not password:
         return None
-    try:
-        from mega import Mega
-        from concurrent.futures import ThreadPoolExecutor, TimeoutError as _TimeoutError
-        mega = Mega()
-        ex = ThreadPoolExecutor(max_workers=1)
+    last_err = None
+    for attempt in range(retries + 1):
         try:
-            future = ex.submit(mega.login, email, password)
-            return future.result(timeout=MEGA_LOGIN_TIMEOUT)
-        finally:
-            ex.shutdown(wait=False)
-    except _TimeoutError:
-        logger.warning("Mega login timed out (network issue?)")
-        return None
-    except Exception as e:
-        logger.error(f"Mega login failed: {e}")
-        return None
+            from mega import Mega
+            from concurrent.futures import ThreadPoolExecutor, TimeoutError as _TimeoutError
+            mega = Mega()
+            ex = ThreadPoolExecutor(max_workers=1)
+            try:
+                future = ex.submit(mega.login, email, password)
+                return future.result(timeout=MEGA_LOGIN_TIMEOUT)
+            finally:
+                ex.shutdown(wait=False)
+        except _TimeoutError:
+            last_err = "Mega login timed out (network issue?)"
+            logger.warning(f"{last_err} (attempt {attempt + 1}/{retries + 1})")
+        except Exception as e:
+            last_err = f"Mega login failed: {e}"
+            logger.error(f"{last_err} (attempt {attempt + 1}/{retries + 1})")
+            # Don't retry on auth errors (wrong creds) — pointless & slow
+            if any(k in str(e).lower() for k in ("bad", "invalid", "authentication", "unauthorized", "wrong", "captcha", "blocked")):
+                break
+        if attempt < retries:
+            time.sleep(backoff)
+    return None
 
 
 def ensure_mega_folder(m, folder_name):
@@ -2498,6 +2518,37 @@ def track_download(task_id):
     return jsonify({"ok": False}), 404
 
 
+@app.route('/refresh-cloud', methods=['POST'])
+def refresh_cloud():
+    """Re-scan Mega ocr-outputs and restore any cloud files not yet in My Downloads."""
+    if not (os.environ.get("MEGA_EMAIL") and os.environ.get("MEGA_PWD")):
+        flash('Mega cloud storage is not configured (MEGA_EMAIL/MEGA_PWD env vars missing).', 'error')
+        return redirect(url_for('downloads_page'))
+    try:
+        rebuild_completed_from_mega()
+        if _mega_restore_error:
+            flash(f'Could not refresh cloud files: {_mega_restore_error}', 'error')
+        else:
+            flash('Cloud storage scan complete. Your cloud files are updated.', 'success')
+    except Exception as e:
+        flash(f'Cloud refresh failed: {e}', 'error')
+    return redirect(url_for('downloads_page'))
+
+
+@app.route('/api/refresh-cloud', methods=['POST'])
+def refresh_cloud_api():
+    """JSON endpoint to trigger an on-demand Mega cloud re-scan."""
+    if not (os.environ.get("MEGA_EMAIL") and os.environ.get("MEGA_PWD")):
+        return jsonify({"ok": False, "error": "Mega cloud storage is not configured"}), 400
+    try:
+        rebuild_completed_from_mega()
+        if _mega_restore_error:
+            return jsonify({"ok": False, "error": _mega_restore_error}), 500
+        return jsonify({"ok": True, "message": "Cloud storage scan complete"}), 200
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route('/mega-link/<task_id>', methods=['POST'])
 def get_mega_link(task_id):
     """Generate and cache a Mega download link for a task on demand."""
@@ -2893,7 +2944,13 @@ def downloads_page():
             }
             all_tasks.append(info)
     all_tasks.reverse()
-    return render_template("downloads.html", downloads=all_tasks, restoring=restoring)
+    return render_template(
+        "downloads.html",
+        downloads=all_tasks,
+        restoring=restoring,
+        cloud_restore_error=_mega_restore_error,
+        mega_configured=bool(os.environ.get("MEGA_EMAIL") and os.environ.get("MEGA_PWD")),
+    )
 
 
 
