@@ -20,7 +20,7 @@ from werkzeug.utils import secure_filename
 from pdf2image import convert_from_path, pdfinfo_from_path
 import pytesseract
 from pytesseract import image_to_osd
-from PIL import Image
+from PIL import Image, ImageOps, ImageEnhance
 import requests
 import gc
 gc.set_threshold(100, 5, 2)  # More aggressive GC for memory-constrained environments
@@ -532,17 +532,68 @@ def detect_pdf_language(pdf_path, sample_page=1):
 
 
 def _ocr_page(img, lang, timeout, task_id, page):
-    """Run OCR on a single image with timeout. Uses a fresh thread pool per call."""
+    """Run OCR on a single image with timeout. Uses a fresh thread pool per call.
+    The source image is preprocessed (grayscale/upscale/contrast) to boost
+    Tesseract accuracy, esp. for Tamil/Indic low-DPI scans."""
     pool = ThreadPoolExecutor(max_workers=1)
     try:
-        f = pool.submit(pytesseract.image_to_string, img, lang)
-        result = f.result(timeout=timeout)
+        prepped = preprocess_page(img)
+        try:
+            f = pool.submit(pytesseract.image_to_string, prepped, lang)
+            result = f.result(timeout=timeout)
+        finally:
+            if prepped is not img:
+                prepped.close()
         return result
     except Exception as e:
         logger.warning(f"Task {task_id}: OCR failed on page {page} ({timeout}s timeout): {e}")
         raise
     finally:
         pool.shutdown(wait=False)
+
+
+def preprocess_page(img):
+    """
+    Lightweight preprocessing that boosts Tesseract accuracy (esp. Tamil/Indic)
+    and trims wasted CPU on overly large scans.
+
+    - Grayscale (Tesseract prefers it).
+    - Upscale very small / low-DPI scans toward ~300 DPI so glyphs are readable.
+    - Downscale absurdly large images so Tesseract isn't matting millions of pixels.
+    - Gentle auto-contrast + slight contrast boost for faint/blurry scans.
+    Returns a NEW PIL image (mode 'L'); caller should close it when done.
+    """
+    try:
+        work = img.convert("L")
+
+        w, h = work.size
+        long_side = max(w, h)
+
+        # Upscale low-DPI scans toward a reliable ~300 DPI window.
+        if long_side < 1400 and min(w, h) > 0:
+            scale = round(1400.0 / long_side, 3)
+            if 1.0 < scale <= 3.0:
+                work = work.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+                w, h = work.size
+
+        # Downscale oversized images to avoid wasting CPU on huge pixel counts.
+        if max(w, h) > 2500:
+            scale = 2500.0 / max(w, h)
+            work = work.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+
+        try:
+            work = ImageOps.autocontrast(work)
+            work = ImageEnhance.Contrast(work).enhance(1.15)
+        except Exception:
+            pass
+
+        return work
+    except Exception as e:
+        logger.warning(f"Preprocessing failed ({getattr(img, 'mode', '?')}): {e}; using raw image")
+        try:
+            return img.convert("L")
+        except Exception:
+            return img
 
 
 def process_pdf_ocr(pdf_path, lang=DEFAULT_LANG, dpi=200, task_id=None, output_file=None, start_page=None, end_page=None):
@@ -722,10 +773,18 @@ def process_image_file(image_path, lang='eng'):
     """Process image file with OCR"""
     try:
         img = Image.open(image_path)
-        # Convert to RGB if necessary
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        text = pytesseract.image_to_string(img, lang=lang)
+        try:
+            prepped = preprocess_page(img)
+        except Exception:
+            prepped = img
+            if prepped.mode != 'RGB':
+                prepped = prepped.convert('RGB')
+        try:
+            text = pytesseract.image_to_string(prepped, lang=lang)
+        finally:
+            if prepped is not img:
+                prepped.close()
+            img.close()
         return text
     except Exception as e:
         logger.error(f"Image processing error: {e}")
