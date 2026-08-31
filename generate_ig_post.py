@@ -1,15 +1,14 @@
-"""Generate Instagram post image for Meow OCR (1080x1080 square)."""
+"""Generate attractive Instagram post for Meow OCR — v2 (gradients, better design)."""
 import os
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS = os.path.join(BASE_DIR, "static", "images")
 
-# Fonts
 FONT_BOLD = r"C:\Windows\Fonts\arialbd.ttf"
 FONT_REGULAR = r"C:\Windows\Fonts\arial.ttf"
+FONT_IMPACT = r"C:\Windows\Fonts\impact.ttf"
 
-# Output
 OUT_SQ = os.path.join(BASE_DIR, "ig_post_square.jpg")
 OUT_STORY = os.path.join(BASE_DIR, "ig_post_story.jpg")
 
@@ -18,232 +17,318 @@ def draw_rounded_rect(draw, xy, radius, fill):
     x0, y0, x1, y1 = xy
     draw.rectangle([x0 + radius, y0, x1 - radius, y1], fill=fill)
     draw.rectangle([x0, y0 + radius, x1, y1 - radius], fill=fill)
-    draw.pieslice([x0, y0, x0 + 2 * radius, y0 + 2 * radius], 180, 270, fill=fill)
-    draw.pieslice([x1 - 2 * radius, y0, x1, y0 + 2 * radius], 270, 360, fill=fill)
-    draw.pieslice([x0, y1 - 2 * radius, x0 + 2 * radius, y1], 90, 180, fill=fill)
-    draw.pieslice([x1 - 2 * radius, y1 - 2 * radius, x1, y1], 0, 90, fill=fill)
+    draw.pieslice([x0, y0, x0 + 2*radius, y0 + 2*radius], 180, 270, fill=fill)
+    draw.pieslice([x1 - 2*radius, y0, x1, y0 + 2*radius], 270, 360, fill=fill)
+    draw.pieslice([x0, y1 - 2*radius, x0 + 2*radius, y1], 90, 180, fill=fill)
+    draw.pieslice([x1 - 2*radius, y1 - 2*radius, x1, y1], 0, 90, fill=fill)
+
+
+def make_gradient(w, h, color_top, color_bottom):
+    img = Image.new("RGB", (w, h))
+    for y in range(h):
+        ratio = y / h
+        r = int(color_top[0] + (color_bottom[0] - color_top[0]) * ratio)
+        g = int(color_top[1] + (color_bottom[1] - color_top[1]) * ratio)
+        b = int(color_top[2] + (color_bottom[2] - color_top[2]) * ratio)
+        ImageDraw.Draw(img).line([(0, y), (w, y)], fill=(r, g, b))
+    return img
+
+
+def text_with_shadow(draw, pos, text, font, fill, shadow_color=(0, 0, 0), shadow_offset=3):
+    x, y = pos
+    draw.text((x + shadow_offset, y + shadow_offset), text, font=font, fill=shadow_color)
+    draw.text((x, y), text, font=font, fill=fill)
+
+
+def text_center_shadow(draw, cy, text, font, fill, W, shadow_color=(0, 0, 0), shadow_offset=3):
+    bbox = draw.textbbox((0, 0), text, font=font)
+    tw = bbox[2] - bbox[0]
+    x = (W - tw) // 2
+    text_with_shadow(draw, (x, cy), text, font, fill, shadow_color, shadow_offset)
+    return bbox[3] - bbox[1]
 
 
 def make_square_post():
     W, H = 1080, 1080
-    # Load hero cat
-    cat = Image.open(os.path.join(ASSETS, "meow-hero.jpg")).convert("RGB")
-    # Resize to fill
-    cat_ratio = cat.width / cat.height
-    if cat_ratio > 1:
-        new_h = H
-        new_w = int(new_h * cat_ratio)
-    else:
-        new_w = W
-        new_h = int(new_w / cat_ratio)
-    cat = cat.resize((new_w, new_h), Image.LANCZOS)
-    # Center crop
-    left = (new_w - W) // 2
-    top = (new_h - H) // 2
-    cat = cat.crop((left, top, left + W, top + H))
 
-    # Apply slight blur for text readability
-    bg = cat.filter(ImageFilter.GaussianBlur(radius=3))
+    # === Background: deep purple-to-blue gradient ===
+    bg = make_gradient(W, H, (25, 10, 60), (10, 30, 80))
 
-    # Dark gradient overlay
+    # === Add a decorative circle (top-right) ===
     overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     od = ImageDraw.Draw(overlay)
-    for y in range(H):
-        # Stronger at top and bottom, lighter in middle
-        if y < H * 0.45:
-            alpha = int(180 * (1 - y / (H * 0.45)))
-        elif y > H * 0.55:
-            alpha = int(180 * ((y - H * 0.55) / (H * 0.45)))
-        else:
-            alpha = 80
-        alpha = max(0, min(200, alpha))
-        od.line([(0, y), (W, y)], fill=(0, 0, 0, alpha))
+    od.ellipse([W-300, -150, W+100, 250], fill=(255, 100, 50, 40))
+    od.ellipse([-100, H-400, 300, H+50], fill=(100, 200, 255, 30))
     bg = bg.convert("RGBA")
-    bg = Image.alpha_composite(bg, overlay)
-    bg = bg.convert("RGB")
+    bg = Image.alpha_composite(bg, overlay).convert("RGB")
+
+    # === Load and place cat (smaller, bottom-left corner) ===
+    cat = Image.open(os.path.join(ASSETS, "meow-hero.jpg")).convert("RGBA")
+    cat = cat.resize((380, 380), Image.LANCZOS)
+    cat_mask = Image.new("L", cat.size, 0)
+    ImageDraw.Draw(cat_mask).ellipse([0, 0, 380, 380], fill=255)
+    cat.putalpha(cat_mask)
+    # Soft glow behind cat
+    glow = Image.new("RGBA", (420, 420), (0, 0, 0, 0))
+    ImageDraw.Draw(glow).ellipse([0, 0, 420, 420], fill=(255, 140, 50, 50))
+    bg.paste(glow, (20, H - 420), glow)
+    bg.paste(cat, (40, H - 400), cat)
 
     draw = ImageDraw.Draw(bg)
 
-    # === TOP: Cat emoji + "MEOW OCR" ===
+    # === Top bar: brand name ===
     try:
-        font_brand = ImageFont.truetype(FONT_BOLD, 52)
-    except Exception:
+        font_brand = ImageFont.truetype(FONT_BOLD, 38)
+    except:
         font_brand = ImageFont.load_default()
-    brand_text = "MEOW OCR"
-    bbox = draw.textbbox((0, 0), brand_text, font=font_brand)
+
+    # Brand pill
+    brand = "MEOW OCR"
+    bbox = draw.textbbox((0, 0), brand, font=font_brand)
+    bw = bbox[2] - bbox[0] + 40
+    bh = bbox[3] - bbox[1] + 20
+    draw_rounded_rect(draw, (30, 30, 30 + bw, 30 + bh), 20, (255, 140, 50))
+    draw.text((50, 38), brand, font=font_brand, fill=(0, 0, 0))
+
+    # === Main headline area ===
+    try:
+        font_big = ImageFont.truetype(FONT_IMPACT, 110)
+    except:
+        font_big = ImageFont.load_default()
+
+    # "SCAN" in yellow
+    text_center_shadow(draw, 160, "SCAN", font_big, (255, 210, 80), W, (0, 0, 0), 4)
+
+    # Arrow
+    try:
+        font_arrow = ImageFont.truetype(FONT_BOLD, 70)
+    except:
+        font_arrow = ImageFont.load_default()
+    arrow = ">>>>>"
+    bbox = draw.textbbox((0, 0), arrow, font=font_arrow)
     tw = bbox[2] - bbox[0]
-    draw.text(((W - tw) // 2, 50), brand_text, fill=(255, 255, 255), font=font_brand)
+    text_with_shadow(draw, ((W - tw) // 2, 285), arrow, font_arrow, (255, 255, 255), (0, 0, 0), 3)
 
-    # === CENTER: Big emoji arrow ===
-    try:
-        font_emoji = ImageFont.truetype(FONT_BOLD, 100)
-    except Exception:
-        font_emoji = ImageFont.load_default()
-    emoji_text = "SCAN  >  TEXT"
-    bbox = draw.textbbox((0, 0), emoji_text, font=font_emoji)
-    tw = bbox[2] - bbox[0]
-    draw.text(((W - tw) // 2, 340), emoji_text, fill=(255, 255, 255), font=font_emoji)
+    # "TEXT" in white
+    text_center_shadow(draw, 360, "TEXT", font_big, (255, 255, 255), W, (0, 0, 0), 4)
 
-    # === CENTER-BOTTOM: Subtitle ===
+    # === Feature pills ===
     try:
-        font_sub = ImageFont.truetype(FONT_BOLD, 42)
-    except Exception:
-        font_sub = ImageFont.load_default()
-    sub_lines = [
-        "Free OCR. No Signup. No Card.",
-        "Tamil + 19 Languages",
-    ]
-    y_pos = 500
-    for line in sub_lines:
-        bbox = draw.textbbox((0, 0), line, font=font_sub)
-        tw = bbox[2] - bbox[0]
-        draw.text(((W - tw) // 2, y_pos), line, fill=(255, 255, 255), font=font_sub)
-        y_pos += 65
+        font_pill = ImageFont.truetype(FONT_BOLD, 30)
+    except:
+        font_pill = ImageFont.load_default()
 
-    # === BOTTOM: URL box ===
+    pills = ["FREE", "NO SIGNUP", "NO CARD"]
+    pill_colors = [(46, 204, 113), (52, 152, 219), (155, 89, 182)]
+    x_start = 160
+    for i, (pill, color) in enumerate(zip(pills, pill_colors)):
+        bbox = draw.textbbox((0, 0), pill, font=font_pill)
+        pw = bbox[2] - bbox[0] + 30
+        ph = bbox[3] - bbox[1] + 16
+        draw_rounded_rect(draw, (x_start, 490, x_start + pw, 490 + ph), 12, color)
+        draw.text((x_start + 15, 496), pill, font=font_pill, fill=(255, 255, 255))
+        x_start += pw + 15
+
+    # === Language line ===
     try:
-        font_url = ImageFont.truetype(FONT_BOLD, 36)
-    except Exception:
+        font_lang = ImageFont.truetype(FONT_BOLD, 34)
+    except:
+        font_lang = ImageFont.load_default()
+    lang = "Tamil + 19 Languages"
+    text_center_shadow(draw, 560, lang, font_lang, (200, 200, 255), W, (0, 0, 0), 2)
+
+    # === Separator line ===
+    draw.line([(100, 620), (W - 100, 620)], fill=(255, 255, 255, 80), width=2)
+
+    # === Supported formats ===
+    try:
+        font_fmt = ImageFont.truetype(FONT_REGULAR, 26)
+    except:
+        font_fmt = ImageFont.load_default()
+    fmts = ["PDF", "Images", "Documents", "Scans", "Photos"]
+    fmt_text = "  |  ".join(fmts)
+    text_center_shadow(draw, 645, fmt_text, font_fmt, (180, 180, 200), W, (0, 0, 0), 2)
+
+    # === CTA Button ===
+    try:
+        font_cta = ImageFont.truetype(FONT_BOLD, 36)
+    except:
+        font_cta = ImageFont.load_default()
+    cta = "TRY NOW FREE"
+    bbox = draw.textbbox((0, 0), cta, font=font_cta)
+    cta_w = bbox[2] - bbox[0] + 50
+    cta_h = bbox[3] - bbox[1] + 28
+    cta_x = (W - cta_w) // 2
+    cta_y = 700
+    draw_rounded_rect(draw, (cta_x, cta_y, cta_x + cta_w, cta_y + cta_h), 16, (255, 100, 50))
+    draw.text((cta_x + 25, cta_y + 12), cta, font=font_cta, fill=(255, 255, 255))
+
+    # === URL at bottom ===
+    try:
+        font_url = ImageFont.truetype(FONT_BOLD, 28)
+    except:
         font_url = ImageFont.load_default()
-    url_text = "www.meowocr.work.gd"
-    bbox = draw.textbbox((0, 0), url_text, font=font_url)
+    url = "www.meowocr.work.gd"
+    bbox = draw.textbbox((0, 0), url, font=font_url)
     tw = bbox[2] - bbox[0]
-    th = bbox[3] - bbox[1]
-    box_pad = 20
-    box_x0 = (W - tw) // 2 - box_pad
-    box_y0 = H - 140
-    box_x1 = (W + tw) // 2 + box_pad
-    box_y1 = box_y0 + th + box_pad * 2
-    draw_rounded_rect(draw, (box_x0, box_y0, box_x1, box_y1), 16, (255, 140, 50))
-    draw.text(((W - tw) // 2, box_y0 + box_pad), url_text, fill=(0, 0, 0), font=font_url)
+    text_with_shadow(draw, ((W - tw) // 2, 790), url, font_url, (200, 200, 200), (0, 0, 0), 2)
 
-    # === BOTTOM: cat paw / small tagline ===
-    try:
-        font_sm = ImageFont.truetype(FONT_REGULAR, 24)
-    except Exception:
-        font_sm = ImageFont.load_default()
-    tagline = "PDF  |  Images  |  Documents  |  Scans"
-    bbox = draw.textbbox((0, 0), tagline, font=font_sm)
-    tw = bbox[2] - bbox[0]
-    draw.text(((W - tw) // 2, H - 70), tagline, fill=(200, 200, 200), font=font_sm)
+    # === Bottom decorative dots ===
+    for i in range(5):
+        x = W // 2 - 40 + i * 20
+        draw.ellipse([x, 840, x + 8, 848], fill=(255, 140, 50, 150))
 
-    bg.save(OUT_SQ, "JPEG", quality=92)
-    print(f"Saved: {OUT_SQ}  ({os.path.getsize(OUT_SQ)//1024} KB)")
+    # === Corner accents ===
+    draw.line([(0, 0), (80, 0)], fill=(255, 140, 50), width=4)
+    draw.line([(0, 0), (0, 80)], fill=(255, 140, 50), width=4)
+    draw.line([(W, H), (W - 80, H)], fill=(255, 140, 50), width=4)
+    draw.line([(W, H), (W, H - 80)], fill=(255, 140, 50), width=4)
+
+    bg.save(OUT_SQ, "JPEG", quality=95)
+    print(f"Saved: {OUT_SQ} ({os.path.getsize(OUT_SQ)//1024} KB)")
 
 
 def make_story_post():
     W, H = 1080, 1920
-    # Load hero cat
-    cat = Image.open(os.path.join(ASSETS, "meow-hero.jpg")).convert("RGB")
-    cat_ratio = cat.width / cat.height
-    if cat_ratio > 1:
-        new_h = H
-        new_w = int(new_h * cat_ratio)
-    else:
-        new_w = W
-        new_h = int(new_w / cat_ratio)
-    cat = cat.resize((new_w, new_h), Image.LANCZOS)
-    left = (new_w - W) // 2
-    top = (new_h - H) // 2
-    cat = cat.crop((left, top, left + W, top + H))
 
-    bg = cat.filter(ImageFilter.GaussianBlur(radius=3))
+    # === Background: deep dark gradient ===
+    bg = make_gradient(W, H, (15, 5, 40), (5, 15, 50))
 
+    # Decorative circles
     overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     od = ImageDraw.Draw(overlay)
-    for y in range(H):
-        if y < H * 0.4:
-            alpha = int(190 * (1 - y / (H * 0.4)))
-        elif y > H * 0.6:
-            alpha = int(190 * ((y - H * 0.6) / (H * 0.4)))
-        else:
-            alpha = 80
-        alpha = max(0, min(210, alpha))
-        od.line([(0, y), (W, y)], fill=(0, 0, 0, alpha))
+    od.ellipse([W-250, -100, W+50, 200], fill=(255, 100, 50, 35))
+    od.ellipse([-80, 200, 220, 500], fill=(100, 200, 255, 25))
+    od.ellipse([W-200, H-500, W+50, H-250], fill=(155, 89, 182, 20))
     bg = bg.convert("RGBA")
-    bg = Image.alpha_composite(bg, overlay)
-    bg = bg.convert("RGB")
+    bg = Image.alpha_composite(bg, overlay).convert("RGB")
+
+    # Cat circle (top area)
+    cat = Image.open(os.path.join(ASSETS, "meow-hero.jpg")).convert("RGBA")
+    cat = cat.resize((300, 300), Image.LANCZOS)
+    cat_mask = Image.new("L", cat.size, 0)
+    ImageDraw.Draw(cat_mask).ellipse([0, 0, 300, 300], fill=255)
+    cat.putalpha(cat_mask)
+    # Glow
+    glow = Image.new("RGBA", (340, 340), (0, 0, 0, 0))
+    ImageDraw.Draw(glow).ellipse([0, 0, 340, 340], fill=(255, 140, 50, 50))
+    bg.paste(glow, (W // 2 - 170, 80), glow)
+    bg.paste(cat, (W // 2 - 150, 100), cat)
 
     draw = ImageDraw.Draw(bg)
 
-    # Top brand
+    # === Brand pill (top) ===
     try:
-        font_brand = ImageFont.truetype(FONT_BOLD, 64)
-    except Exception:
+        font_brand = ImageFont.truetype(FONT_BOLD, 36)
+    except:
         font_brand = ImageFont.load_default()
-    brand_text = "MEOW OCR"
-    bbox = draw.textbbox((0, 0), brand_text, font=font_brand)
+    brand = "MEOW OCR"
+    bbox = draw.textbbox((0, 0), brand, font=font_brand)
+    bw = bbox[2] - bbox[0] + 40
+    bh = bbox[3] - bbox[1] + 18
+    draw_rounded_rect(draw, ((W - bw) // 2, 420, (W + bw) // 2, 420 + bh), 18, (255, 140, 50))
+    draw.text(((W - (bbox[2] - bbox[0])) // 2, 428), brand, font=font_brand, fill=(0, 0, 0))
+
+    # === Main headline ===
+    try:
+        font_huge = ImageFont.truetype(FONT_IMPACT, 130)
+    except:
+        font_huge = ImageFont.load_default()
+
+    text_center_shadow(draw, 510, "SCAN", font_huge, (255, 210, 80), W, (0, 0, 0), 5)
+
+    # Arrow with animation feel
+    try:
+        font_arrow = ImageFont.truetype(FONT_BOLD, 80)
+    except:
+        font_arrow = ImageFont.load_default()
+    arrow = ">>>>>"
+    bbox = draw.textbbox((0, 0), arrow, font=font_arrow)
     tw = bbox[2] - bbox[0]
-    draw.text(((W - tw) // 2, 120), brand_text, fill=(255, 255, 255), font=font_brand)
+    text_with_shadow(draw, ((W - tw) // 2, 655), arrow, font_arrow, (255, 255, 255), (0, 0, 0), 3)
 
-    # Big center block
+    text_center_shadow(draw, 750, "TEXT", font_huge, (255, 255, 255), W, (0, 0, 0), 5)
+
+    # === Feature pills ===
     try:
-        font_big = ImageFont.truetype(FONT_BOLD, 100)
-    except Exception:
-        font_big = ImageFont.load_default()
+        font_pill = ImageFont.truetype(FONT_BOLD, 32)
+    except:
+        font_pill = ImageFont.load_default()
 
-    # "SCAN > TEXT" in one line
-    center_line = "SCAN  >  TEXT"
-    bbox = draw.textbbox((0, 0), center_line, font=font_big)
-    tw = bbox[2] - bbox[0]
-    draw.text(((W - tw) // 2, 680), center_line, fill=(255, 210, 80), font=font_big)
+    pills = [("FREE", (46, 204, 113)), ("NO SIGNUP", (52, 152, 219)), ("NO CARD", (155, 89, 182))]
+    y_pill = 920
+    for pill, color in pills:
+        bbox = draw.textbbox((0, 0), pill, font=font_pill)
+        pw = bbox[2] - bbox[0] + 36
+        ph = bbox[3] - bbox[1] + 18
+        px = (W - pw) // 2
+        draw_rounded_rect(draw, (px, y_pill, px + pw, y_pill + ph), 14, color)
+        draw.text((px + 18, y_pill + 8), pill, font=font_pill, fill=(255, 255, 255))
+        y_pill += ph + 14
 
-    # Subtitle
+    # === Language ===
     try:
-        font_sub = ImageFont.truetype(FONT_BOLD, 48)
-    except Exception:
-        font_sub = ImageFont.load_default()
-    sub_lines = [
-        "Free OCR",
-        "No Signup. No Card.",
-        "Tamil + 19 Languages",
-    ]
-    y_pos = 850
-    for line in sub_lines:
-        bbox = draw.textbbox((0, 0), line, font=font_sub)
-        tw = bbox[2] - bbox[0]
-        draw.text(((W - tw) // 2, y_pos), line, fill=(255, 255, 255), font=font_sub)
-        y_pos += 70
+        font_lang = ImageFont.truetype(FONT_BOLD, 38)
+    except:
+        font_lang = ImageFont.load_default()
+    text_center_shadow(draw, 1100, "Tamil + 19 Languages", font_lang, (200, 200, 255), W, (0, 0, 0), 3)
 
-    # URL box
+    # === Separator ===
+    draw.line([(150, 1170), (W - 150, 1170)], fill=(255, 255, 255), width=2)
+
+    # === Formats ===
     try:
-        font_url = ImageFont.truetype(FONT_BOLD, 44)
-    except Exception:
+        font_fmt = ImageFont.truetype(FONT_REGULAR, 28)
+    except:
+        font_fmt = ImageFont.load_default()
+    fmts = ["PDF", "Images", "Documents", "Scans", "Photos"]
+    y_fmt = 1195
+    for fmt in fmts:
+        text_center_shadow(draw, y_fmt, fmt, font_fmt, (170, 170, 190), W, (0, 0, 0), 2)
+        y_fmt += 40
+
+    # === CTA Button ===
+    try:
+        font_cta = ImageFont.truetype(FONT_BOLD, 40)
+    except:
+        font_cta = ImageFont.load_default()
+    cta = "TRY NOW FREE"
+    bbox = draw.textbbox((0, 0), cta, font=font_cta)
+    cta_w = bbox[2] - bbox[0] + 55
+    cta_h = bbox[3] - bbox[1] + 30
+    cta_x = (W - cta_w) // 2
+    cta_y = 1430
+    draw_rounded_rect(draw, (cta_x, cta_y, cta_x + cta_w, cta_y + cta_h), 18, (255, 100, 50))
+    draw.text((cta_x + 28, cta_y + 14), cta, font=font_cta, fill=(255, 255, 255))
+
+    # === URL ===
+    try:
+        font_url = ImageFont.truetype(FONT_BOLD, 30)
+    except:
         font_url = ImageFont.load_default()
-    url_text = "www.meowocr.work.gd"
-    bbox = draw.textbbox((0, 0), url_text, font=font_url)
+    url = "www.meowocr.work.gd"
+    bbox = draw.textbbox((0, 0), url, font=font_url)
     tw = bbox[2] - bbox[0]
-    th = bbox[3] - bbox[1]
-    box_pad = 24
-    box_x0 = (W - tw) // 2 - box_pad
-    box_y0 = H - 220
-    box_x1 = (W + tw) // 2 + box_pad
-    box_y1 = box_y0 + th + box_pad * 2
-    draw_rounded_rect(draw, (box_x0, box_y0, box_x1, box_y1), 18, (255, 140, 50))
-    draw.text(((W - tw) // 2, box_y0 + box_pad), url_text, fill=(0, 0, 0), font=font_url)
+    text_with_shadow(draw, ((W - tw) // 2, 1520), url, font_url, (200, 200, 200), (0, 0, 0), 2)
 
-    # Bottom tagline
+    # Swipe
     try:
-        font_sm = ImageFont.truetype(FONT_REGULAR, 28)
-    except Exception:
-        font_sm = ImageFont.load_default()
-    tagline = "PDF  |  Images  |  Documents  |  Scans"
-    bbox = draw.textbbox((0, 0), tagline, font=font_sm)
-    tw = bbox[2] - bbox[0]
-    draw.text(((W - tw) // 2, H - 130), tagline, fill=(200, 200, 200), font=font_sm)
-
-    # Swipe up
-    try:
-        font_sw = ImageFont.truetype(FONT_REGULAR, 30)
-    except Exception:
+        font_sw = ImageFont.truetype(FONT_REGULAR, 26)
+    except:
         font_sw = ImageFont.load_default()
     swipe = "Swipe up to try"
     bbox = draw.textbbox((0, 0), swipe, font=font_sw)
     tw = bbox[2] - bbox[0]
-    draw.text(((W - tw) // 2, H - 70), swipe, fill=(180, 180, 180), font=font_sw)
+    text_with_shadow(draw, ((W - tw) // 2, 1580), swipe, font_sw, (150, 150, 170), (0, 0, 0), 2)
 
-    bg.save(OUT_STORY, "JPEG", quality=92)
-    print(f"Saved: {OUT_STORY}  ({os.path.getsize(OUT_STORY)//1024} KB)")
+    # Corner accents
+    draw.line([(0, 0), (100, 0)], fill=(255, 140, 50), width=5)
+    draw.line([(0, 0), (0, 100)], fill=(255, 140, 50), width=5)
+    draw.line([(W, H), (W - 100, H)], fill=(255, 140, 50), width=5)
+    draw.line([(W, H), (W, H - 100)], fill=(255, 140, 50), width=5)
+
+    bg.save(OUT_STORY, "JPEG", quality=95)
+    print(f"Saved: {OUT_STORY} ({os.path.getsize(OUT_STORY)//1024} KB)")
 
 
 if __name__ == "__main__":
