@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
     <link rel="canonical" href="{{ canonical_url }}">
     {% include 'analytics.html' %}
-    {% include 'monetag.html' %}
+    <!-- ads removed -->
     <meta name="description" content="Terms of service for Meow OCR: the rules and guidelines for using our free online OCR tool to extract text from PDF and images.">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -51,7 +51,7 @@
     </header>
 
     <main class="container">
-        {% set slot = 'leaderboard' %}{% include 'ads.html' %}
+        <!-- ads removed -->
         <section class="content-section info-page">
             <h1 class="page-main-title"><i class="fas fa-file-contract"></i> Terms of Service</h1>
             <div class="page-cat-chip"><img src="{{ url_for('static', filename='images/cat-orange.jpg') }}" alt="Meow OCR terms cat"><span class="heading-cat">Short, fair, and cat-approved 🐾</span></div>
@@ -200,21 +200,5 @@
         });
     </script>
 
-    <script>
-        (function () {
-            function initAdFallback() {
-                document.querySelectorAll('.ad-container[data-ad-slot]').forEach(function (box) {
-                    var inner = box.querySelector('.ad-inner');
-                    var fb = box.querySelector('.ad-fallback');
-                    if (!inner || !fb) return;
-                    setTimeout(function () {
-                        if (!inner.querySelector('iframe')) { fb.style.display = 'flex'; }
-                    }, 2500);
-                });
-            }
-            if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initAdFallback); }
-            else { initAdFallback(); }
-        })();
-    </script>
 </body>
 </html>

@@ -35,8 +35,8 @@
     <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
     <link rel="canonical" href="{{ canonical_url }}">
     {% include 'analytics.html' %}
-<meta name="monetag" content="7a72b6f0df920c3a70f08e97ba824d5d">
-    {% include 'monetag.html' %}
+    <!-- monetag removed -->
+    <!-- ads removed -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -148,7 +148,7 @@
             </div>
         </section>
 
-        {% set slot = 'leaderboard' %}{% include 'ads.html' %}
+        <!-- ads removed -->
 
         <!-- ===== UPLOAD ===== -->
         <section class="content-section" id="upload">
@@ -504,7 +504,7 @@
             </details>
         </section>
 
-        {% set slot = 'inpage' %}{% include 'ads.html' %}
+        <!-- ads removed -->
 
         <!-- ===== CTA BANNER ===== -->
         <section class="cta-banner" id="cta">
@@ -1008,23 +1008,6 @@
         });
     </script>
 
-    <script>
-        (function () {
-            function initAdFallback() {
-                document.querySelectorAll('.ad-container[data-ad-slot]').forEach(function (box) {
-                    var inner = box.querySelector('.ad-inner');
-                    var fb = box.querySelector('.ad-fallback');
-                    if (!inner || !fb) return;
-                    setTimeout(function () {
-                        if (!inner.querySelector('iframe')) { fb.style.display = 'flex'; }
-                    }, 2500);
-                });
-            }
-            if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initAdFallback); }
-            else { initAdFallback(); }
-        })();
-    </script>
-
-    {% set slot = 'popunder' %}{% include 'ads.html' %}
+    <!-- ads removed -->
 </body>
 </html>

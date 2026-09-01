@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
     <link rel="canonical" href="{{ canonical_url }}">
     {% include 'analytics.html' %}
-    {% include 'monetag.html' %}
+    <!-- ads removed -->
     <meta name="description" content="Learn how to use Meow OCR to extract text from PDF, images and documents in 3 easy steps. Supports 19+ languages, auto-delete in 2 days, free to use.">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
@@ -52,7 +52,7 @@
     </header>
 
     <main class="container">
-        {% set slot = 'leaderboard' %}{% include 'ads.html' %}
+        <!-- ads removed -->
         <section class="content-section info-page">
             <h1 class="page-main-title"><i class="fas fa-graduation-cap"></i> How to Use Meow OCR</h1>
             <div class="page-cat-chip"><img src="{{ url_for('static', filename='images/cat-tabby.jpg') }}" alt="Meow OCR cat guide"><span class="heading-cat">Paw-fect guide by our senior cat engineer 🐱</span></div>
@@ -210,21 +210,5 @@
         });
     </script>
 
-    <script>
-        (function () {
-            function initAdFallback() {
-                document.querySelectorAll('.ad-container[data-ad-slot]').forEach(function (box) {
-                    var inner = box.querySelector('.ad-inner');
-                    var fb = box.querySelector('.ad-fallback');
-                    if (!inner || !fb) return;
-                    setTimeout(function () {
-                        if (!inner.querySelector('iframe')) { fb.style.display = 'flex'; }
-                    }, 2500);
-                });
-            }
-            if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initAdFallback); }
-            else { initAdFallback(); }
-        })();
-    </script>
 </body>
 </html>
