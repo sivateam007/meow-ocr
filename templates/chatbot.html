@@ -2,20 +2,23 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='chatbot.css') }}">
 <div id="meow-chat">
     <button type="button" id="meow-chat-toggle" aria-label="Chat with Meow Assistant" title="Ask Meow Assistant">
-        <span class="meow-chat-toggle-icon"><i class="fas fa-comment-dots"></i></span>
-        <span class="meow-chat-toggle-cat">🐱</span>
+        <span class="meow-chat-toggle-img" style="background-image:url('{{ url_for('static', filename='images/pix-cat-1.jpg') }}')"></span>
+        <span class="meow-chat-toggle-dot" aria-hidden="true"></span>
     </button>
     <div id="meow-chat-panel" class="meow-chat-panel" role="dialog" aria-label="Meow Assistant chat">
         <div class="meow-chat-header">
-            <span class="meow-chat-cat">🐱</span>
-            <div>
+            <span class="meow-chat-avatar" style="background-image:url('{{ url_for('static', filename='images/pix-cat-1.jpg') }}')" role="img" aria-label="Whiskers the Cute"></span>
+            <div class="meow-chat-heading">
                 <div class="meow-chat-title">Meow Assistant</div>
-                <div class="meow-chat-status"><span class="meow-chat-dot"></span> Free &amp; always here</div>
+                <div class="meow-chat-status"><span class="meow-chat-dot"></span> Whiskers the Cute — free &amp; online</div>
             </div>
-            <button type="button" id="meow-chat-close" aria-label="Close chat">&times;</button>
+            <button type="button" id="meow-chat-close" aria-label="Close chat"><i class="fas fa-times"></i></button>
         </div>
         <div class="meow-chat-body" id="meow-chat-body">
-            <div class="meow-msg meow-msg-bot">Hi! I'm Meow Assistant 🐱 your free OCR helper. Ask me anything about Meow OCR — or tap a quick question below.</div>
+            <div class="meow-row row-bot">
+                <span class="meow-avatar"><img src="{{ url_for('static', filename='images/pix-cat-1.jpg') }}" alt="Whiskers the Cute" loading="lazy"></span>
+                <div class="meow-msg meow-msg-bot">Hi! I'm Whiskers the Cute 🐱 your free OCR helper. Tap a quick question below or ask me anything!</div>
+            </div>
         </div>
         <div class="meow-chat-chips" id="meow-chat-chips">
             <button type="button" class="meow-chip" data-q="How do I use Meow OCR?">How to use</button>
@@ -31,4 +34,5 @@
         </form>
     </div>
 </div>
+<script>window.MEOW_AVATAR = "{{ url_for('static', filename='images/pix-cat-1.jpg') }}";</script>
 <script src="{{ url_for('static', filename='chatbot.js') }}"></script>

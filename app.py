@@ -3191,6 +3191,8 @@ GROQ_VISION_MODEL = os.environ.get("GROQ_VISION_MODEL", "llama-3.2-90b-vision-pr
 _GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 _GROQ_MAX_MESSAGE = 500
 _GROQ_MAX_IMAGE_BYTES = 5 * 1024 * 1024
+_GROQ_MAX_IMAGE_PIXELS = 30_000_000  # ~5477x5477, safe cap for the 512MB tier
+_GROQ_READ_CHUNK = 256 * 1024
 
 _GROQ_SYSTEM_PROMPT = (
     "You are 'Meow Assistant', the friendly cat mascot of Meow OCR "
@@ -3278,7 +3280,8 @@ def api_chat():
     {"reply": "..."}. Calls Groq from the server; the API key never leaves
     the server. Falls back to _faq_reply when Groq is unavailable."""
     data = request.get_json(silent=True) or {}
-    raw = (data.get("message") or "").strip()
+    _m = data.get("message")
+    raw = _m.strip() if isinstance(_m, str) else ""
     if not raw:
         return jsonify({"reply": "Say something, meow? 🐱"}), 200
     msg = raw[:_GROQ_MAX_MESSAGE]
@@ -3324,12 +3327,22 @@ def api_handwrite():
     f = request.files["file"]
     if not f.filename:
         return jsonify({"error": "No file selected."}), 400
-    blob = f.read()
+    blob = b""
+    while True:  # cap memory: reject oversized uploads while streaming, not after
+        chunk = f.stream.read(_GROQ_READ_CHUNK)
+        if not chunk:
+            break
+        blob += chunk
+        if len(blob) > _GROQ_MAX_IMAGE_BYTES:
+            return jsonify({"error": "Image is too large (max 5 MB)."}), 413
     if not blob:
         return jsonify({"error": "The file appears to be empty."}), 400
-    if len(blob) > _GROQ_MAX_IMAGE_BYTES:
-        return jsonify({"error": "Image is too large (max 5 MB)."}), 413
     try:
+        img = Image.open(io.BytesIO(blob))
+        # Reject decompression bombs before decoding (huge declared size in a tiny file)
+        if (img.width or 0) * (img.height or 0) > _GROQ_MAX_IMAGE_PIXELS:
+            return jsonify({"error": "Image resolution is too high (max ~5500 x 5500 pixels)."}), 413
+        img.verify()  # cheap structural check; discards the decoded buffer
         img = Image.open(io.BytesIO(blob))
         img = img.convert("RGB")
         img.thumbnail((1400, 1400))  # keep payload small + fast

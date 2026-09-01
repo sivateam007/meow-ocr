@@ -1,5 +1,6 @@
 /* Meow Assistant chat widget — talks to /api/chat. The Groq API key is used
-   only by the server; this file never sees it. */
+   only by the server; this file never sees it. All user/Groq text is added
+   with textContent, never innerHTML, so it is XSS-safe. */
 (function () {
     'use strict';
 
@@ -11,22 +12,41 @@
     var body = document.getElementById('meow-chat-body');
     var chips = document.querySelectorAll('.meow-chip');
 
+    function makeAvatar() {
+        var av = document.createElement('span');
+        av.className = 'meow-avatar';
+        var img = document.createElement('img');
+        img.src = window.MEOW_AVATAR || '';
+        img.alt = 'Meow Assistant';
+        img.loading = 'lazy';
+        av.appendChild(img);
+        return av;
+    }
+
     function appendMsg(text, who) {
-        var wrap = document.createElement('div');
-        wrap.className = 'meow-msg meow-msg-' + who;
-        wrap.textContent = text;
-        body.appendChild(wrap);
+        var row = document.createElement('div');
+        row.className = 'meow-row ' + (who === 'bot' ? 'row-bot' : 'row-user');
+        if (who === 'bot') row.appendChild(makeAvatar());
+        var bubble = document.createElement('div');
+        bubble.className = 'meow-msg meow-msg-' + who;
+        bubble.textContent = text;
+        row.appendChild(bubble);
+        body.appendChild(row);
         body.scrollTop = body.scrollHeight;
-        return wrap;
+        return row;
     }
 
     function showTyping() {
-        var wrap = document.createElement('div');
-        wrap.className = 'meow-msg meow-msg-bot meow-typing';
-        wrap.innerHTML = '<span></span><span></span><span></span>';
-        body.appendChild(wrap);
+        var row = document.createElement('div');
+        row.className = 'meow-row row-bot';
+        row.appendChild(makeAvatar());
+        var bubble = document.createElement('div');
+        bubble.className = 'meow-msg meow-msg-bot meow-typing';
+        bubble.innerHTML = '<span></span><span></span><span></span>';
+        row.appendChild(bubble);
+        body.appendChild(row);
         body.scrollTop = body.scrollHeight;
-        return wrap;
+        return row;
     }
 
     function send(text) {
@@ -41,7 +61,7 @@
         .then(function (r) { return r.json(); })
         .then(function (d) {
             typing.remove();
-            appendMsg(d.reply || 'Sorry, I got distracted by a passing butterfly. Try again? 🦋', 'bot');
+            appendMsg(d.reply || 'Sorry, I got distracted by a passing butterfly. Try again? 🐱', 'bot');
         })
         .catch(function () {
             typing.remove();
