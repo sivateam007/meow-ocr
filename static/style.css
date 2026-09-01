@@ -1502,18 +1502,20 @@ header {
 
 /* ---- Meow "loading cat" with spinning paw ---- */
 .cat-loader-photo {
-    width: 72px; height: 72px;
-    object-fit: contain;
-    background: #ffffff;
+    width: 84px; height: 84px;
+    object-fit: cover;              /* fill the circle fully, no white space */
+    background: transparent;
     border-radius: 50%;
-    border: 3px solid #fbbf24;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
-    padding: 6px;
+    border: 3px solid #4f7cff;
+    box-shadow: 0 4px 16px rgba(79, 124, 255, 0.3);
+    padding: 0;
+    transform-origin: center center;
     animation: catLoaderSpin 1.6s linear infinite;
+    will-change: transform;
 }
 @keyframes catLoaderSpin {
     0% { transform: rotate(0deg) scale(1); }
-    50% { transform: rotate(180deg) scale(1.08); }
+    50% { transform: rotate(180deg) scale(1.06); }
     100% { transform: rotate(360deg) scale(1); }
 }
 

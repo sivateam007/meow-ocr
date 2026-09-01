@@ -493,7 +493,7 @@
             var box = document.getElementById('status-box');
             if (box) anime({ targets: box, opacity: [0, 1], translateY: [18, 0], duration: 700, easing: 'easeOutExpo' });
             var cat = document.querySelector('.cat-loader-photo');
-            if (cat) anime({ targets: cat, scale: [0, 1], rotate: [-8, 0], opacity: [0, 1], duration: 900, easing: 'easeOutBack' });
+            if (cat) anime({ targets: cat, scale: [0.6, 1], opacity: [0, 1], duration: 700, easing: 'easeOutBack', complete: function () { cat.style.transform = ''; } });
             var cards = document.querySelectorAll('.status-card');
             anime({ targets: cards, translateY: [16, 0], opacity: [0, 1], delay: anime.stagger(90), duration: 500, easing: 'easeOutQuad' });
         });
