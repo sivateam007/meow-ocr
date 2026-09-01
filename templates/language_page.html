@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data.title }}</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="canonical" href="{{ canonical_url }}">
+    <meta name="description" content="{{ data.description }}">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="{{ data.title }}">
+    <meta property="og:description" content="{{ data.description }}">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        window.FIREBASE_CONFIG = {
+            apiKey: "{{ firebase_api_key }}",
+            authDomain: "{{ firebase_auth_domain }}",
+            projectId: "{{ firebase_project_id }}",
+            storageBucket: "{{ firebase_storage_bucket }}",
+            messagingSenderId: "",
+            appId: "{{ firebase_app_id }}",
+            measurementId: "{{ firebase_measurement_id }}"
+        };
+        window.SCANNER_USER = {{ current_user_json|safe }};
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Meow OCR - {{ data.name }}",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Web",
+      "description": "{{ data.description }}",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "ratingCount": "120" }
+    }
+    </script>
+    {% include 'analytics.html' %}
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
+                <span class="user-badge" id="user-badge" style="display:none;">
+                    <img id="user-avatar" class="user-avatar" alt="" />
+                    <span id="user-name"></span>
+                    <a href="#" class="logout-btn" id="logout-btn" title="Sign out"><i class="fas fa-sign-out-alt"></i></a>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="content-section info-page" style="text-align:center; padding: 3rem 1.5rem 1.5rem;">
+            <h1 style="font-size: 2.2rem; margin-bottom: 0.75rem;"><i class="fas fa-language"></i> {{ data.emoji }} {{ data.h1 }}</h1>
+            <p class="page-subtitle" style="max-width: 760px; margin: 0 auto 1.5rem; line-height: 1.7;">{{ data.intro }}</p>
+            <div class="feature-pills" style="display:flex; gap:0.8rem; justify-content:center; flex-wrap:wrap; margin-bottom: 2rem;">
+                {% for f in data.features %}
+                <span class="hero-badge" style="background:linear-gradient(135deg,#0a6cff,#6a5acd); color:#fff; padding:0.55rem 1.1rem; border-radius:30px;"><i class="fas fa-check-circle"></i> {{ f }}</span>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="content-section info-page">
+            <div class="hero-cta-wrap" style="max-width:640px; margin:0 auto;">
+                <form method="POST" enctype="multipart/form-data" class="upload-form" id="upload-form" action="/">
+                    <div class="file-input-wrapper">
+                        <input type="file" name="file" id="pdf-upload" accept=".pdf,.jpg,.jpeg,.png,.bmp,.tiff,.tif,.docx,.pptx,.xlsx,.csv,.txt,.rtf,.odt" required>
+                        <label for="pdf-upload" class="upload-box" id="drop-zone">
+                            <img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo" class="upload-logo" style="width:90px; height:auto;">
+                            <div class="upload-text">Click to upload or drag &amp; drop 🐱</div>
+                            <div class="upload-hint">Supports: PDF, Images, Documents</div>
+                            <div class="file-name" id="file-name"></div>
+                        </label>
+                    </div>
+                    <input type="hidden" name="language" value="{{ data.lang_code }}">
+                    <input type="hidden" name="auto_delete" value="2">
+                    <button type="submit" class="submit-btn" id="submit-btn">
+                        <span id="btn-text">Extract {{ data.name }} Text</span>
+                    </button>
+                </form>
+            </div>
+            <div class="info-box">
+                <h4><i class="fas fa-lightbulb"></i> Quick Tips:</h4>
+                <p>Selecting {{ data.name }} is set automatically for best results. Clear, high-resolution scans extract more accurately. Files auto-delete from the cloud after 2 days by default.</p>
+            </div>
+        </section>
+
+        <section class="content-section info-page">
+            <h2><i class="fas fa-cogs"></i> Why Use Meow OCR for {{ data.name }}?</h2>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-icon"><i class="fas fa-infinity"></i></div>
+                    <h3>100% Free</h3>
+                    <p>No signup, no watermark, no hidden fees — and no credit card ever required.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon"><i class="fas fa-shield-alt"></i></div>
+                    <h3>Private &amp; Secure</h3>
+                    <p>Your files are auto-deleted from the cloud after 2 days by default for your privacy.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon"><i class="fas fa-bolt"></i></div>
+                    <h3>Fast Conversion</h3>
+                    <p>Automatic language detection and batch processing keep {{ data.name }} extraction quick.</p>
+                </div>
+            </div>
+            <p style="text-align:center; margin-top:1.5rem;"><a href="/" class="nav-link"><i class="fas fa-home"></i> Back to full tool with 19+ languages</a></p>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <h4>Meow OCR</h4>
+                <p>Free online OCR — extract text from PDF, images &amp; documents. 19+ languages. Built by Siva.</p>
+                <p class="meow-tagline"><i class="fas fa-cat"></i> Powered by curious cats <i class="fas fa-paw"></i></p>
+            </div>
+            <div class="footer-links">
+                <h4>OCR Tools</h4>
+                <a href="/tamil-ocr"><i class="fas fa-language"></i> Tamil OCR</a>
+                <a href="/hindi-ocr"><i class="fas fa-language"></i> Hindi OCR</a>
+                <a href="/english-ocr"><i class="fas fa-language"></i> English PDF to Text</a>
+                <a href="/"><i class="fas fa-home"></i> Full OCR Tool</a>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <a href="/how-to-use"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="/about"><i class="fas fa-info-circle"></i> About</a>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <a href="/privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                <a href="/terms"><i class="fas fa-file-contract"></i> Terms of Service</a>
+            </div>
+            <div class="footer-links">
+                <h4>Follow Us</h4>
+                <a href="https://www.instagram.com/transocrapp" target="_blank" rel="noopener"><i class="fab fa-instagram"></i> Instagram</a>
+            </div>
+        </div>
+    </footer>
+
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="meow-loader"><span class="loading-text" id="loading-text">Submitting for processing 🐱...</span></div>
+    </div>
+
+    <script>
+        const uploadForm = document.getElementById('upload-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const fileInput = document.getElementById('pdf-upload');
+        const fileName = document.getElementById('file-name');
+        const dropZone = document.getElementById('drop-zone');
+
+        fileInput.addEventListener('change', function () {
+            if (this.files.length > 0) { fileName.textContent = this.files[0].name; }
+            else { fileName.textContent = ''; }
+        });
+
+        dropZone.addEventListener('dragover', function (e) { e.preventDefault(); this.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', function () { this.classList.remove('drag-over'); });
+        dropZone.addEventListener('drop', function (e) {
+            e.preventDefault(); this.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; fileName.textContent = e.dataTransfer.files[0].name; }
+        });
+
+        uploadForm.addEventListener('submit', function () {
+            submitBtn.disabled = true;
+            btnText.textContent = 'Processing...';
+            loadingText.textContent = 'Extracting text...';
+            loadingOverlay.classList.add('active');
+        });
+    </script>
+</body>
+</html>

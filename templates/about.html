@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Meow OCR - Free Online OCR Tool by Siva</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="canonical" href="{{ canonical_url }}">
+    <meta name="description" content="Learn about Meow OCR: a free online OCR tool built by developer Siva. Extract text from PDF, images and documents in 19+ languages — no signup, no card, no watermark.">
+    <meta name="robots" content="index, follow">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        window.FIREBASE_CONFIG = {
+            apiKey: "{{ firebase_api_key }}",
+            authDomain: "{{ firebase_auth_domain }}",
+            projectId: "{{ firebase_project_id }}",
+            storageBucket: "{{ firebase_storage_bucket }}",
+            messagingSenderId: "",
+            appId: "{{ firebase_app_id }}",
+            measurementId: "{{ firebase_measurement_id }}"
+        };
+        window.SCANNER_USER = {{ current_user_json|safe }};
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+    {% include 'analytics.html' %}
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="/about" class="nav-link active"><i class="fas fa-info-circle"></i> About</a>
+                <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
+                <span class="user-badge" id="user-badge" style="display:none;">
+                    <img id="user-avatar" class="user-avatar" alt="" />
+                    <span id="user-name"></span>
+                    <a href="#" class="logout-btn" id="logout-btn" title="Sign out"><i class="fas fa-sign-out-alt"></i></a>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="content-section info-page">
+            <h1 style="font-size: 2.2rem; text-align:center;"><i class="fas fa-info-circle"></i> About Meow OCR</h1>
+            <p class="page-subtitle" style="text-align:center; max-width:720px; margin:0 auto;">A simple, free, privacy-first OCR tool built with 🐱 and a lot of coffee.</p>
+        </section>
+
+        <section class="content-section info-page">
+            <h2><i class="fas fa-user"></i> Who's Behind It</h2>
+            <p>Meow OCR was created and developed by <strong>Siva</strong>, an independent developer who wanted a genuinely free, no-strings-attached way to extract text from documents. No signup walls. No credit card. No watermark. Just upload, convert, and go.</p>
+        </section>
+
+        <section class="content-section info-page">
+            <h2><i class="fas fa-question-circle"></i> Why It Exists</h2>
+            <p>Most OCR tools hide their best features behind paid plans or force you to create accounts before you've done anything. Meow OCR flips that — it's <strong>completely free</strong> to use, supports <strong>19+ languages</strong> (including Tamil, Hindi, and other Indian languages), and works right in your browser. Whether it's a Tamil textbook page, a Hindi form, or an English invoice, Meow OCR turns it into editable text in seconds.</p>
+        </section>
+
+        <section class="content-section info-page">
+            <h2><i class="fas fa-shield-alt"></i> Your Privacy Matters</h2>
+            <p>Your documents are processed using the free Tesseract OCR engine and stored temporarily in secure cloud storage. By default, files are <strong>automatically deleted after 2 days</strong> for your privacy. No account is required to use the core tool.</p>
+        </section>
+
+        <section class="content-section info-page">
+            <h2><i class="fas fa-infinity"></i> The Free Promise</h2>
+            <ul style="line-height: 2; padding-left: 1.2rem;">
+                <li><strong>Free forever</strong> — no hidden costs</li>
+                <li><strong>No signup</strong> required for the core tool</li>
+                <li><strong>No card</strong> — ever</li>
+                <li><strong>No watermark</strong> on your extracted text</li>
+                <li><strong>19+ languages</strong> supported</li>
+                <li>Results <strong>auto-delete</strong> after 2 days by default</li>
+            </ul>
+            <p style="margin-top:1.5rem; text-align:center;"><a href="/" class="submit-btn" style="text-decoration:none; display:inline-block; padding:0.85rem 2rem;">Try Meow OCR Now 🐱</a></p>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <h4>Meow OCR</h4>
+                <p>Free online OCR — extract text from PDF, images &amp; documents. 19+ languages. Built by Siva.</p>
+                <p class="meow-tagline"><i class="fas fa-cat"></i> Powered by curious cats <i class="fas fa-paw"></i></p>
+            </div>
+            <div class="footer-links">
+                <h4>OCR Tools</h4>
+                <a href="/tamil-ocr"><i class="fas fa-language"></i> Tamil OCR</a>
+                <a href="/hindi-ocr"><i class="fas fa-language"></i> Hindi OCR</a>
+                <a href="/english-ocr"><i class="fas fa-language"></i> English PDF to Text</a>
+                <a href="/"><i class="fas fa-home"></i> Full OCR Tool</a>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <a href="/how-to-use"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="/about"><i class="fas fa-info-circle"></i> About</a>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <a href="/privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                <a href="/terms"><i class="fas fa-file-contract"></i> Terms of Service</a>
+            </div>
+            <div class="footer-links">
+                <h4>Follow Us</h4>
+                <a href="https://www.instagram.com/transocrapp" target="_blank" rel="noopener"><i class="fab fa-instagram"></i> Instagram</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var authBtn = document.getElementById('google-login-btn');
+            if (window.SCANNER_USER && window.SCANNER_USER.uid) {
+                var ub = document.getElementById('user-badge');
+                if (ub) { ub.style.display = 'inline-flex'; }
+                var avatar = document.getElementById('user-avatar');
+                var uname = document.getElementById('user-name');
+                if (avatar && window.SCANNER_USER.photo) { avatar.src = window.SCANNER_USER.photo; }
+                if (uname) { uname.textContent = window.SCANNER_USER.name || 'User'; }
+            } else if (authBtn) {
+                authBtn.style.display = 'inline-block';
+            }
+        });
+    </script>
+</body>
+</html>

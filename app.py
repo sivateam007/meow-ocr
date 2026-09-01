@@ -2589,6 +2589,54 @@ def track_download(task_id):
     return jsonify({"ok": False}), 404
 
 
+def _read_task_text(task_id):
+    """Return the extracted text of a completed task (from disk or Mega), or None."""
+    with progress_lock:
+        if task_id not in progress_tracker:
+            return None
+        task = progress_tracker[task_id]
+        if task["status"] != "completed":
+            return None
+        output_path = task.get("output_path") or ""
+        filename = task.get("output_filename", "output.txt")
+    if output_path and os.path.exists(output_path):
+        try:
+            with open(output_path, "r", encoding="utf-8", errors="replace") as f:
+                return f.read()
+        except Exception as e:
+            logger.error(f"Result read error for {task_id}: {e}")
+    # Try Mega fallback
+    if os.environ.get("MEGA_EMAIL") and os.environ.get("MEGA_PWD"):
+        try:
+            from mega import Mega
+            import tempfile as _tf
+            m = Mega().login(os.environ.get("MEGA_EMAIL"), os.environ.get("MEGA_PWD"))
+            node = mega_call(m, "find", f"ocr-outputs/{filename}", timeout=30)
+            if node:
+                with _tf.TemporaryDirectory() as td:
+                    mega_call(m, "download", node, dest_path=td, timeout=120)
+                    local = os.path.join(td, os.path.basename(filename))
+                    if os.path.exists(local):
+                        with open(local, "r", encoding="utf-8", errors="replace") as f:
+                            return f.read()
+        except Exception as e:
+            logger.error(f"Result Mega read error for {task_id}: {e}")
+    return None
+
+
+@app.route('/result/<task_id>')
+def result_page(task_id):
+    """Show extracted text with copy-to-clipboard and inline edit."""
+    text = _read_task_text(task_id)
+    if text is None:
+        flash('Result not found or not completed yet')
+        return redirect(url_for('index'))
+    with progress_lock:
+        filename = progress_tracker[task_id].get("output_filename", "output.txt")
+        display_name = progress_tracker[task_id].get("original_filename", filename) if progress_tracker[task_id].get("original_filename") else filename
+    return render_template('result.html', task_id=task_id, text=text, filename=display_name)
+
+
 @app.route('/refresh-cloud', methods=['POST'])
 def refresh_cloud():
     """Re-scan Mega ocr-outputs and restore any cloud files not yet in My Downloads."""
@@ -2813,7 +2861,7 @@ SITE_URL = os.environ.get("SITE_URL", "https://www.meowocr.work.gd").rstrip("/")
 @app.route('/sitemap.xml')
 def sitemap():
     """XML sitemap so Google can discover and index every static page."""
-    pages = ["", "/how-to-use", "/privacy", "/terms", "/downloads"]
+    pages = ["", "/how-to-use", "/privacy", "/terms", "/downloads", "/about", "/tamil-ocr", "/hindi-ocr", "/english-ocr"]
     today = "2026-08-30"
     urls = "".join(
         f"  <url>\n"
@@ -2934,6 +2982,64 @@ def privacy_page():
 def terms_page():
     """Terms of Service page."""
     return render_template('terms.html')
+
+
+LANGUAGE_PAGES = {
+    'tamil-ocr': {
+        'route': 'tamil_ocr',
+        'lang_code': 'tam',
+        'name': 'Tamil',
+        'emoji': '🇮🇳',
+        'title': 'Tamil OCR - Extract Tamil Text from PDF & Images (Free Online)',
+        'description': 'Free Tamil OCR online: extract editable Tamil text from PDF, JPG, PNG and scanned documents. No signup, no watermark, supports Tamil PDF to text conversion.',
+        'h1': 'Tamil OCR - Convert Tamil PDF & Images to Text',
+        'intro': 'Upload a Tamil PDF, image or scanned document and convert it into clean, editable Tamil text in seconds. Meow OCR uses Tesseract engine with automatic language detection, so handwritten and printed Tamil both extract accurately.',
+        'features': ['Free Tamil PDF to text', 'No signup or card required', 'Supports JPG, PNG, TIFF & PDF', 'Results auto-delete in 2 days'],
+    },
+    'hindi-ocr': {
+        'route': 'hindi_ocr',
+        'lang_code': 'hin',
+        'name': 'Hindi',
+        'emoji': '🇮🇳',
+        'title': 'Hindi OCR - Extract Hindi Text from PDF & Images (Free Online)',
+        'description': 'Free Hindi OCR online: extract editable Hindi (Devanagari) text from PDF, images and scanned documents. No signup, supports Hindi PDF to text conversion.',
+        'h1': 'Hindi OCR - Convert Hindi PDF & Images to Text',
+        'intro': 'Turn Hindi (Devanagari) PDFs, images and scans into editable text in seconds. Meow OCR detects Hindi automatically and extracts clean, copyable text — completely free with no account needed.',
+        'features': ['Free Hindi PDF to text', 'No signup or card required', 'Devanagari text extraction', 'Results auto-delete in 2 days'],
+    },
+    'english-ocr': {
+        'route': 'english_ocr',
+        'lang_code': 'eng',
+        'name': 'English',
+        'emoji': '🇬🇧',
+        'title': 'PDF to Text Converter - Extract English Text from PDF & Images (Free)',
+        'description': 'Free online PDF to text: extract editable English text from PDF, images and scanned documents. No signup, no watermark, fast and private.',
+        'h1': 'English PDF to Text - Free Online OCR',
+        'intro': 'Convert English PDFs, images and scans into clean, editable text in seconds. Fast, private and free — no signup, no watermark, and your files auto-delete after 2 days.',
+        'features': ['Free English PDF to text', 'No signup or card required', 'Supports PDF, JPG, PNG & more', 'Results auto-delete in 2 days'],
+    },
+}
+
+
+@app.route('/tamil-ocr')
+def tamil_ocr():
+    return render_template('language_page.html', data=LANGUAGE_PAGES['tamil-ocr'])
+
+
+@app.route('/hindi-ocr')
+def hindi_ocr():
+    return render_template('language_page.html', data=LANGUAGE_PAGES['hindi-ocr'])
+
+
+@app.route('/english-ocr')
+def english_ocr():
+    return render_template('language_page.html', data=LANGUAGE_PAGES['english-ocr'])
+
+
+@app.route('/about')
+def about():
+    """About page — who runs Meow OCR."""
+    return render_template('about.html')
 
 
 def get_user():
