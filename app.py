@@ -3190,8 +3190,10 @@ GROQ_CHAT_MODEL = os.environ.get("GROQ_CHAT_MODEL", "llama-3.1-8b-instant")
 GROQ_VISION_MODEL = os.environ.get("GROQ_VISION_MODEL", "llama-3.2-90b-vision-preview")
 _GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 _GROQ_MAX_MESSAGE = 500
-_GROQ_MAX_IMAGE_BYTES = 5 * 1024 * 1024
-_GROQ_MAX_IMAGE_PIXELS = 30_000_000  # ~5477x5477, safe cap for the 512MB tier
+_GROQ_MAX_IMAGE_BYTES = 25 * 1024 * 1024  # covers typical 15-20MB camera photos
+_GROQ_MAX_IMAGE_PIXELS = 52_000_000  # ~7200x7200, lets 50MP camera photos pass
+_GROQ_PREVIEW_SIZE = (1800, 1800)  # what the AI actually sees (payload stays <1MB)
+_GROQ_DRAFT_THRESHOLD = 15_000_000  # big JPEGs decode at reduced scale to protect RAM
 _GROQ_READ_CHUNK = 256 * 1024
 
 _GROQ_SYSTEM_PROMPT = (
@@ -3334,18 +3336,21 @@ def api_handwrite():
             break
         blob += chunk
         if len(blob) > _GROQ_MAX_IMAGE_BYTES:
-            return jsonify({"error": "Image is too large (max 5 MB)."}), 413
+            return jsonify({"error": "Image is too large (max 25 MB)."}), 413
     if not blob:
         return jsonify({"error": "The file appears to be empty."}), 400
     try:
         img = Image.open(io.BytesIO(blob))
         # Reject decompression bombs before decoding (huge declared size in a tiny file)
         if (img.width or 0) * (img.height or 0) > _GROQ_MAX_IMAGE_PIXELS:
-            return jsonify({"error": "Image resolution is too high (max ~5500 x 5500 pixels)."}), 413
+            return jsonify({"error": "Image resolution is too high (max ~7200 x 7200 pixels)."}), 413
         img.verify()  # cheap structural check; discards the decoded buffer
         img = Image.open(io.BytesIO(blob))
+        w, h = img.size
+        if (w or 0) * (h or 0) > _GROQ_DRAFT_THRESHOLD and img.format == "JPEG":
+            img.draft(("RGB",), _GROQ_PREVIEW_SIZE)  # decode big JPEGs at reduced scale: low RAM spike
         img = img.convert("RGB")
-        img.thumbnail((1400, 1400))  # keep payload small + fast
+        img.thumbnail(_GROQ_PREVIEW_SIZE)  # keep payload small + fast
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=85)
         data_url = "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
