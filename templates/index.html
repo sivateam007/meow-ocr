@@ -78,6 +78,11 @@
           "@type": "Question",
           "name": "How long are my files stored?",
           "acceptedAnswer": { "@type": "Answer", "text": "Your results are stored securely in the cloud and automatically deleted after 2 days by default for your privacy." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can Meow OCR read handwritten notes?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes, the Handwritten Notes scanner uses a dedicated AI vision model to read photos of handwriting in Tamil, Hindi, English and more, returning editable text instantly." }
         }
       ]
     }
@@ -351,6 +356,104 @@
             <p class="language-note" id="translate-note" style="display: none;">Upload a .txt file to translate. Multiple languages supported.</p>
         </section>
 
+        <!-- ===== HANDWRITTEN NOTES (AI) ===== -->
+        <section class="content-section info-page" id="handwritten">
+            <h2><i class="fas fa-pen-nib"></i> Handwritten Notes <span class="heading-cat">✍️🐱</span></h2>
+            <p class="page-subtitle">Can't read your own handwriting? Neither can Tesseract — so this uses a dedicated AI model. Photo it, upload it, and get clean editable text. Tamil, Hindi, English and more.</p>
+            <div class="hw-card">
+                <div class="hw-drop" id="hw-drop">
+                    <input type="file" id="hw-file" accept="image/*" hidden>
+                    <i class="fas fa-camera-retro hw-icon"></i>
+                    <p class="hw-title">Upload a clear photo of your handwritten notes</p>
+                    <p class="hw-hint">JPG or PNG, up to 5 MB — bright, flat and in focus works best</p>
+                    <button type="button" class="hw-choose" id="hw-choose"><i class="fas fa-upload"></i> Choose Photo</button>
+                    <p class="hw-name" id="hw-name"></p>
+                </div>
+                <div class="hw-status" id="hw-status" style="display: none;"><i class="fas fa-spinner fa-spin"></i> 🐱 Reading your handwriting…</div>
+                <div class="hw-result" id="hw-result" style="display: none;">
+                    <textarea id="hw-text" rows="8" readonly placeholder="Extracted text will appear here…"></textarea>
+                    <div class="hw-actions">
+                        <button type="button" class="hw-btn" id="hw-copy"><i class="fas fa-copy"></i> Copy</button>
+                        <button type="button" class="hw-btn" id="hw-download"><i class="fas fa-download"></i> Download .txt</button>
+                        <button type="button" class="hw-btn" id="hw-reset"><i class="fas fa-redo"></i> New Photo</button>
+                    </div>
+                </div>
+                <div class="hw-error" id="hw-error" style="display: none;"></div>
+            </div>
+            <p class="language-note">Handwritten text is read by an AI model on the server — the photo is used for that conversion only and is not saved. Results appear instantly right here.</p>
+        </section>
+        <script>
+            (function () {
+                'use strict';
+                var fileInput = document.getElementById('hw-file');
+                var choose = document.getElementById('hw-choose');
+                var drop = document.getElementById('hw-drop');
+                var nameEl = document.getElementById('hw-name');
+                var statusEl = document.getElementById('hw-status');
+                var resultEl = document.getElementById('hw-result');
+                var errorEl = document.getElementById('hw-error');
+                var textEl = document.getElementById('hw-text');
+                var copyBtn = document.getElementById('hw-copy');
+                var dlBtn = document.getElementById('hw-download');
+                var resetBtn = document.getElementById('hw-reset');
+                if (!fileInput) return;
+                function show(el, on) { el.style.display = on ? 'block' : 'none'; }
+                function scan(file) {
+                    if (!file) return;
+                    if (!/image\/(jpeg|png|webp|gif|bmp|tiff)/.test(file.type)) {
+                        show(errorEl, true); errorEl.textContent = 'Please choose an image (JPG or PNG).';
+                        return;
+                    }
+                    nameEl.textContent = file.name;
+                    show(statusEl, true); show(resultEl, false); show(errorEl, false);
+                    var fd = new FormData();
+                    fd.append('file', file);
+                    fetch('/api/handwrite', { method: 'POST', body: fd })
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) {
+                            show(statusEl, false);
+                            if (d.error) { show(errorEl, true); errorEl.textContent = d.error; return; }
+                            textEl.value = d.text || '';
+                            show(resultEl, true);
+                        })
+                        .catch(function () {
+                            show(statusEl, false);
+                            show(errorEl, true);
+                            errorEl.textContent = 'Something went wrong — please try again.';
+                        });
+                }
+                choose.addEventListener('click', function () { fileInput.click(); });
+                drop.addEventListener('click', function () { fileInput.click(); });
+                fileInput.addEventListener('change', function () { scan(fileInput.files[0]); });
+                drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('over'); });
+                drop.addEventListener('dragleave', function () { drop.classList.remove('over'); });
+                drop.addEventListener('drop', function (e) {
+                    e.preventDefault(); drop.classList.remove('over');
+                    if (e.dataTransfer.files && e.dataTransfer.files.length) scan(e.dataTransfer.files[0]);
+                });
+                copyBtn.addEventListener('click', function () {
+                    textEl.select();
+                    document.execCommand('copy');
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    setTimeout(function () { copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 1500);
+                });
+                dlBtn.addEventListener('click', function () {
+                    var blob = new Blob([textEl.value], { type: 'text/plain;charset=utf-8' });
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'handwritten-notes.txt';
+                    document.body.appendChild(a);
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    a.remove();
+                });
+                resetBtn.addEventListener('click', function () {
+                    show(resultEl, false); show(errorEl, false);
+                    textEl.value = ''; nameEl.textContent = ''; fileInput.value = '';
+                });
+            })();
+        </script>
+
         <!-- ===== HOW IT WORKS ===== -->
         <section class="content-section info-page" id="how">
             <h2><i class="fas fa-cogs"></i> How It Works <span class="heading-cat">🐱</span></h2>
@@ -497,6 +600,10 @@
             <details class="faq-item">
                 <summary>Are my files kept private?</summary>
                 <p>Files are processed securely on the server and automatically deleted from cloud storage after 2 days (privacy auto-delete). No account or personal details are needed for basic use.</p>
+            </details>
+            <details class="faq-item">
+                <summary>Can Meow OCR read my handwritten notes?</summary>
+                <p>Yes. The Handwritten Notes scanner uses a dedicated AI vision model to read photos of handwriting — Tamil, Hindi, English and more — and gives you clean editable text instantly. You'll find it right below the upload section on the homepage.</p>
             </details>
             <details class="faq-item">
                 <summary>Can I use Meow OCR on mobile?</summary>
@@ -1013,5 +1120,6 @@
     </script>
 
     <!-- ads removed -->
+    {% include 'chatbot.html' %}
 </body>
 </html>

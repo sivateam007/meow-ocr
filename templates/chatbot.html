@@ -1,0 +1,34 @@
+<!-- ===== Meow Assistant chat widget (Groq AI — key stays server-side) ===== -->
+<link rel="stylesheet" href="{{ url_for('static', filename='chatbot.css') }}">
+<div id="meow-chat">
+    <button type="button" id="meow-chat-toggle" aria-label="Chat with Meow Assistant" title="Ask Meow Assistant">
+        <span class="meow-chat-toggle-icon"><i class="fas fa-comment-dots"></i></span>
+        <span class="meow-chat-toggle-cat">🐱</span>
+    </button>
+    <div id="meow-chat-panel" class="meow-chat-panel" role="dialog" aria-label="Meow Assistant chat">
+        <div class="meow-chat-header">
+            <span class="meow-chat-cat">🐱</span>
+            <div>
+                <div class="meow-chat-title">Meow Assistant</div>
+                <div class="meow-chat-status"><span class="meow-chat-dot"></span> Free &amp; always here</div>
+            </div>
+            <button type="button" id="meow-chat-close" aria-label="Close chat">&times;</button>
+        </div>
+        <div class="meow-chat-body" id="meow-chat-body">
+            <div class="meow-msg meow-msg-bot">Hi! I'm Meow Assistant 🐱 your free OCR helper. Ask me anything about Meow OCR — or tap a quick question below.</div>
+        </div>
+        <div class="meow-chat-chips" id="meow-chat-chips">
+            <button type="button" class="meow-chip" data-q="How do I use Meow OCR?">How to use</button>
+            <button type="button" class="meow-chip" data-q="Is Meow OCR free?">Is it free?</button>
+            <button type="button" class="meow-chip" data-q="Which languages are supported?">Languages</button>
+            <button type="button" class="meow-chip" data-q="Are my files private?">Privacy</button>
+            <button type="button" class="meow-chip" data-q="Can you read handwritten notes?">Handwritten</button>
+            <button type="button" class="meow-chip" data-q="Who built Meow OCR?">About</button>
+        </div>
+        <form class="meow-chat-form" id="meow-chat-form">
+            <input type="text" id="meow-chat-input" placeholder="Type a message…" autocomplete="off" maxlength="500" aria-label="Message Meow Assistant">
+            <button type="submit" aria-label="Send"><i class="fas fa-paper-plane"></i></button>
+        </form>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='chatbot.js') }}"></script>

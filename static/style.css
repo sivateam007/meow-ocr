@@ -2004,3 +2004,128 @@ body {
     line-height: 1.4;
 }
 .ad-fallback i { color: var(--accent); }
+
+/* ===== Handwritten Notes (AI) scanner ===== */
+.hw-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    max-width: 680px;
+    margin: 1.5rem auto;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.hw-drop {
+    border: 2px dashed var(--accent);
+    border-radius: var(--radius);
+    background: #f6f8ff;
+    padding: 2rem 1.5rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.hw-drop.over {
+    background: #eef2ff;
+    border-color: var(--accent-2);
+    transform: scale(1.01);
+}
+
+.hw-icon {
+    font-size: 2.2rem;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+}
+
+.hw-title {
+    font-weight: 700;
+    color: var(--dark);
+    font-size: 1.05rem;
+    margin-bottom: 0.35rem;
+}
+
+.hw-hint {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 1rem;
+}
+
+.hw-choose {
+    background: var(--grad-brand);
+    color: #fff;
+    border: none;
+    padding: 0.65rem 1.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hw-choose:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(79, 124, 255, 0.35);
+}
+
+.hw-name {
+    margin-top: 0.75rem;
+    color: var(--teal);
+    font-weight: 600;
+    font-size: 0.9rem;
+    word-break: break-all;
+}
+
+.hw-status {
+    margin: 1rem auto;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.hw-result textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.9rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    background: #fdfdfe;
+    color: var(--dark);
+}
+
+.hw-actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.hw-btn {
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--dark);
+    padding: 0.55rem 1.2rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.hw-btn:hover {
+    background: var(--grad-brand);
+    color: #fff;
+    border-color: transparent;
+}
+
+.hw-error {
+    margin-top: 1rem;
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+}

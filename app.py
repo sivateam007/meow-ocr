@@ -15,6 +15,8 @@ import time
 import shutil
 import json
 import glob
+import base64
+import io
 from flask import Flask, request, render_template, send_file, flash, redirect, url_for, jsonify, session, make_response
 from werkzeug.utils import secure_filename
 from pdf2image import convert_from_path, pdfinfo_from_path
@@ -3174,6 +3176,214 @@ def downloads_page():
         mega_configured=bool(os.environ.get("MEGA_EMAIL") and os.environ.get("MEGA_PWD")),
     )
 
+
+
+# =====================================================================
+# Groq AI — Meow Assistant (chatbot) + Handwritten Notes scanner.
+# GROQ_API_KEY is read server-side only (Render env var) and is NEVER
+# rendered to templates or static assets. If no key is set, the chatbot
+# falls back to scripted FAQ replies and the handwriting endpoint returns
+# a friendly error, so the site never breaks without a key.
+# =====================================================================
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
+GROQ_CHAT_MODEL = os.environ.get("GROQ_CHAT_MODEL", "llama-3.1-8b-instant")
+GROQ_VISION_MODEL = os.environ.get("GROQ_VISION_MODEL", "llama-3.2-90b-vision-preview")
+_GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+_GROQ_MAX_MESSAGE = 500
+_GROQ_MAX_IMAGE_BYTES = 5 * 1024 * 1024
+
+_GROQ_SYSTEM_PROMPT = (
+    "You are 'Meow Assistant', the friendly cat mascot of Meow OCR "
+    "(https://www.meowocr.work.gd), a completely FREE online OCR tool "
+    "created by developer Siva. You answer in a warm, playful but "
+    "professional tone, using cat emojis sparingly (max one per message). "
+    "Keep answers short (max ~100 words) and match the user's language "
+    "(e.g. reply in Tamil or Hindi if they write in it). Answer only from "
+    "these facts about Meow OCR:\n"
+    "- Extracts editable text from PDF, images (JPG, PNG, TIFF), Word, "
+    "Excel, PPT and documents, plus translate.\n"
+    "- Supports 19+ languages incl. Tamil, Hindi, Telugu, Bengali, "
+    "English, with auto-detection.\n"
+    "- 100% free. First scan needs no signup; guests get one free scan, "
+    "signing in with Google unlocks unlimited conversions.\n"
+    "- No watermark, no credit card.\n"
+    "- Files stored securely in the cloud, auto-deleted after 2 days by "
+    "default; users can pick 1/7/30 days or keep forever and delete "
+    "manually from My Downloads.\n"
+    "- Handwritten notes: use the 'Handwritten Notes' AI scanner on the "
+    "homepage to read photos of handwriting with AI.\n"
+    "- Built by developer Siva.\n"
+    "For anything outside these facts, honestly say you're not sure and "
+    "suggest visiting the homepage help section."
+)
+
+
+def _faq_reply(text):
+    """Keyword-matched scripted replies used when Groq is not configured,
+    rate-limited, or unavailable — keeps the widget working at all times."""
+    t = " " + text.lower().strip() + " "
+    if any(k in t for k in ("hi ", "hello", "hey", "vanakkam", "good morning", "good evening")):
+        return ("Hi! 🐱 I'm Meow Assistant. Ask me how Meow OCR works, whether it's "
+                "free, which languages it supports, or how your files stay private.")
+    if any(k in t for k in ("hand", "written", "handwriting", "note", "writing", "letra")):
+        return ("Yes! Meow OCR can read handwriting 🐱 Use the 'Handwritten Notes' "
+                "scanner on the homepage — upload a clear photo of your notes (or "
+                "manuscript) and AI will transcribe them into editable text. "
+                "Tamil, Hindi and English handwriting all work.")
+    if any(k in t for k in ("free", "cost", "price", "pay", "money", "card", "subscription")):
+        return ("It's 100% free 🐾 No payment, no trial, no credit card. Your first "
+                "scan needs no signup at all, and signing in with Google unlocks "
+                "unlimited conversions.")
+    if any(k in t for k in ("language", "tamil", "hindi", "telugu", "supported")):
+        return ("Meow OCR supports 19+ languages 🐱 including Tamil, Hindi, Telugu, "
+                "Bengali, Malayalam, English, Arabic and more — with auto-detection "
+                "so you usually don't need to pick manually. You can also translate "
+                "text between 30+ languages.")
+    if any(k in t for k in ("private", "privacy", "secure", "delete", "stored", "data", "safe")):
+        return ("Your files are handled privately 🐱 They're stored securely in the "
+                "cloud and automatically deleted after 2 days by default. You can "
+                "choose 1/7/30 days or keep forever, and delete any download "
+                "anytime from 'My Downloads'. No account is needed for basic use.")
+    if any(k in t for k in ("how", "use", "upload", "works", "step", "convert", "start")):
+        return ("Easy! 🐾 1) Go to the homepage. 2) Drag & drop your PDF, image or "
+                "document (or tap the 'Handwritten Notes' card for handwriting). "
+                "3) Hit 'Extract Text' — the engine reads it, then you can view, "
+                "copy or download the .txt result. That's it.")
+    if any(k in t for k in ("image", "jpg", "png", "photo", "picture", "pdf", "word", "excel", "format", "file type")):
+        return ("You can upload PDFs, images (JPG, PNG, BMP, TIFF, GIF), Word, "
+                "Excel, PPT, and more 🐾 For handwriting, use the 'Handwritten "
+                "Notes' AI scanner instead — it's built for photos of written notes.")
+    if any(k in t for k in ("contact", "siva", "who", "about", "developer", "created", "built", "email")):
+        return ("Meow OCR was built by developer Siva 🐱 He keeps it free because "
+                "he believes OCR should be simple. You can read more on the About "
+                "page — there's a link at the bottom of every page.")
+    if any(k in t for k in ("rule", "translate", "translation", "translate")):
+        return ("Yes, Meow OCR can translate too! 🐾 Switch to the 'Translate' tab "
+                "on the homepage, upload a .txt file, pick source and target "
+                "languages, and download your translated file.")
+    if any(k in t for k in ("error", "not working", "fail", "problem", "issue", "bug")):
+        return ("Sorry about that! 🐱 Try a smaller file, use a clear high-quality "
+                "scan, and pick the language manually for speedier results. If it "
+                "still fails, your files are safe — wait a minute and try again.")
+    return ("Great question! 🐱 I'm still a small cat assistant, and my long-term "
+            "memory is short. Could you rephrase, or tap a quick question below? "
+            "I'm best at questions about how Meow OCR works, free limits, "
+            "languages, handwriting and privacy.")
+
+
+@app.route("/api/chat", methods=["POST"])
+@_rate_limit(20, 60)
+def api_chat():
+    """Meow Assistant chatbot. Accepts JSON {"message": "..."}, returns
+    {"reply": "..."}. Calls Groq from the server; the API key never leaves
+    the server. Falls back to _faq_reply when Groq is unavailable."""
+    data = request.get_json(silent=True) or {}
+    raw = (data.get("message") or "").strip()
+    if not raw:
+        return jsonify({"reply": "Say something, meow? 🐱"}), 200
+    msg = raw[:_GROQ_MAX_MESSAGE]
+    if not GROQ_API_KEY:
+        return jsonify({"reply": _faq_reply(msg)}), 200
+    try:
+        resp = requests.post(
+            _GROQ_URL,
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": GROQ_CHAT_MODEL,
+                "messages": [
+                    {"role": "system", "content": _GROQ_SYSTEM_PROMPT},
+                    {"role": "user", "content": msg},
+                ],
+                "temperature": 0.4,
+                "max_tokens": 500,
+            },
+            timeout=20,
+        )
+        if resp.status_code == 200:
+            body = resp.json()
+            reply = (body.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
+            if reply:
+                return jsonify({"reply": reply}), 200
+        logger.warning("Groq chat non-200 status=%s", resp.status_code)
+    except Exception:
+        logger.error("Groq chat error, falling back to FAQ", exc_info=True)
+    return jsonify({"reply": _faq_reply(msg)}), 200
+
+
+@app.route("/api/handwrite", methods=["POST"])
+@_rate_limit(10, 60)
+def api_handwrite():
+    """AI scanner for handwritten notes. Accepts an image file upload,
+    sends it to the Groq vision model, returns {"text": "..."}. Runs fully
+    server-side; nothing is stored and no key reaches the browser."""
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded."}), 400
+    f = request.files["file"]
+    if not f.filename:
+        return jsonify({"error": "No file selected."}), 400
+    blob = f.read()
+    if not blob:
+        return jsonify({"error": "The file appears to be empty."}), 400
+    if len(blob) > _GROQ_MAX_IMAGE_BYTES:
+        return jsonify({"error": "Image is too large (max 5 MB)."}), 413
+    try:
+        img = Image.open(io.BytesIO(blob))
+        img = img.convert("RGB")
+        img.thumbnail((1400, 1400))  # keep payload small + fast
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85)
+        data_url = "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+    except Exception:
+        logger.error("Handwrite image parse failed", exc_info=True)
+        return jsonify({"error": "Could not read that image — please use JPG or PNG."}), 400
+    if not GROQ_API_KEY:
+        return jsonify({
+            "error": "The AI handwriting engine isn't configured yet. Please try again later.",
+            "ai_offline": True,
+        }), 503
+    prompt = (
+        "This is a photo of HANDWRITTEN notes. Transcribe ALL handwritten or "
+        "printed text exactly as written, preserving line breaks and paragraphs. "
+        "If the handwriting is in Tamil, Hindi, or another language, transcribe "
+        "it fully in that language. Do not add, correct or remove any words. "
+        "Do not describe the image. If there is no readable handwriting, reply "
+        "exactly: '(No readable text detected on this image)'."
+    )
+    try:
+        resp = requests.post(
+            _GROQ_URL,
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": GROQ_VISION_MODEL,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": data_url}},
+                        ],
+                    }
+                ],
+                "temperature": 0.2,
+                "max_tokens": 2000,
+            },
+            timeout=60,
+        )
+        if resp.status_code == 200:
+            body = resp.json()
+            text = (body.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
+            if text:
+                return jsonify({"text": text}), 200
+        logger.warning("Groq vision non-200 status=%s", resp.status_code)
+    except Exception:
+        logger.error("Groq vision error", exc_info=True)
+    return jsonify({"error": "The AI scanner is busy right now — please try again in a moment."}), 502
 
 
 # Fast local restore (synchronous, <1s), Mega scan in background (fast with deferred links)
