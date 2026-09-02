@@ -182,6 +182,37 @@ OCR_TIMEOUT = 300  # Max seconds per page for Tesseract OCR
 AUTO_DELETE_DAYS = int(os.environ.get("AUTO_DELETE_DAYS", "2"))  # Cloud auto-delete window (default 2 days)
 AUTO_DELETE_SECONDS = AUTO_DELETE_DAYS * 86400
 
+# ---- Document-to-Audio (edge-tts) ----
+TTS_MAX_WORDS = int(os.environ.get("TTS_MAX_WORDS", "2500"))  # Cap to keep MP3 size/time sane
+TTS_RATE_MIN, TTS_RATE_MAX = 50, 200  # percent
+TTS_PITCH_MIN, TTS_PITCH_MAX = -50, 50  # Hz
+
+# App language code -> available edge-tts voices (verified names). Ordered female-first default.
+TTS_VOICES = {
+    "en":   [("en-US-JennyNeural", "Jenny (Female)", "Female"), ("en-US-GuyNeural", "Guy (Male)", "Male"), ("en-IN-NeerjaNeural", "Neerja IN (Female)", "Female"), ("en-IN-PrabhatNeural", "Prabhat IN (Male)", "Male")],
+    "hin":  [("hi-IN-SwaraNeural", "Swara (Female)", "Female"), ("hi-IN-MadhurNeural", "Madhur (Male)", "Male")],
+    "tam":  [("ta-IN-PallaviNeural", "Pallavi (Female)", "Female"), ("ta-IN-ValluvarNeural", "Valluvar (Male)", "Male")],
+    "tel":  [("te-IN-ShrutiNeural", "Shruti (Female)", "Female"), ("te-IN-MohanNeural", "Mohan (Male)", "Male")],
+    "kan":  [("kn-IN-SapnaNeural", "Sapna (Female)", "Female"), ("kn-IN-GaganNeural", "Gagan (Male)", "Male")],
+    "mal":  [("ml-IN-SobhanaNeural", "Sobhana (Female)", "Female"), ("ml-IN-MidhunNeural", "Midhun (Male)", "Male")],
+    "ben":  [("bn-IN-TanishaaNeural", "Tanishaa (Female)", "Female"), ("bn-IN-BashkarNeural", "Bashkar (Male)", "Male")],
+    "guj":  [("gu-IN-DhwaniNeural", "Dhwani (Female)", "Female"), ("gu-IN-NiranjanNeural", "Niranjan (Male)", "Male")],
+    "mar":  [("mr-IN-AarohiNeural", "Aarohi (Female)", "Female"), ("mr-IN-ManoharNeural", "Manohar (Male)", "Male")],
+    "pan":  [("ta-IN-PallaviNeural", "Pallavi (Female)", "Female"), ("ta-IN-ValluvarNeural", "Valluvar (Male)", "Male")],  # punjabi: fallback to ta-IN
+    "ara":  [("ar-SA-ZariyahNeural", "Zariyah (Female)", "Female"), ("ar-SA-HamedNeural", "Hamed (Male)", "Male")],
+    "rus":  [("ru-RU-SvetlanaNeural", "Svetlana (Female)", "Female"), ("ru-RU-DmitryNeural", "Dmitry (Male)", "Male")],
+    "ell":  [("el-GR-AthinaNeural", "Athina (Female)", "Female"), ("el-GR-NestorasNeural", "Nestoras (Male)", "Male")],
+    "heb":  [("he-IL-HilaNeural", "Hila (Female)", "Female"), ("he-IL-AvriNeural", "Avri (Male)", "Male")],
+    "tha":  [("th-TH-PremwadeeNeural", "Premwadee (Female)", "Female"), ("th-TH-NiwatNeural", "Niwat (Male)", "Male")],
+    "chi_sim": [("zh-CN-XiaoxiaoNeural", "Xiaoxiao (Female)", "Female"), ("zh-CN-YunxiNeural", "Yunxi (Male)", "Male")],
+    "jpn":  [("ja-JP-NanamiNeural", "Nanami (Female)", "Female"), ("ja-JP-KeitaNeural", "Keita (Male)", "Male")],
+    "kor":  [("ko-KR-SunHiNeural", "SunHi (Female)", "Female"), ("ko-KR-InJoonNeural", "InJoon (Male)", "Male")],
+    "spa":  [("es-ES-ElviraNeural", "Elvira (Female)", "Female"), ("es-ES-AlvaroNeural", "Alvaro (Male)", "Male")],
+    "fra":  [("fr-FR-DeniseNeural", "Denise (Female)", "Female"), ("fr-FR-HenriNeural", "Henri (Male)", "Male")],
+    "deu":  [("de-DE-KatjaNeural", "Katja (Female)", "Female"), ("de-DE-ConradNeural", "Conrad (Male)", "Male")],
+    "ita":  [("it-IT-ElsaNeural", "Elsa (Female)", "Female"), ("it-IT-DiegoNeural", "Diego (Male)", "Male")],
+}
+
 # Anonymous free usage limit (docs convertible without signing in)
 FREE_DOCS_WITHOUT_LOGIN = int(os.environ.get("FREE_DOCS_WITHOUT_LOGIN", "1"))
 _COOKIE_COUNTER = "scan_docs_done"  # cookie name counting anonymous conversions
@@ -1398,12 +1429,20 @@ def cleanup_old_tasks():
                 fn = task.get("output_filename")
                 if fn:
                     mega_delete_names.append(fn)
+                tts_fn = task.get("tts_filename")
+                if tts_fn:
+                    mega_delete_names.append(tts_fn)
 
         for task_id in to_delete:
             logger.info(f"Auto-deleting old completed task {task_id}")
             op = progress_tracker[task_id].get("output_path")
             if op and os.path.exists(op):
                 try: os.remove(op)
+                except Exception: pass
+            # Remove generated MP3 (if any) and its Mega copy
+            tts_path = progress_tracker[task_id].get("tts_path")
+            if tts_path and os.path.exists(tts_path):
+                try: os.remove(tts_path)
                 except Exception: pass
             # Remove persisted file from OUTPUT_DIR too
             out_fn = progress_tracker[task_id].get("output_filename")
@@ -3630,7 +3669,153 @@ def api_handwrite():
     return jsonify({"error": "The AI scanner is busy right now — please try again in a moment."}), 502
 
 
-# Fast local restore (synchronous, <1s), Mega scan in background (fast with deferred links)
+# ================= Document-to-Audio (edge-tts) =================
+@app.route('/api/tts/voices')
+def tts_voices():
+    """Return available voices grouped by app language code for the MP3 dialog."""
+    return jsonify(TTS_VOICES)
+
+
+def _tts_run(task_id, text, voice, rate, pitch):
+    """Background worker: synthesize MP3 via edge-tts, persist, upload to cloud."""
+    import asyncio as _asyncio
+    import edge_tts
+    try:
+        base = task_id
+        mp3_filename = f"{base}.mp3"
+        mp3_path = os.path.join(OUTPUT_DIR, f"{task_id}_{mp3_filename}")
+
+        rate_str = f"+{int(rate - 100)}%" if rate >= 100 else f"{int(rate - 100)}%"
+        pitch_str = f"{int(pitch)+0:+}Hz"
+
+        with progress_lock:
+            progress_tracker[task_id]["tts_status"] = "generating"
+            progress_tracker[task_id]["tts_progress"] = 5
+        _save_progress(force=True)
+
+        async def _do():
+            communicate = edge_tts.Communicate(
+                text,
+                voice=voice or "en-US-JennyNeural",
+                rate=rate_str,
+                pitch=pitch_str,
+            )
+            with open(mp3_path, "wb") as f:
+                async for chunk in communicate.stream():
+                    if chunk["type"] == "audio":
+                        f.write(chunk["data"])
+
+        _asyncio.run(_do())
+
+        if not os.path.exists(mp3_path) or os.path.getsize(mp3_path) == 0:
+            raise RuntimeError("TTS produced empty audio")
+
+        with progress_lock:
+            progress_tracker[task_id]["tts_status"] = "done"
+            progress_tracker[task_id]["tts_progress"] = 90
+            progress_tracker[task_id]["tts_path"] = mp3_path
+            progress_tracker[task_id]["tts_filename"] = mp3_filename
+        _save_progress(force=True)
+
+        # Save MP3 to Mega cloud (ocr-outputs)
+        link = ""
+        try:
+            link = upload_to_mega(mp3_path, mp3_filename)
+            with progress_lock:
+                progress_tracker[task_id]["tts_mega_link"] = link
+        except Exception as e:
+            logger.warning(f"Task {task_id}: MP3 cloud upload failed: {e}")
+
+        with progress_lock:
+            progress_tracker[task_id]["tts_status"] = "done"
+            progress_tracker[task_id]["tts_progress"] = 100
+            progress_tracker[task_id]["tts_download_link"] = link or f"/download/tts/{task_id}"
+        _save_progress(force=True)
+    except Exception as e:
+        logger.error(f"Task {task_id}: TTS error: {e}", exc_info=True)
+        with progress_lock:
+            progress_tracker[task_id]["tts_status"] = "error"
+            progress_tracker[task_id]["tts_error"] = str(e)
+        _save_progress(force=True)
+
+
+@app.route('/api/tts/<task_id>', methods=['POST'])
+def tts_task(task_id):
+    """Start (or restart) MP3 conversion for a completed OCR task."""
+    with progress_lock:
+        if task_id not in progress_tracker:
+            return jsonify({"error": "Task not found"}), 404
+        task = progress_tracker[task_id]
+        if task.get("status") != "completed":
+            return jsonify({"error": "Task not completed yet"}), 400
+        if task.get("tts_status") == "generating":
+            return jsonify({"error": "Audio is already generating"}), 409
+
+    text = _read_task_text(task_id)
+    if text is None:
+        return jsonify({"error": "Could not read the extracted text"}), 400
+    text = (text or "").strip()
+    if not text:
+        return jsonify({"error": "No text to convert"}), 400
+
+    word_count = len(text.split())
+    if word_count > TTS_MAX_WORDS:
+        return jsonify({
+            "error": f"This document is too long to convert ({word_count} words; limit {TTS_MAX_WORDS}).",
+        }), 400
+
+    data = request.get_json(silent=True) or {}
+    voice = (data.get("voice") or "").strip()
+    if voice and not any(vn == voice for grp in TTS_VOICES.values() for vn, _, _ in grp):
+        voice = ""
+    rate = int(data.get("rate", 100))
+    rate = max(TTS_RATE_MIN, min(TTS_RATE_MAX, rate))
+    pitch = int(data.get("pitch", 0))
+    pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, pitch))
+
+    with progress_lock:
+        progress_tracker[task_id]["tts_status"] = "queued"
+        progress_tracker[task_id]["tts_progress"] = 0
+        progress_tracker[task_id]["tts_error"] = ""
+        progress_tracker[task_id]["tts_download_link"] = ""
+    _save_progress(force=True)
+
+    threading.Thread(target=_tts_run, args=(task_id, text, voice, rate, pitch), daemon=True).start()
+    return jsonify({"ok": True, "status": "queued"}), 202
+
+
+@app.route('/api/tts/status/<task_id>')
+def tts_status(task_id):
+    """Return MP3 conversion progress for polling."""
+    with progress_lock:
+        task = progress_tracker.get(task_id)
+        if not task:
+            return jsonify({"error": "Task not found"}), 404
+        return jsonify({
+            "status": task.get("tts_status", "idle"),
+            "progress": task.get("tts_progress", 0),
+            "error": task.get("tts_error", ""),
+            "link": task.get("tts_download_link", "") or task.get("tts_mega_link", ""),
+        })
+
+
+@app.route('/download/tts/<task_id>')
+def download_tts_mp3(task_id):
+    """Serve the generated MP3 file if present locally."""
+    with progress_lock:
+        task = progress_tracker.get(task_id)
+        if not task:
+            flash('Task not found')
+            return redirect(url_for('index'))
+        mp3_path = task.get("tts_path")
+        mp3_filename = task.get("tts_filename", "audio.mp3")
+    if mp3_path and os.path.exists(mp3_path):
+        return send_file(mp3_path, as_attachment=True, download_name=mp3_filename, mimetype="audio/mpeg")
+    flash('Audio not ready yet')
+    return redirect(url_for('index'))
+
+
+
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 saved = _load_progress()
 if saved:

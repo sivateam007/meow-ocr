@@ -129,6 +129,7 @@
                             <button id="tts-pause" class="tts-btn btn-pause" type="button" style="display:none;"><i class="fas fa-pause"></i> Pause</button>
                             <button id="tts-stop" class="tts-btn btn-stop" type="button"><i class="fas fa-stop"></i> Stop</button>
                             <button id="tts-screen" class="tts-btn btn-screen" type="button" title="Keep the screen on while reading"><i class="fas fa-sun"></i> Screen on</button>
+                            <button id="tts-mp3" class="tts-btn btn-screen" type="button" style="background:linear-gradient(135deg,#8e44ad 0%,#6c3483 100%);" title="Convert the whole document to a downloadable MP3 audio file"><i class="fas fa-file-audio"></i> Download MP3</button>
                             <span id="tts-status" class="tts-status"></span>
                         </div>
                     </div>
@@ -198,6 +199,30 @@
             <div class="tts-modal-actions">
                 <button id="tts-modal-cancel" type="button" style="background:#ecf0f1; color:#555;">Cancel</button>
                 <button id="tts-modal-go" type="button" style="background:linear-gradient(135deg,#e67e22 0%,#d35400 100%); color:#fff;"><i class="fas fa-play"></i> Start reading</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mp3-modal" class="tts-modal" role="dialog" aria-modal="true">
+        <div class="tts-modal-box">
+            <h3><i class="fas fa-file-audio" style="color:#8e44ad;"></i> Download as MP3</h3>
+            <p>Pick a voice, language, speed and pitch, then convert the whole document to an audio file.</p>
+            <label for="mp3-lang">Language</label>
+            <select id="mp3-lang"></select>
+            <label for="mp3-voice">Voice</label>
+            <select id="mp3-voice"></select>
+            <label for="mp3-rate">Speed <span id="mp3-rate-val">1.00x</span></label>
+            <input type="range" id="mp3-rate" min="50" max="200" step="5" value="100">
+            <label for="mp3-pitch">Pitch <span id="mp3-pitch-val">0Hz</span></label>
+            <input type="range" id="mp3-pitch" min="-50" max="50" step="5" value="0">
+            <div id="mp3-status" class="tts-status" style="color:#8e44ad; min-height:2em;"></div>
+            <div id="mp3-ready" style="display:none;">
+                <a id="mp3-download-link" class="submit-btn" style="text-decoration:none; background:linear-gradient(135deg,#8e44ad 0%,#6c3483 100%); width:100%; text-align:center; margin:0.5rem 0;"><i class="fas fa-download"></i> Download MP3</a>
+                <p style="font-size:.82rem; color:#8a6d3b; margin:.4rem 0 0;">Your audio is also saved to cloud storage / My Downloads.</p>
+            </div>
+            <div class="tts-modal-actions">
+                <button id="mp3-cancel" type="button" style="background:#ecf0f1; color:#555;">Close</button>
+                <button id="mp3-go" type="button" style="background:linear-gradient(135deg,#8e44ad 0%,#6c3483 100%); color:#fff;"><i class="fas fa-cog"></i> Convert to Audio</button>
             </div>
         </div>
     </div>
@@ -801,6 +826,155 @@
             modal.addEventListener('click', function (e) {
                 if (e.target === modal) closeModal();
             });
+        })();
+
+        (function () {
+            'use strict';
+            var TASK_ID = "{{ task_id }}";
+            var mp3Btn = document.getElementById('tts-mp3');
+            var modal = document.getElementById('mp3-modal');
+            var langSel = document.getElementById('mp3-lang');
+            var voiceSel = document.getElementById('mp3-voice');
+            var rateRange = document.getElementById('mp3-rate');
+            var pitchRange = document.getElementById('mp3-pitch');
+            var rateVal = document.getElementById('mp3-rate-val');
+            var pitchVal = document.getElementById('mp3-pitch-val');
+            var statusEl = document.getElementById('mp3-status');
+            var readyEl = document.getElementById('mp3-ready');
+            var dlLink = document.getElementById('mp3-download-link');
+            var cancelBtn = document.getElementById('mp3-cancel');
+            var goBtn = document.getElementById('mp3-go');
+            var voices = {};
+            var pollTimer = null;
+            if (!mp3Btn || !modal) return;
+
+            function show(el, on) { if (el) el.style.display = on ? '' : 'none'; }
+
+            function loadVoices() {
+                fetch('/api/tts/voices')
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        voices = data || {};
+                        populateLangs();
+                    })
+                    .catch(function () {
+                        statusEl.textContent = 'Could not load voices. Please try again.';
+                    });
+            }
+
+            var LABELS = {
+                tam:'Tamil', eng:'English', hin:'Hindi', tel:'Telugu', kan:'Kannada',
+                mal:'Malayalam', ben:'Bengali', guj:'Gujarati', mar:'Marathi', pan:'Punjabi',
+                ara:'Arabic', rus:'Russian', ell:'Greek', heb:'Hebrew', tha:'Thai',
+                chi_sim:'Chinese', jpn:'Japanese', kor:'Korean', spa:'Spanish', fra:'French',
+                deu:'German', ita:'Italian'
+            };
+
+            function populateLangs() {
+                langSel.innerHTML = '';
+                var keys = Object.keys(voices);
+                keys.forEach(function (code) {
+                    var opt = document.createElement('option');
+                    opt.value = code;
+                    opt.textContent = (LABELS[code] || code) + ' (' + code + ')';
+                    langSel.appendChild(opt);
+                });
+                var def = keys.indexOf('tam') >= 0 ? 'tam' : (keys[0] || 'en');
+                if (def) langSel.value = def;
+                populateVoices();
+            }
+
+            function populateVoices() {
+                voiceSel.innerHTML = '';
+                var list = voices[langSel.value] || [];
+                if (!list.length) {
+                    var o = document.createElement('option');
+                    o.value = '';
+                    o.textContent = 'Default voice';
+                    voiceSel.appendChild(o);
+                    return;
+                }
+                list.forEach(function (v) {
+                    var opt = document.createElement('option');
+                    opt.value = v[0];
+                    opt.textContent = v[1];
+                    voiceSel.appendChild(opt);
+                });
+            }
+
+            function openModal() {
+                goBtn.disabled = false;
+                statusEl.textContent = '';
+                show(readyEl, false);
+                loadVoices();
+                modal.classList.add('open');
+            }
+            function closeModal() {
+                modal.classList.remove('open');
+                if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+            }
+
+            mp3Btn.addEventListener('click', function () { openModal(); });
+            cancelBtn.addEventListener('click', closeModal);
+            langSel.addEventListener('change', populateVoices);
+            rateRange.addEventListener('input', function () {
+                rateVal.textContent = (parseInt(rateRange.value, 10) / 100).toFixed(2) + 'x';
+            });
+            pitchRange.addEventListener('input', function () {
+                pitchVal.textContent = parseInt(pitchRange.value, 10) + 'Hz';
+            });
+
+            goBtn.addEventListener('click', function () {
+                var body = {
+                    voice: voiceSel.value || '',
+                    rate: parseInt(rateRange.value, 10) || 100,
+                    pitch: parseInt(pitchRange.value, 10) || 0
+                };
+                goBtn.disabled = true;
+                statusEl.textContent = 'Starting conversion...';
+                show(readyEl, false);
+                fetch('/api/tts/' + TASK_ID, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                })
+                    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                    .then(function (res) {
+                        if (!res.ok) {
+                            goBtn.disabled = false;
+                            statusEl.textContent = res.d.error || 'Could not start conversion.';
+                            return;
+                        }
+                        statusEl.textContent = 'Converting... 0%';
+                        pollTimer = setInterval(function () { pollStatus(); }, 1500);
+                    })
+                    .catch(function () {
+                        goBtn.disabled = false;
+                        statusEl.textContent = 'Network error. Please try again.';
+                    });
+            });
+
+            function pollStatus() {
+                fetch('/api/tts/status/' + TASK_ID)
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (d.status === 'done') {
+                            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                            statusEl.textContent = 'Ready!';
+                            show(readyEl, true);
+                            if (d.link) { dlLink.href = d.link; dlLink.setAttribute('download', ''); }
+                            else { dlLink.href = '/download/tts/' + TASK_ID; }
+                            goBtn.disabled = false;
+                        } else if (d.status === 'error') {
+                            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                            statusEl.textContent = d.error || 'Conversion failed.';
+                            goBtn.disabled = false;
+                        } else {
+                            statusEl.textContent = 'Converting... ' + (d.progress || 0) + '%';
+                        }
+                    })
+                    .catch(function () { });
+            }
         })();
     </script>
 {% include 'chatbot.html' %}
