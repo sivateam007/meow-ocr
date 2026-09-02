@@ -4076,7 +4076,8 @@ def text2audio_preview():
 
 
 def _text2audio_worker(token, text, voice, rate, pitch):
-    """Background: synthesize MP3, persist, upload to cloud, store link/status."""
+    """Background: synthesize MP3, persist, upload to cloud, update My Downloads."""
+    p_id = f"t2a_{token}"
     try:
         base = f"text2audio_{token}"
         mp3_filename = f"{base}.mp3"
@@ -4084,16 +4085,23 @@ def _text2audio_worker(token, text, voice, rate, pitch):
         with text2audio_lock:
             text2audio_tasks[token]["status"] = "generating"
             text2audio_tasks[token]["progress"] = 5
+        with progress_lock:
+            if p_id in progress_tracker:
+                progress_tracker[p_id]["percentage"] = 5
 
         _synthesize_to_mp3(text, voice, rate, pitch, mp3_path)
 
         with text2audio_lock:
             text2audio_tasks[token]["status"] = "done"
-            text2audio_tasks[token]["progress"] = 85
+            text2audio_tasks[token]["progress"] = 80
             text2audio_tasks[token]["path"] = mp3_path
             text2audio_tasks[token]["filename"] = mp3_filename
+        with progress_lock:
+            if p_id in progress_tracker:
+                progress_tracker[p_id]["percentage"] = 80
+                progress_tracker[p_id]["status"] = "processing"
 
-        # Save to Mega cloud (ocr-outputs) so it appears in My Downloads later.
+        # Save to Mega cloud so it appears in My Downloads later.
         link = ""
         try:
             link = upload_to_mega(mp3_path, mp3_filename)
@@ -4108,33 +4116,32 @@ def _text2audio_worker(token, text, voice, rate, pitch):
             text2audio_tasks[token]["progress"] = 100
             text2audio_tasks[token]["link"] = dl_link
 
-        # Register into progress_tracker so the MP3 shows up in My Downloads.
-        p_id = f"t2a_{token}"
+        # Mark complete in My Downloads with the MP3 ready to download.
         with progress_lock:
-            progress_tracker[p_id] = {
-                "status": "completed",
-                "file_type": "text_to_audio",
-                "audio": True,
-                "output_filename": mp3_filename,
-                "output_path": mp3_path,
-                "download_link": dl_link,
-                "mega_uploaded": bool(link),
-                "mega_status": "uploaded" if link else "",
-                "pages_processed": 1,
-                "percentage": 100,
-                "detected_language": "",
-                "created_at": time.time(),
-                "completed_at": time.time(),
-                "tts_filename": mp3_filename,
-                "tts_path": mp3_path,
-                "tts_download_link": dl_link,
-            }
+            if p_id in progress_tracker:
+                progress_tracker[p_id]["status"] = "completed"
+                progress_tracker[p_id]["percentage"] = 100
+                progress_tracker[p_id]["output_filename"] = mp3_filename
+                progress_tracker[p_id]["output_path"] = mp3_path
+                progress_tracker[p_id]["download_link"] = dl_link
+                progress_tracker[p_id]["mega_uploaded"] = bool(link)
+                progress_tracker[p_id]["mega_status"] = "uploaded" if link else ""
+                progress_tracker[p_id]["pages_processed"] = 1
+                progress_tracker[p_id]["completed_at"] = time.time()
+                progress_tracker[p_id]["tts_filename"] = mp3_filename
+                progress_tracker[p_id]["tts_path"] = mp3_path
+                progress_tracker[p_id]["tts_download_link"] = dl_link
         _save_progress(force=True)
     except Exception as e:
         logger.error(f"text2audio {token}: error: {e}", exc_info=True)
         with text2audio_lock:
             text2audio_tasks[token]["status"] = "error"
             text2audio_tasks[token]["error"] = str(e)
+        with progress_lock:
+            if p_id in progress_tracker:
+                progress_tracker[p_id]["status"] = "error"
+                progress_tracker[p_id]["mega_status"] = str(e)[:200]
+        _save_progress(force=True)
 
 
 @app.route('/api/text2audio', methods=['POST'])
@@ -4153,12 +4160,33 @@ def text2audio_create():
     pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, pitch))
 
     token = uuid.uuid4().hex[:16]
+    p_id = f"t2a_{token}"
     with text2audio_lock:
         text2audio_tasks[token] = {
             "status": "queued", "progress": 0, "error": "",
             "link": "", "mega_link": "", "path": None, "filename": None,
             "created_at": time.time(),
         }
+    # Register immediately so the task shows in My Downloads as "In progress..." (background).
+    with progress_lock:
+        progress_tracker[p_id] = {
+            "status": "processing",
+            "file_type": "text_to_audio",
+            "audio": True,
+            "filename": "Audio conversion",
+            "output_filename": None,
+            "output_path": None,
+            "download_link": "",
+            "mega_uploaded": False,
+            "mega_status": "",
+            "pages_processed": 0,
+            "percentage": 0,
+            "detected_language": "",
+            "voice_name": voice,
+            "created_at": time.time(),
+            "completed_at": None,
+        }
+    _save_progress(force=True)
     threading.Thread(target=_text2audio_worker, args=(token, text, voice, rate, pitch), daemon=True).start()
     return jsonify({"ok": True, "token": token}), 202
 

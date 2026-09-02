@@ -1379,6 +1379,8 @@
                 show(readyEl, false);
                 goBtn.disabled = false;
                 if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                show(player, false);
+                if (testMsg) testMsg.textContent = '';
             });
 
             if (testBtn) testBtn.addEventListener('click', function () {
