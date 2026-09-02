@@ -2604,6 +2604,10 @@ def download_result(task_id):
             return redirect(url_for('index'))
 
         if not task["output_path"] or not os.path.exists(task["output_path"]):
+            if task.get("download_link"):
+                with progress_lock:
+                    progress_tracker[task_id]["download_count"] = progress_tracker[task_id].get("download_count", 0) + 1
+                return redirect(task["download_link"])
             if task.get("mega_node_info"):
                 with progress_lock:
                     progress_tracker[task_id]["download_count"] = progress_tracker[task_id].get("download_count", 0) + 1
@@ -2761,7 +2765,7 @@ def refresh_cloud_api():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route('/mega-link/<task_id>', methods=['POST'])
+@app.route('/mega-link/<task_id>', methods=['GET', 'POST'])
 def get_mega_link(task_id):
     """Generate and cache a Mega download link for a task on demand."""
     with progress_lock:

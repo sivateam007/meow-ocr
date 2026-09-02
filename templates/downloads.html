@@ -301,20 +301,21 @@
             var orig = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
             fetch('/download/' + taskId)
-                .then(function (r) { if (!r.ok) throw new Error('bad'); return r.text(); })
+                .then(function (r) {
+                    btn.innerHTML = orig;
+                    if (!r.ok) throw new Error('bad');
+                    return r.text();
+                })
                 .then(function (text) {
                     if (navigator.clipboard && window.isSecureContext) {
-                        navigator.clipboard.writeText(text)
-                            .then(goResult)
-                            .catch(function () { fallbackCopy(text); goResult(); });
+                        navigator.clipboard.writeText(text).catch(function () { fallbackCopy(text); });
                     } else {
-                        fallbackCopy(text); goResult();
+                        fallbackCopy(text);
                     }
-                    function goResult() { window.location.href = '/result/' + taskId; }
+                    window.location.href = '/result/' + taskId;
                 })
                 .catch(function () {
-                    btn.innerHTML = '<i class="fas fa-times"></i> Error';
-                    setTimeout(function () { btn.innerHTML = orig; }, 1800);
+                    window.location.href = '/result/' + taskId;
                 });
         }
 
