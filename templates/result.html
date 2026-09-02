@@ -301,11 +301,7 @@
                 });
                 if (!langSel.value && sorted.length) langSel.value = sorted[0].lang.split('-')[0];
 
-                var autoOpt = document.createElement('option');
-                autoOpt.value = 'auto';
-                autoOpt.textContent = 'Auto (best available)';
                 voiceSel.innerHTML = '';
-                voiceSel.appendChild(autoOpt);
 
                 var maleList = [], femaleList = [], otherList = [];
                 sorted.forEach(function (v) {
@@ -332,28 +328,22 @@
                 addGroup('Female Voices', femaleList);
                 if (otherList.length) addGroup('Other Voices', otherList);
 
-                if (prevVoice) voiceSel.value = prevVoice;
-                if (!voiceSel.value) voiceSel.value = 'auto';
+                if (prevVoice && prevVoice !== 'auto') voiceSel.value = prevVoice;
+                if (!voiceSel.value && voiceSel.options.length) voiceSel.selectedIndex = 0;
             }
 
             function getSelectedVoice() {
                 var want = voiceSel.value;
-                if (!want || want === 'auto') {
-                    var l = langSel.value;
-                    var localVoices = voices.filter(function (v) { return v.localService; });
-                    if (l) {
-                        var localLang = localVoices.filter(function (v) { return v.lang.split('-')[0] === l; });
-                        if (localLang.length) return localLang[0];
-                    }
-                    if (localVoices.length) return localVoices[0];
-                    if (l) {
-                        var anyLang = voices.filter(function (v) { return v.lang.split('-')[0] === l; });
-                        if (anyLang.length) return anyLang[0];
-                    }
-                    return voices[0] || null;
+                if (want) {
+                    var found = voices.filter(function (v) { return v.name === want; })[0];
+                    if (found) return found;
                 }
-                var found = voices.filter(function (v) { return v.name === want; })[0];
-                return found || voices[0] || null;
+                var l = langSel.value;
+                if (l) {
+                    var byLang = voices.filter(function (v) { return v.lang.split('-')[0] === l; });
+                    if (byLang.length) return byLang[0];
+                }
+                return voices[0] || null;
             }
 
             function refreshMetrics() {
@@ -458,10 +448,13 @@
                 }
                 var st = textarea.scrollTop || 0;
                 if (st > 0) {
-                    var range = Math.max(1, textarea.scrollHeight - textarea.clientHeight);
-                    var ratio = Math.min(1, st / range);
-                    var guess = Math.floor(ratio * (textarea.value.length || 0));
-                    return findSentenceIndex(guess);
+                    if (lineStartOffsets.length <= 1) {
+                        refreshMetrics();
+                        lineStartOffsets = buildLineStarts(textarea.value || '');
+                    }
+                    var lineAt = Math.floor(st / lineHeightPx);
+                    var offset = lineStartOffsets[lineAt] != null ? lineStartOffsets[lineAt] : 0;
+                    return Math.max(0, findSentenceIndex(offset));
                 }
                 return 0;
             }
@@ -714,7 +707,7 @@
             });
 
             hereBtn.addEventListener('pointerdown', function (e) {
-                try { caretAtPointerDown = textarea.selectionStart; } catch (err) { caretAtPointerDown = 0; }
+                try { caretAtPointerDown = (document.activeElement === textarea) ? textarea.selectionStart : -1; } catch (err) { caretAtPointerDown = -1; }
             });
             playBtn.addEventListener('click', function () {
                 if (isPaused) { resumeReading(); return; }
