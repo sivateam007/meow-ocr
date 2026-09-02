@@ -398,6 +398,9 @@
                 </div>
 
                 <div class="tts-status" id="t2a-status" style="color:#6c3483; min-height:1.6em; margin-top:.9rem;"></div>
+                <div id="t2a-check" style="display:none; margin-top:.5rem;">
+                    <a href="/downloads" style="text-decoration:none; font-weight:600; color:#6c3483;"><i class="fas fa-tasks"></i> Check progress in My Downloads →</a>
+                </div>
                 <div id="t2a-ready" style="display:none; margin-top:.75rem; padding:1rem; background:#faf8ff; border:1px solid #e5d9f0; border-radius:10px;">
                     <a id="t2a-download" class="submit-btn tta-dl" style="text-decoration:none; background:linear-gradient(135deg,#8e44ad 0%,#6c3483 100%); width:100%; text-align:center;"><i class="fas fa-download"></i> Download MP3</a>
                     <p style="font-size:.84rem; color:#8a6d3b; margin:.6rem 0 0;">Your audio is saved to cloud storage &amp; My Downloads — you can come back to it later. 🐾</p>
@@ -1236,6 +1239,7 @@
             var pitchVal = document.getElementById('t2a-pitch-val');
             var countEl = document.getElementById('t2a-count');
             var statusEl = document.getElementById('t2a-status');
+            var checkEl = document.getElementById('t2a-check');
             var readyEl = document.getElementById('t2a-ready');
             var dlLink = document.getElementById('t2a-download');
             var goBtn = document.getElementById('t2a-go');
@@ -1336,6 +1340,7 @@
                 goBtn.disabled = true;
                 statusEl.textContent = 'Starting conversion...';
                 show(readyEl, false);
+                show(checkEl, true);
                 fetch('/api/text2audio', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1357,6 +1362,7 @@
                         if (d.status === 'done') {
                             if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
                             statusEl.textContent = 'Ready! Your audio is saved to cloud.';
+                            show(checkEl, false);
                             show(readyEl, true);
                             dlLink.href = d.link || ('/download/text2audio/' + token);
                             dlLink.setAttribute('download', '');
@@ -1364,6 +1370,7 @@
                         } else if (d.status === 'error') {
                             if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
                             statusEl.textContent = d.error || 'Conversion failed.';
+                            show(checkEl, false);
                             goBtn.disabled = false;
                         } else {
                             var pct = d.progress || 0;
@@ -1382,6 +1389,7 @@
                 updateCount();
                 statusEl.textContent = '';
                 show(readyEl, false);
+                show(checkEl, false);
                 goBtn.disabled = false;
                 if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
                 show(player, false);
