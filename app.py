@@ -3298,9 +3298,13 @@ GROQ_VISION_MODEL = os.environ.get("GROQ_VISION_MODEL", "meta-llama/llama-4-scou
 # Fallback vision models tried in order if the primary (or a configured one) is
 # unavailable on this account (e.g. model decommissioned or not granted).
 GROQ_VISION_FALLBACKS = [
-    "llama-4-scout-17b-16e-instruct",
     "meta-llama/llama-4-scout-17b-16e-instruct",
+    "llama-4-scout-17b-16e-instruct",
+    "qwen/qwen3.6-27b",
+    "qwen/qwen3.8-27b",
+    "llama-3.2-11b-vision-preview",
 ]
+_GROQ_VISION_RETRY_4XX = 3  # how many times to retry a quirk transient 429/5xx before giving up
 _GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 _GROQ_MAX_MESSAGE = 500
 _GROQ_MAX_IMAGE_BYTES = 25 * 1024 * 1024  # covers typical 15-20MB camera photos
@@ -3490,6 +3494,7 @@ def api_handwrite():
         if m and m not in models:
             models.append(m)
     last_status = None
+    last_reason = None
     for model in models:
         try:
             resp = requests.post(
@@ -3520,21 +3525,38 @@ def api_handwrite():
                 text = (body.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
                 if text:
                     return jsonify({"text": text}), 200
+            last_reason = resp.text[:300]
             if resp.status_code == 400 and "decommissioned" in resp.text.lower():
                 logger.warning("Vision model %s decommissioned, trying next", model)
                 continue
-            # other 4xx (e.g. 401/403 invalid key, 404 model not available)
+            if resp.status_code in (401, 403):
+                logger.warning("Vision model %s auth error HTTP %s: %s", model, resp.status_code, resp.text[:200])
+                return jsonify({
+                    "error": "The AI scanner has an invalid API key. Contact the site owner to fix the server setup.",
+                    "ai_offline": True,
+                }), 502
+            if resp.status_code in (404, 400):
+                logger.warning("Vision model %s unavailable HTTP %s: %s", model, resp.status_code, resp.text[:200])
+                continue
+            # other 4xx (e.g. 429 rate limit)
             if 400 <= resp.status_code < 500:
                 logger.warning("Vision model %s HTTP %s: %s", model, resp.status_code, resp.text[:200])
                 continue
-            # 429 rate limited or 5xx: don't burn through fallbacks pointlessly
+            # 5xx server error: don't burn through fallbacks pointlessly
             logger.warning("Groq vision HTTP %s with model %s", resp.status_code, model)
-            continue
         except Exception:
             logger.error("Groq vision error with model %s", model, exc_info=True)
+            last_reason = "network error"
             continue
+    if last_status in (401, 403):
+        return jsonify({
+            "error": "The AI scanner has an invalid API key. Contact the site owner to fix the server setup.",
+            "ai_offline": True,
+        }), 502
     if last_status and 400 <= last_status < 500:
-        return jsonify({"error": "The AI scanner hit a snag (HTTP %s). Please try again in a moment." % last_status}), 502
+        return jsonify({
+            "error": "The AI scanner hit a snag (HTTP %s). Please try again in a moment." % last_status,
+        }), 502
     return jsonify({"error": "The AI scanner is busy right now — please try again in a moment."}), 502
 
 
