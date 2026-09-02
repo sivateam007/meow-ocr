@@ -3435,6 +3435,49 @@ def api_chat():
     return jsonify({"reply": _faq_reply(msg)}), 200
 
 
+def _clean_vision_output(text):
+    """Strip any chain-of-thought/thinking preamble a vision model may prepend,
+    and collapse accidental duplicate lines, returning just the transcribed text."""
+    if not text:
+        return text
+    t = text.strip()
+    # Some reasoning models prefix the answer with a "thinking" block. Keep only
+    # the part after the closing "response" marker if one is present.
+    marker = None
+    for line in t.splitlines():
+        low = (line or "").strip().lower()
+        if low == "response" or low == "answer":
+            marker = low
+            break
+    if marker is not None:
+        parts = t.splitlines()
+        for i, line in enumerate(parts):
+            if (line or "").strip().lower() == marker:
+                t = "\n".join(parts[i + 1:]).strip()
+                break
+    # If a raw "thinking" block still leads (no answer marker), cut everything
+    # from "thinking" to the first blank-line+content transition.
+    if t.lower().startswith("thinking") or "\nthinking\n" in t.lower() or t.lower().startswith("\nthinking"):
+        t = re.sub(r"(?is)^\s*thinking\b.*?(\nresponse\b|\n\n)", "\n", t, count=1).strip()
+        if t.lower().startswith("thinking"):
+            t = ""
+    # De-duplicate a classic "thinking echo" pattern where the model returns every
+    # line twice (A,A,B,B,C,C). Only collapse when the whole block clearly shows
+    # the alternating echo, so genuine repeated lines in handwritten poems/lyrics
+    # are preserved.
+    lines = t.splitlines()
+    stripped = [ln.lstrip() for ln in lines]
+    echo_ratio = sum(1 for i in range(len(stripped) - 1) if stripped[i] == stripped[i + 1]) / max(1, len(stripped) - 1)
+    if echo_ratio >= 0.8:
+        out = []
+        for ln in lines:
+            if out and out[-1].strip() == ln.strip():
+                continue
+            out.append(ln)
+        return "\n".join(out).strip()
+    return "\n".join(lines).strip()
+
+
 @app.route("/api/handwrite", methods=["POST"])
 @_rate_limit(10, 60)
 def api_handwrite():
@@ -3497,32 +3540,38 @@ def api_handwrite():
     last_reason = None
     for model in models:
         try:
+            payload = {
+                "model": model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": data_url}},
+                        ],
+                    }
+                ],
+                "temperature": 0.2,
+                "max_tokens": 2000,
+            }
+            # Qwen vision models default to a "thinking" mode that prefixes the
+            # answer with chain-of-thought. Disable it for clean transcription.
+            if "qwen" in (model or "").lower():
+                payload["reasoning_effort"] = "none"
             resp = requests.post(
                 _GROQ_URL,
                 headers={
                     "Authorization": f"Bearer {GROQ_API_KEY}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "model": model,
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": prompt},
-                                {"type": "image_url", "image_url": {"url": data_url}},
-                            ],
-                        }
-                    ],
-                    "temperature": 0.2,
-                    "max_tokens": 2000,
-                },
+                json=payload,
                 timeout=60,
             )
             last_status = resp.status_code
             if resp.status_code == 200:
                 body = resp.json()
                 text = (body.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
+                text = _clean_vision_output(text)
                 if text:
                     return jsonify({"text": text}), 200
             last_reason = resp.text[:300]
