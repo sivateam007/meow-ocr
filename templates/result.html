@@ -67,6 +67,33 @@
                 <textarea id="result-text" spellcheck="false" style="width:100%; min-height:380px; padding:1rem; font-size:1rem; line-height:1.6; border:2px solid #ddd; border-radius:10px; font-family:inherit; resize:vertical; background:#fafaff;">{{ text }}</textarea>
             </div>
 
+            <div id="tts-panel" style="max-width:820px; margin:0 auto 1.5rem; background:linear-gradient(135deg,#fff7ef 0%,#fef0e6 100%); border:2px solid #ffd9b3; border-radius:12px; padding:1rem 1.25rem;">
+                <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; margin-bottom:0.75rem;">
+                    <i class="fas fa-volume-up" style="color:#e67e22; font-size:1.2rem;"></i>
+                    <strong style="color:#7a4a12;">Read Aloud</strong>
+                    <span id="tts-status" style="font-size:0.9rem; color:#b06a1e;"></span>
+                    <span style="margin-left:auto; display:flex; align-items:center; gap:0.5rem;">
+                        <button id="tts-play" class="submit-btn" style="width:auto; min-width:110px; background:linear-gradient(135deg,#e67e22 0%,#d35400 100%); border:none; cursor:pointer;"><i class="fas fa-play"></i> Listen</button>
+                        <button id="tts-pause" class="submit-btn" style="width:auto; min-width:110px; background:linear-gradient(135deg,#f39c12 0%,#e67e22 100%); border:none; cursor:pointer; display:none;"><i class="fas fa-pause"></i> Pause</button>
+                        <button id="tts-stop" class="submit-btn" style="width:auto; min-width:110px; background:linear-gradient(135deg,#95a5a6 0%,#7f8c8d 100%); border:none; cursor:pointer;"><i class="fas fa-stop"></i> Stop</button>
+                    </span>
+                </div>
+                <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+                    <label style="font-size:0.9rem; color:#7a4a12;">Language
+                        <select id="tts-lang" style="margin-left:0.4rem; padding:0.3rem 0.5rem; border-radius:6px; border:1px solid #ddd;"></select>
+                    </label>
+                    <label style="font-size:0.9rem; color:#7a4a12;">Voice
+                        <select id="tts-voice" style="margin-left:0.4rem; padding:0.3rem 0.5rem; border-radius:6px; border:1px solid #ddd;"></select>
+                    </label>
+                    <label style="font-size:0.9rem; color:#7a4a12;">Speed
+                        <input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1" style="vertical-align:middle; width:110px;"> <span id="tts-rate-val" style="font-weight:600;">1.0x</span>
+                    </label>
+                    <label style="font-size:0.9rem; color:#7a4a12;">Pitch
+                        <input type="range" id="tts-pitch" min="0.5" max="2" step="0.1" value="1" style="vertical-align:middle; width:110px;"> <span id="tts-pitch-val" style="font-weight:600;">1.0</span>
+                    </label>
+                </div>
+            </div>
+
             <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
                 <button id="copy-btn" class="submit-btn" style="width:auto; min-width:160px;"><i class="fas fa-copy"></i> Copy Text</button>
                 <a href="/download/{{ task_id }}" class="submit-btn" style="width:auto; min-width:150px; text-decoration:none; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);"><i class="fas fa-download"></i> Download .txt</a>
@@ -127,6 +154,194 @@
                 }
             });
         });
+
+        (function () {
+            if (!('speechSynthesis' in window)) {
+                var p = document.getElementById('tts-panel');
+                if (p) p.style.display = 'none';
+                return;
+            }
+            var synth = window.speechSynthesis;
+            var textarea = document.getElementById('result-text');
+            var langSel = document.getElementById('tts-lang');
+            var voiceSel = document.getElementById('tts-voice');
+            var rateRange = document.getElementById('tts-rate');
+            var pitchRange = document.getElementById('tts-pitch');
+            var rateVal = document.getElementById('tts-rate-val');
+            var pitchVal = document.getElementById('tts-pitch-val');
+            var playBtn = document.getElementById('tts-play');
+            var pauseBtn = document.getElementById('tts-pause');
+            var stopBtn = document.getElementById('tts-stop');
+            var status = document.getElementById('tts-status');
+            var voices = [];
+            var isPaused = false;
+
+            var langLabels = {
+                'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German',
+                'it': 'Italian', 'pt': 'Portuguese', 'hi': 'Hindi', 'ta': 'Tamil',
+                'te': 'Telugu', 'bn': 'Bengali', 'kn': 'Kannada', 'ml': 'Malayalam',
+                'gu': 'Gujarati', 'mr': 'Marathi', 'ur': 'Urdu', 'ar': 'Arabic',
+                'ru': 'Russian', 'zh': 'Chinese', 'ja': 'Japanese', 'ko': 'Korean',
+                'nl': 'Dutch', 'pl': 'Polish', 'tr': 'Turkish', 'vi': 'Vietnamese',
+                'th': 'Thai', 'sv': 'Swedish', 'id': 'Indonesian', 'el': 'Greek'
+            };
+
+            function populateVoices() {
+                voices = synth.getVoices() || [];
+                var prevLang = langSel.value;
+                var prevVoice = voiceSel.value;
+                var sorted = voices.slice().sort(function (a, b) {
+                    var la = langLabels[a.lang.split('-')[0]] || a.lang;
+                    var lb = langLabels[b.lang.split('-')[0]] || b.lang;
+                    if (la < lb) return -1;
+                    if (la > lb) return 1;
+                    return a.name.localeCompare(b.name);
+                });
+
+                // languages
+                var seenLangs = new Set();
+                var curSel = null;
+                sorted.forEach(function (v) {
+                    var code = v.lang.split('-')[0];
+                    if (!seenLangs.has(code)) {
+                        seenLangs.add(code);
+                        var opt = document.createElement('option');
+                        opt.value = code;
+                        opt.textContent = langLabels[code] + ' (' + (code || '?') + ')';
+                        langSel.appendChild(opt);
+                        if (code === prevLang) curSel = opt;
+                    }
+                });
+                if (curSel) curSel.selected = true;
+                if (!langSel.value && sorted.length) langSel.value = sorted[0].lang.split('-')[0];
+
+                // voices (all, with language labels)
+                voiceSel.innerHTML = '';
+                sorted.forEach(function (v) {
+                    var label = langLabels[v.lang.split('-')[0]] || v.lang;
+                    var opt = document.createElement('option');
+                    opt.value = v.name;
+                    var flag = v.localService ? 'local' : 'online';
+                    opt.textContent = label + ' - ' + v.name + ' (' + flag + ')';
+                    opt.setAttribute('data-lang', v.lang.split('-')[0]);
+                    if (v.lang.split('-')[0] === langSel.value) {
+                        if (!voiceSel.value || v.name === prevVoice) {
+                            opt.selected = true;
+                            if (v.name === prevVoice) voiceSel.selectedIndex = voiceSel.length - 1;
+                        }
+                        voiceSel.appendChild(opt);
+                    }
+                });
+                // if none for selected language, fill with all voices
+                if (!voiceSel.value) {
+                    voiceSel.innerHTML = '';
+                    sorted.forEach(function (v) {
+                        var label = langLabels[v.lang.split('-')[0]] || v.lang;
+                        var opt = document.createElement('option');
+                        opt.value = v.name;
+                        opt.textContent = label + ' - ' + v.name + ' (auto)';
+                        voiceSel.appendChild(opt);
+                    });
+                }
+            }
+
+            if ('onvoiceschanged' in synth) synth.onvoiceschanged = function () { populateVoices(); };
+            populateVoices();
+
+            if (langSel) langSel.addEventListener('change', function () { populateVoices(); });
+
+            rateRange.addEventListener('input', function () { rateVal.textContent = parseFloat(rateRange.value).toFixed(1) + 'x'; });
+            pitchRange.addEventListener('input', function () { pitchVal.textContent = parseFloat(pitchRange.value).toFixed(1); });
+
+            function getSelectedVoice() {
+                var name = voiceSel.value;
+                var found = voices.filter(function (v) { return v.name === name; })[0];
+                if (found) return found;
+                if (langSel.value) {
+                    var byLang = voices.filter(function (v) { return v.lang.split('-')[0] === langSel.value; });
+                    if (byLang.length) return byLang[0];
+                }
+                return voices[0] || null;
+            }
+
+            function speak() {
+                var text = (textarea.value || '').trim();
+                if (!text) {
+                    status.textContent = 'No text to read.';
+                    return;
+                }
+                synth.cancel();
+                // sentence-by-sentence step through
+                var sentences = text.match(/[^.!?…]+[.!?…]*[\s\n]*/g) || [text];
+                var fullUtterance = new SpeechSynthesisUtterance(text);
+                var voice = getSelectedVoice();
+                if (voice) {
+                    fullUtterance.voice = voice;
+                    fullUtterance.lang = voice.lang || langSel.value || 'en-US';
+                } else if (langSel.value) {
+                    fullUtterance.lang = langSel.value;
+                }
+                fullUtterance.rate = parseFloat(rateRange.value) || 1;
+                fullUtterance.pitch = parseFloat(pitchRange.value) || 1;
+                fullUtterance.onstart = function () { status.textContent = 'Reading...'; playBtn.style.display = 'none'; pauseBtn.style.display = 'inline-block'; };
+                fullUtterance.onend = function () { status.textContent = 'Finished.'; playBtn.style.display = ''; pauseBtn.style.display = 'none'; isPaused = false; };
+                fullUtterance.onerror = function (e) {
+                    if (e.error && e.error !== 'canceled' && e.error !== 'interrupted') {
+                        status.textContent = 'Speech error.';
+                    }
+                    playBtn.style.display = ''; pauseBtn.style.display = 'none';
+                };
+                if (voices.length > 1) {
+                    // queue sentences for step-by-step following
+                    var n = sentences.filter(function (s) { return s.trim(); }).length;
+                    var started = 0, ended = 0;
+                    sentences.forEach(function (s) {
+                        if (!s.trim()) return;
+                        var u = new SpeechSynthesisUtterance(s);
+                        u.voice = fullUtterance.voice;
+                        u.lang = fullUtterance.lang;
+                        u.rate = fullUtterance.rate;
+                        u.pitch = fullUtterance.pitch;
+                        u.onstart = function () { status.textContent = 'Reading...'; playBtn.style.display = 'none'; pauseBtn.style.display = 'inline-block'; };
+                        u.onend = function () {
+                            ended++;
+                            if (ended >= n) {
+                                status.textContent = 'Finished.';
+                                playBtn.style.display = ''; pauseBtn.style.display = 'none'; isPaused = false;
+                            }
+                        };
+                        synth.speak(u);
+                    });
+                } else {
+                    synth.speak(fullUtterance);
+                }
+                isPaused = false;
+            }
+
+            playBtn.addEventListener('click', function () {
+                if (isPaused) {
+                    synth.resume();
+                    isPaused = false;
+                    status.textContent = 'Reading...';
+                    playBtn.style.display = 'none'; pauseBtn.style.display = 'inline-block';
+                    return;
+                }
+                speak();
+            });
+            pauseBtn.addEventListener('click', function () {
+                if (synth.speaking && !synth.paused) {
+                    synth.pause();
+                    isPaused = true;
+                    status.textContent = 'Paused.';
+                }
+            });
+            stopBtn.addEventListener('click', function () {
+                synth.cancel();
+                isPaused = false;
+                status.textContent = 'Stopped.';
+                playBtn.style.display = ''; pauseBtn.style.display = 'none';
+            });
+        })();
     </script>
 {% include 'chatbot.html' %}
 </body>
