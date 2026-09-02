@@ -594,6 +594,7 @@
                 currentSentence = startIdx - 1;
                 status.textContent = 'Starting with "' + currentVoiceLabel + '"...';
                 if (synth.speaking || synth.paused || synth.pending) synth.cancel();
+                startBackgroundPlay();
                 setTimeout(function () { kick(tok); }, 250);
             }
 
@@ -620,14 +621,85 @@
                 synth.cancel();
                 isPaused = false;
                 finishReading();
+                stopBackgroundPlay();
                 status.textContent = 'Stopped.';
+            }
+
+            /* --- Background play: Wake Lock + Media Session + silent AudioContext --- */
+            var wakeLock = null;
+            var audioCtx = null;
+            var silentSource = null;
+
+            function requestWakeLock() {
+                try {
+                    if ('wakeLock' in navigator) {
+                        navigator.wakeLock.request('screen').then(function (lock) {
+                            wakeLock = lock;
+                            lock.addEventListener('release', function () { wakeLock = null; });
+                        }).catch(function () { });
+                    }
+                } catch (e) { }
+            }
+
+            function releaseWakeLock() {
+                try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch (e) { }
+            }
+
+            function startSilentAudio() {
+                try {
+                    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                    var buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+                    silentSource = audioCtx.createBufferSource();
+                    silentSource.buffer = buf;
+                    silentSource.loop = true;
+                    silentSource.connect(audioCtx.destination);
+                    silentSource.start();
+                } catch (e) { }
+            }
+
+            function stopSilentAudio() {
+                try { if (silentSource) { silentSource.stop(); silentSource.disconnect(); silentSource = null; } } catch (e) { }
+                try { if (audioCtx && audioCtx.state !== 'closed') audioCtx.suspend(); } catch (e) { }
+            }
+
+            function activateMediaSession() {
+                try {
+                    if ('mediaSession' in navigator) {
+                        navigator.mediaSession.metadata = new MediaMetadata({
+                            title: 'Reading Aloud - Meow OCR',
+                            artist: 'Meow OCR',
+                            album: 'Text Reader'
+                        });
+                        navigator.mediaSession.setActionHandler('play', function () { resumeReading(); });
+                        navigator.mediaSession.setActionHandler('pause', function () { pauseReading(); });
+                        navigator.mediaSession.setActionHandler('stop', function () { stopReading(); });
+                    }
+                } catch (e) { }
+            }
+
+            function startBackgroundPlay() {
+                requestWakeLock();
+                startSilentAudio();
+                activateMediaSession();
+            }
+
+            function stopBackgroundPlay() {
+                releaseWakeLock();
+                stopSilentAudio();
             }
 
             if ('onvoiceschanged' in synth) synth.onvoiceschanged = function () { populateVoices(); };
             populateVoices();
             if (langSel) langSel.addEventListener('change', function () { populateVoices(); });
-            rateRange.addEventListener('input', function () { rateVal.textContent = parseFloat(rateRange.value).toFixed(1) + 'x'; });
-            pitchRange.addEventListener('input', function () { pitchVal.textContent = parseFloat(pitchRange.value).toFixed(1); });
+            rateRange.addEventListener('input', function () {
+                rateVal.textContent = parseFloat(rateRange.value).toFixed(1) + 'x';
+                rateCurrent = parseFloat(rateRange.value) || 1;
+            });
+            pitchRange.addEventListener('input', function () {
+                pitchVal.textContent = parseFloat(pitchRange.value).toFixed(1);
+                pitchCurrent = parseFloat(pitchRange.value) || 1;
+            });
             textarea.addEventListener('scroll', function () {
                 overlay.scrollTop = textarea.scrollTop;
                 overlay.scrollLeft = textarea.scrollLeft;
