@@ -34,6 +34,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
     <link rel="canonical" href="{{ canonical_url }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     {% include 'analytics.html' %}
     <!-- monetag removed -->
     <!-- ads removed -->
@@ -136,9 +137,9 @@
                         <a href="/how-to-use" class="hero-cta ghost"><i class="fas fa-graduation-cap"></i> How It Works</a>
                     </div>
                     <div class="hero-stats">
-                        <div class="stat-item"><span class="stat-num" data-count="19">0</span><span class="stat-label">Languages</span></div>
-                        <div class="stat-item"><span class="stat-num" data-count="10">0</span><span class="stat-label">File Types</span></div>
-                        <div class="stat-item"><span class="stat-num" data-count="1200">0</span><span class="stat-label">Happy Users</span></div>
+                        <div class="stat-item"><span class="stat-num">{{ 19 }}</span><span class="stat-label">Languages</span></div>
+                        <div class="stat-item"><span class="stat-num">10+</span><span class="stat-label">File Types</span></div>
+                        <div class="stat-item"><span class="stat-num">{{ '{:,}'.format(doc_count) }}</span><span class="stat-label">Docs Converted</span></div>
                     </div>
                 </div>
 
@@ -189,7 +190,7 @@
 
             <form method="POST" enctype="multipart/form-data" class="upload-form" id="upload-form" action="/">
                 <div class="file-input-wrapper">
-                    <input type="file" name="file" id="pdf-upload" accept=".pdf" required>
+                    <input type="file" name="file" id="pdf-upload" accept=".pdf" multiple required>
                     <label for="pdf-upload" class="upload-box" id="drop-zone">
                         <img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo" class="upload-logo">
                         <div class="upload-text">Click to upload or drag & drop 🐱</div>
@@ -352,7 +353,7 @@
                 </div>
             </div>
 
-            <p class="language-note" id="ocr-note">Supports: PDF, Images (JPG, PNG, BMP, TIFF), Documents (DOCX, PPTX, RTF, ODT), Data (XLSX, CSV, XML, JSON, HTML)</p>
+            <p class="language-note" id="ocr-note">Supports: PDF, Images (JPG, PNG, BMP, TIFF), Documents (DOCX, PPTX, RTF, ODT), Data (XLSX, CSV, XML, JSON, HTML) · Up to 5 files at once — each converts and lands in My Downloads</p>
             <p class="language-note" id="translate-note" style="display: none;">Upload a .txt file to translate. Multiple languages supported.</p>
         </section>
 
@@ -521,11 +522,10 @@
         <!-- ===== CUSTOMER REVIEWS ===== -->
         <section class="content-section info-page" id="reviews">
             <h2><i class="fas fa-comments"></i> What Our Users Say <span class="heading-cat">🐱</span></h2>
-            <p class="page-subtitle">Real (metaphorically purring) customers love Meow OCR.</p>
+            <p class="page-subtitle">Why people love Meow OCR — free, private and fast.</p>
             <div class="rating-summary">
-                <span class="big">4.9</span>
-                <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
-                <span class="count">Rated 4.9 / 5 by <b>1,200+</b> users worldwide</span>
+                <div class="stars"><i class="fas fa-check-circle"></i><i class="fas fa-check-circle"></i><i class="fas fa-check-circle"></i><i class="fas fa-check-circle"></i></div>
+                <span class="count">No signup · No watermark · Files auto-delete in 2 days · 19+ languages</span>
             </div>
             <div class="reviews-grid">
                 <div class="review-card">
@@ -533,28 +533,28 @@
                     <img src="{{ url_for('static', filename='images/meow-hero.jpg') }}" alt="happy cat customer avatar" class="review-cat" loading="lazy">
                     <p class="review-text">"Amazing free tool! Extracted text from a 80-page Tamil PDF perfectly in minutes, no signup needed. Saved me hours of typing."</p>
                     <div class="review-author"><span class="avatar">P</span><div class="who"><b>Priya R.</b><span>Chennai, India</span></div></div>
-                    <span class="review-verified"><i class="fas fa-check-circle"></i> Verified User</span>
+                    <span class="review-verified"><i class="fas fa-check-circle"></i> Happy user</span>
                 </div>
                 <div class="review-card">
                     <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <img src="{{ url_for('static', filename='images/meow-smile.jpg') }}" alt="happy cat customer avatar" class="review-cat" loading="lazy">
                     <p class="review-text">"The auto language detection is spot-on. I convert invoices and receipts to editable text every day. Fast and private."</p>
                     <div class="review-author"><span class="avatar">A</span><div class="who"><b>Arun K.</b><span>Coimbatore, India</span></div></div>
-                    <span class="review-verified"><i class="fas fa-check-circle"></i> Verified User</span>
+                    <span class="review-verified"><i class="fas fa-check-circle"></i> Happy user</span>
                 </div>
                 <div class="review-card">
                     <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <img src="{{ url_for('static', filename='images/meow-cute.jpg') }}" alt="happy cat customer avatar" class="review-cat" loading="lazy">
                     <p class="review-text">"Clean, professional and genuinely unlimited after signing in. I love that my files auto-delete from cloud storage after 2 days — very secure."</p>
                     <div class="review-author"><span class="avatar">S</span><div class="who"><b>Selvi M.</b><span>Madurai, India</span></div></div>
-                    <span class="review-verified"><i class="fas fa-check-circle"></i> Verified User</span>
+                    <span class="review-verified"><i class="fas fa-check-circle"></i> Happy user</span>
                 </div>
                 <div class="review-card">
                     <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
                     <img src="{{ url_for('static', filename='images/meow-yawn.jpg') }}" alt="happy cat customer avatar" class="review-cat" loading="lazy">
                     <p class="review-text">"Works on my phone, supports Hindi and English, and there's no watermark. Definitely my go-to OCR website now."</p>
                     <div class="review-author"><span class="avatar">V</span><div class="who"><b>Vikram S.</b><span>Hyderabad, India</span></div></div>
-                    <span class="review-verified"><i class="fas fa-check-circle"></i> Verified User</span>
+                    <span class="review-verified"><i class="fas fa-check-circle"></i> Happy user</span>
                 </div>
             </div>
         </section>
@@ -803,7 +803,7 @@
 
         fileInput.addEventListener('change', function() {
             if (this.files.length > 0) {
-                fileName.textContent = this.files[0].name;
+                fileName.textContent = this.files.length > 1 ? (this.files.length + ' files selected') : this.files[0].name;
             } else {
                 fileName.textContent = '';
             }
@@ -841,7 +841,7 @@
 
                 if (allowed.includes(ext)) {
                     fileInput.files = e.dataTransfer.files;
-                    fileName.textContent = file.name;
+                    fileName.textContent = e.dataTransfer.files.length > 1 ? (e.dataTransfer.files.length + ' files selected') : file.name;
                 } else {
                     const names = {
                         pdf: 'PDF', image: 'Image', doc: 'Document',
@@ -862,12 +862,44 @@
             }
         });
 
-        uploadForm.addEventListener('submit', function() {
+        uploadForm.addEventListener('submit', function(e) {
+            var files = fileInput.files;
+            if (currentTab !== 'translate' && files.length > 1) {
+                e.preventDefault();
+                batchUpload(files);
+                return;
+            }
             submitBtn.disabled = true;
             btnText.textContent = currentTab === 'translate' ? 'Translating...' : 'Processing...';
             loadingText.textContent = currentTab === 'translate' ? 'Translating file...' : 'Submitting for processing...';
             loadingOverlay.classList.add('active');
         });
+
+        function batchUpload(files) {
+            submitBtn.disabled = true;
+            loadingOverlay.classList.add('active');
+            var total = Math.min(files.length, 5);
+            function next(i) {
+                if (i >= total) {
+                    loadingText.textContent = 'All uploaded! Opening your downloads...';
+                    setTimeout(function () { window.location.href = '/downloads'; }, 400);
+                    return;
+                }
+                loadingText.textContent = 'Uploading file ' + (i + 1) + ' of ' + total + ' (' + files[i].name + ')...';
+                var fd = new FormData(uploadForm);
+                fd.delete('file');
+                fd.append('file', files[i]);
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', uploadForm.action, true);
+                xhr.onload = function () {
+                    if (xhr.status === 200) { next(i + 1); }
+                    else { loadingText.textContent = 'Upload ' + (i + 1) + ' failed — retrying...'; setTimeout(function () { next(i); }, 1500); }
+                };
+                xhr.onerror = function () { loadingText.textContent = 'Connection error — retrying...'; setTimeout(function () { next(i); }, 1500); };
+                xhr.send(fd);
+            }
+            next(0);
+        }
     </script>
 
     <script>
@@ -918,13 +950,6 @@
 
                     // Gentle floating on the upload box
                     anime({ targets: '#drop-zone', translateY: [0, -8, 0], duration: 2500, loop: true, easing: 'easeInOutSine' });
-
-                    // Animated stat counters
-                    var stats = document.querySelectorAll('.stat-num');
-                    stats.forEach(function (el) {
-                        var target = +el.getAttribute('data-count');
-                        anime({ targets: el, innerHTML: [0, target], round: 1, duration: 1200, delay: 600, easing: 'easeOutExpo', update: function (anim) { el.textContent = Math.round(anim.animations[0].currentValue); } });
-                    });
 
                     // Upload tab fade-in stagger
                     var tabs = document.querySelectorAll('.tab-btn');
@@ -1121,5 +1146,14 @@
 
     <!-- ads removed -->
     {% include 'chatbot.html' %}
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('{{ url_for('static', filename='sw.js') }}').catch(function (e) {
+                    console.warn('SW registration failed:', e);
+                });
+            });
+        }
+    </script>
 </body>
 </html>

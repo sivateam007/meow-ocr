@@ -117,7 +117,10 @@ def inject_globals():
     user = get_user()
     _ads = ads_slots()
     _path = _request.path if _request else "/"
+    with progress_lock:
+        _doc_count = sum(1 for t in progress_tracker.values() if t.get("status") == "completed")
     return {
+        "doc_count": _doc_count,
         "canonical_url": (SITE_URL + _path) if SITE_URL else "/",
         "ga4_id": os.environ.get("GA4_ID", "").strip(),
         "clarity_id": os.environ.get("CLARITY_ID", "").strip(),
@@ -792,6 +795,51 @@ def process_image_file(image_path, lang='eng'):
         logger.error(f"Image processing error: {e}")
         raise
 
+
+def ocr_low_confidence_words(image_path, lang='eng', threshold=62, max_words=40):
+    """
+    Run Tesseract with per-word confidence (image OCR only) and return the
+    words the engine was unsure about, so we can highlight likely OCR errors.
+    Best-effort: any failure returns an empty list and never breaks the job.
+    """
+    try:
+        img = Image.open(image_path)
+        try:
+            try:
+                prepped = preprocess_page(img)
+            except Exception:
+                prepped = img if img.mode == 'L' else img.convert('L')
+            data = pytesseract.image_to_data(prepped, lang=lang, output_type=pytesseract.Output.DICT)
+        finally:
+            if prepped is not img:
+                prepped.close()
+            img.close()
+
+        words = []
+        for i, w in enumerate(data.get("text", [])):
+            try:
+                conf = float(data.get("conf", [100])[i])
+            except (TypeError, ValueError):
+                conf = 100.0
+            w = (w or "").strip()
+            if not w:
+                continue
+            if conf >= 0 and conf < threshold:
+                words.append((w, int(conf)))
+        # Deduplicate preserving order, sort by lowest confidence
+        seen = set()
+        unique = []
+        for w, c in words:
+            key = w.lower()
+            if key not in seen:
+                seen.add(key)
+                unique.append((w, c))
+        unique.sort(key=lambda t: t[1])
+        return [w for w, c in unique[:max_words]]
+    except Exception as e:
+        logger.warning(f"Confidence scan skipped ({getattr(e, '__class__', e).__name__}): {e}")
+        return []
+
 def process_docx_file(docx_path):
     """Extract text from DOCX file (no OCR needed)"""
     try:
@@ -1128,6 +1176,11 @@ def process_file_background(task_id, file_path, filename, temp_dir, selected_lan
             
             # Process image with OCR
             text = process_image_file(file_path, lang=selected_lang if selected_lang != 'auto' else 'eng')
+            
+            # Confidence highlighting (image OCR only) — best-effort, never breaks the job
+            low_conf = ocr_low_confidence_words(file_path, lang=selected_lang if selected_lang != 'auto' else 'eng')
+            with progress_lock:
+                progress_tracker[task_id]["low_conf_words"] = low_conf
             
             # Write to output
             with open(output_path, 'w', encoding='utf-8') as f:
@@ -2562,13 +2615,28 @@ def download_result(task_id):
         output_filename = task["output_filename"]
 
     # Send file as download
+    fmt = request.args.get("format", "txt")
     try:
-        response = send_file(
-            output_path,
-            as_attachment=True,
-            download_name=output_filename,
-            mimetype='text/plain'
-        )
+        if fmt == "docx":
+            with open(output_path, "r", encoding="utf-8", errors="replace") as f:
+                text = f.read()
+            base = os.path.splitext(output_filename)[0]
+            pc = base.rsplit("_ocr", 1)[0] if base.endswith("_ocr") else base
+            docx_name = f"{pc}_ocr.docx"
+            buf = _build_docx(text)
+            response = send_file(
+                buf,
+                as_attachment=True,
+                download_name=docx_name,
+                mimetype=_docx_mimetype()
+            )
+        else:
+            response = send_file(
+                output_path,
+                as_attachment=True,
+                download_name=output_filename,
+                mimetype='text/plain'
+            )
     except Exception as e:
         logger.error(f"Download error for {task_id}: {e}")
         flash('Error sending file')
@@ -2589,6 +2657,28 @@ def track_download(task_id):
             progress_tracker[task_id]["download_count"] = progress_tracker[task_id].get("download_count", 0) + 1
             return jsonify({"ok": True}), 200
     return jsonify({"ok": False}), 404
+
+
+def _build_docx(text, title="Meow OCR — Extracted Text"):
+    """Return a BytesIO of a .docx built from extracted text."""
+    import io as _io
+    from docx import Document
+    from docx.shared import Pt
+    buf = _io.BytesIO()
+    doc = Document()
+    if title:
+        h = doc.add_heading(title, level=1)
+        for r in h.runs:
+            r.font.size = Pt(18)
+    for para in (text or "").splitlines():
+        doc.add_paragraph(para or " ")
+    doc.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def _docx_mimetype():
+    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
 def _read_task_text(task_id):
@@ -2636,7 +2726,8 @@ def result_page(task_id):
     with progress_lock:
         filename = progress_tracker[task_id].get("output_filename", "output.txt")
         display_name = progress_tracker[task_id].get("original_filename", filename) if progress_tracker[task_id].get("original_filename") else filename
-    return render_template('result.html', task_id=task_id, text=text, filename=display_name)
+        low_conf_words = progress_tracker[task_id].get("low_conf_words", [])
+    return render_template('result.html', task_id=task_id, text=text, filename=display_name, low_conf_words=low_conf_words)
 
 
 @app.route('/refresh-cloud', methods=['POST'])
