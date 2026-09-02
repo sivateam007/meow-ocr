@@ -187,9 +187,31 @@ TTS_MAX_WORDS = int(os.environ.get("TTS_MAX_WORDS", "2500"))  # Cap to keep MP3 
 TTS_RATE_MIN, TTS_RATE_MAX = 50, 200  # percent
 TTS_PITCH_MIN, TTS_PITCH_MAX = -50, 50  # Hz
 
-# App language code -> available edge-tts voices (verified names). Ordered female-first default.
+# App language code -> available edge-tts voices (verified). Ordered female-first default.
 TTS_VOICES = {
-    "en":   [("en-US-JennyNeural", "Jenny (Female)", "Female"), ("en-US-GuyNeural", "Guy (Male)", "Male"), ("en-IN-NeerjaNeural", "Neerja IN (Female)", "Female"), ("en-IN-PrabhatNeural", "Prabhat IN (Male)", "Male")],
+    "en": [
+        ("en-US-JennyNeural", "Jenny (Female)", "Female"),
+        ("en-US-AriaNeural", "Aria (Female)", "Female"),
+        ("en-US-AnaNeural", "Ana (Female)", "Female"),
+        ("en-US-MichelleNeural", "Michelle (Female)", "Female"),
+        ("en-US-EmmaNeural", "Emma (Female)", "Female"),
+        ("en-US-AvaNeural", "Ava (Female)", "Female"),
+        ("en-IN-NeerjaNeural", "Neerja IN (Female)", "Female"),
+        ("en-GB-SoniaNeural", "Sonia GB (Female)", "Female"),
+        ("en-GB-LibbyNeural", "Libby GB (Female)", "Female"),
+        ("en-GB-MaisieNeural", "Maisie GB (Female)", "Female"),
+        ("en-AU-NatashaNeural", "Natasha AU (Female)", "Female"),
+        ("en-US-GuyNeural", "Guy (Male)", "Male"),
+        ("en-US-BrianNeural", "Brian (Male)", "Male"),
+        ("en-US-AndrewNeural", "Andrew (Male)", "Male"),
+        ("en-US-ChristopherNeural", "Christopher (Male)", "Male"),
+        ("en-US-RogerNeural", "Roger (Male)", "Male"),
+        ("en-US-EricNeural", "Eric (Male)", "Male"),
+        ("en-US-SteffanNeural", "Steffan (Male)", "Male"),
+        ("en-IN-PrabhatNeural", "Prabhat IN (Male)", "Male"),
+        ("en-GB-RyanNeural", "Ryan GB (Male)", "Male"),
+        ("en-GB-ThomasNeural", "Thomas GB (Male)", "Male"),
+    ],
     "hin":  [("hi-IN-SwaraNeural", "Swara (Female)", "Female"), ("hi-IN-MadhurNeural", "Madhur (Male)", "Male")],
     "tam":  [("ta-IN-PallaviNeural", "Pallavi (Female)", "Female"), ("ta-IN-ValluvarNeural", "Valluvar (Male)", "Male")],
     "tel":  [("te-IN-ShrutiNeural", "Shruti (Female)", "Female"), ("te-IN-MohanNeural", "Mohan (Male)", "Male")],
@@ -198,68 +220,163 @@ TTS_VOICES = {
     "ben":  [("bn-IN-TanishaaNeural", "Tanishaa (Female)", "Female"), ("bn-IN-BashkarNeural", "Bashkar (Male)", "Male")],
     "guj":  [("gu-IN-DhwaniNeural", "Dhwani (Female)", "Female"), ("gu-IN-NiranjanNeural", "Niranjan (Male)", "Male")],
     "mar":  [("mr-IN-AarohiNeural", "Aarohi (Female)", "Female"), ("mr-IN-ManoharNeural", "Manohar (Male)", "Male")],
-    "pan":  [("ta-IN-PallaviNeural", "Pallavi (Female)", "Female"), ("ta-IN-ValluvarNeural", "Valluvar (Male)", "Male")],  # punjabi: fallback to ta-IN
+    "urd":  [("ur-IN-GulNeural", "Gul (Female)", "Female"), ("ur-IN-SalmanNeural", "Salman (Male)", "Male")],
     "ara":  [("ar-SA-ZariyahNeural", "Zariyah (Female)", "Female"), ("ar-SA-HamedNeural", "Hamed (Male)", "Male")],
     "rus":  [("ru-RU-SvetlanaNeural", "Svetlana (Female)", "Female"), ("ru-RU-DmitryNeural", "Dmitry (Male)", "Male")],
     "ell":  [("el-GR-AthinaNeural", "Athina (Female)", "Female"), ("el-GR-NestorasNeural", "Nestoras (Male)", "Male")],
     "heb":  [("he-IL-HilaNeural", "Hila (Female)", "Female"), ("he-IL-AvriNeural", "Avri (Male)", "Male")],
     "tha":  [("th-TH-PremwadeeNeural", "Premwadee (Female)", "Female"), ("th-TH-NiwatNeural", "Niwat (Male)", "Male")],
-    "chi_sim": [("zh-CN-XiaoxiaoNeural", "Xiaoxiao (Female)", "Female"), ("zh-CN-YunxiNeural", "Yunxi (Male)", "Male")],
+    "tur":  [("tr-TR-EmelNeural", "Emel (Female)", "Female"), ("tr-TR-AhmetNeural", "Ahmet (Male)", "Male")],
+    "por":  [("pt-BR-FranciscaNeural", "Francisca (Female)", "Female"), ("pt-BR-AntonioNeural", "Antonio (Male)", "Male")],
+    "ind":  [("id-ID-GadisNeural", "Gadis (Female)", "Female"), ("id-ID-ArdiNeural", "Ardi (Male)", "Male")],
+    "msa":  [("ms-MY-YasminNeural", "Yasmin (Female)", "Female"), ("ms-MY-OsmanNeural", "Osman (Male)", "Male")],
+    "fil":  [("fil-PH-BlessicaNeural", "Blessica (Female)", "Female"), ("fil-PH-AngeloNeural", "Angelo (Male)", "Male")],
+    "vie":  [("vi-VN-HoaiMyNeural", "HoaiMy (Female)", "Female"), ("vi-VN-NamMinhNeural", "NamMinh (Male)", "Male")],
+    "chi_sim": [
+        ("zh-CN-XiaoxiaoNeural", "Xiaoxiao (Female)", "Female"),
+        ("zh-CN-XiaoyiNeural", "Xiaoyi (Female)", "Female"),
+        ("zh-CN-YunxiNeural", "Yunxi (Male)", "Male"),
+        ("zh-CN-YunjianNeural", "Yunjian (Male)", "Male"),
+        ("zh-CN-YunyangNeural", "Yunyang (Male)", "Male"),
+        ("zh-CN-YunxiaNeural", "Yunxia (Male)", "Male"),
+    ],
     "jpn":  [("ja-JP-NanamiNeural", "Nanami (Female)", "Female"), ("ja-JP-KeitaNeural", "Keita (Male)", "Male")],
-    "kor":  [("ko-KR-SunHiNeural", "SunHi (Female)", "Female"), ("ko-KR-InJoonNeural", "InJoon (Male)", "Male")],
-    "spa":  [("es-ES-ElviraNeural", "Elvira (Female)", "Female"), ("es-ES-AlvaroNeural", "Alvaro (Male)", "Male")],
-    "fra":  [("fr-FR-DeniseNeural", "Denise (Female)", "Female"), ("fr-FR-HenriNeural", "Henri (Male)", "Male")],
-    "deu":  [("de-DE-KatjaNeural", "Katja (Female)", "Female"), ("de-DE-ConradNeural", "Conrad (Male)", "Male")],
-    "ita":  [("it-IT-ElsaNeural", "Elsa (Female)", "Female"), ("it-IT-DiegoNeural", "Diego (Male)", "Male")],
+    "kor":  [("ko-KR-SunHiNeural", "SunHi (Female)", "Female"), ("ko-KR-InJoonNeural", "InJoon (Male)", "Male"), ("ko-KR-HyunsuMultilingualNeural", "Hyunsu Multi (Male)", "Male")],
+    "spa":  [("es-ES-ElviraNeural", "Elvira (Female)", "Female"), ("es-ES-XimenaNeural", "Ximena (Female)", "Female"), ("es-ES-AlvaroNeural", "Alvaro (Male)", "Male")],
+    "fra":  [("fr-FR-DeniseNeural", "Denise (Female)", "Female"), ("fr-FR-EloiseNeural", "Eloise (Female)", "Female"), ("fr-FR-HenriNeural", "Henri (Male)", "Male"), ("fr-FR-RemyMultilingualNeural", "Remy Multi (Male)", "Male")],
+    "deu":  [("de-DE-KatjaNeural", "Katja (Female)", "Female"), ("de-DE-AmalaNeural", "Amala (Female)", "Female"), ("de-DE-ConradNeural", "Conrad (Male)", "Male"), ("de-DE-KillianNeural", "Killian (Male)", "Male")],
+    "ita":  [("it-IT-ElsaNeural", "Elsa (Female)", "Female"), ("it-IT-IsabellaNeural", "Isabella (Female)", "Female"), ("it-IT-DiegoNeural", "Diego (Male)", "Male")],
+    "bul":  [("bg-BG-KalinaNeural", "Kalina (Female)", "Female"), ("bg-BG-BorislavNeural", "Borislav (Male)", "Male")],
+    "hrv":  [("hr-HR-GabrijelaNeural", "Gabrijela (Female)", "Female"), ("hr-HR-SreckoNeural", "Srecko (Male)", "Male")],
+    "ces":  [("cs-CZ-VlastaNeural", "Vlasta (Female)", "Female"), ("cs-CZ-AntoninNeural", "Antonin (Male)", "Male")],
+    "dan":  [("da-DK-ChristelNeural", "Christel (Female)", "Female"), ("da-DK-JeppeNeural", "Jeppe (Male)", "Male")],
+    "nld":  [("nl-NL-FennaNeural", "Fenna (Female)", "Female"), ("nl-NL-ColetteNeural", "Colette (Female)", "Female"), ("nl-NL-MaartenNeural", "Maarten (Male)", "Male")],
+    "fin":  [("fi-FI-NooraNeural", "Noora (Female)", "Female"), ("fi-FI-HarriNeural", "Harri (Male)", "Male")],
+    "hun":  [("hu-HU-NoemiNeural", "Noemi (Female)", "Female"), ("hu-HU-TamasNeural", "Tamas (Male)", "Male")],
+    "nob":  [("nb-NO-PernilleNeural", "Pernille (Female)", "Female"), ("nb-NO-FinnNeural", "Finn (Male)", "Male")],
+    "pol":  [("pl-PL-ZofiaNeural", "Zofia (Female)", "Female"), ("pl-PL-MarekNeural", "Marek (Male)", "Male")],
+    "ron":  [("ro-RO-AlinaNeural", "Alina (Female)", "Female"), ("ro-RO-EmilNeural", "Emil (Male)", "Male")],
+    "slk":  [("sk-SK-ViktoriaNeural", "Viktoria (Female)", "Female"), ("sk-SK-LukasNeural", "Lukas (Male)", "Male")],
+    "swe":  [("sv-SE-SofieNeural", "Sofie (Female)", "Female"), ("sv-SE-MattiasNeural", "Mattias (Male)", "Male")],
+    "ukr":  [("uk-UA-PolinaNeural", "Polina (Female)", "Female"), ("uk-UA-OstapNeural", "Ostap (Male)", "Male")],
 }
 
-# Cat-mascot brand names for voices (voice name -> [cat name, gender]). Curated for the
-# main English + Indian languages; non-curated voices fall back to their plain label.
+# Cat-mascot brand names for every voice (voice name -> [cat name, gender]).
 TTS_CAT_NAMES = {
-    "en-US-JennyNeural":     ("Misty",   "Female"),
-    "en-US-GuyNeural":       ("Tiger",   "Male"),
-    "en-IN-NeerjaNeural":    ("Nyla",    "Female"),
-    "en-IN-PrabhatNeural":   ("Prabhu",  "Male"),
-    "ta-IN-PallaviNeural":   ("Paavi",   "Female"),
-    "ta-IN-ValluvarNeural":  ("Valli",   "Male"),
-    "hi-IN-SwaraNeural":     ("Sona",    "Female"),
-    "hi-IN-MadhurNeural":    ("Madhu",   "Male"),
-    "te-IN-ShrutiNeural":    ("Shruti",  "Female"),
-    "te-IN-MohanNeural":     ("Mohan",   "Male"),
-    "kn-IN-SapnaNeural":     ("Sapna",   "Female"),
-    "kn-IN-GaganNeural":     ("Gagan",   "Male"),
-    "ml-IN-SobhanaNeural":   ("Sobha",   "Female"),
-    "ml-IN-MidhunNeural":    ("Midhu",   "Male"),
-    "bn-IN-TanishaaNeural":  ("Tanu",    "Female"),
-    "bn-IN-BashkarNeural":   ("Basha",   "Male"),
-    "gu-IN-DhwaniNeural":    ("Dhani",   "Female"),
-    "gu-IN-NiranjanNeural":  ("Niru",    "Male"),
-    "mr-IN-AarohiNeural":    ("Aaru",    "Female"),
-    "mr-IN-ManoharNeural":   ("Mano",    "Male"),
-    "ar-SA-ZariyahNeural":   ("Zara",    "Female"),
-    "ar-SA-HamedNeural":     ("Hamdi",   "Male"),
-    "ru-RU-SvetlanaNeural":  ("Sveta",   "Female"),
-    "ru-RU-DmitryNeural":    ("Dima",    "Male"),
-    "es-ES-ElviraNeural":    ("Elvi",    "Female"),
-    "es-ES-AlvaroNeural":    ("Alvi",    "Male"),
-    "fr-FR-DeniseNeural":    ("Deni",    "Female"),
-    "fr-FR-HenriNeural":     ("Henri",   "Male"),
-    "de-DE-KatjaNeural":     ("Katja",   "Female"),
-    "de-DE-ConradNeural":    ("Conny",   "Male"),
-    "it-IT-ElsaNeural":      ("Elsa",    "Female"),
-    "it-IT-DiegoNeural":     ("Diego",   "Male"),
-    "zh-CN-XiaoxiaoNeural":  ("Xiao",    "Female"),
-    "zh-CN-YunxiNeural":     ("Yunxi",   "Male"),
-    "ja-JP-NanamiNeural":    ("Nana",    "Female"),
-    "ja-JP-KeitaNeural":     ("Kei",     "Male"),
-    "ko-KR-SunHiNeural":     ("Sunny",   "Female"),
-    "ko-KR-InJoonNeural":    ("Inji",    "Male"),
-    "el-GR-AthinaNeural":    ("Athina",  "Female"),
-    "el-GR-NestorasNeural":  ("Nest",    "Male"),
-    "he-IL-HilaNeural":      ("Hilly",   "Female"),
-    "he-IL-AvriNeural":      ("Avri",    "Male"),
-    "th-TH-PremwadeeNeural": ("Prem",    "Female"),
-    "th-TH-NiwatNeural":     ("Niwat",   "Male"),
+    "en-US-JennyNeural": ("Misty", "Female"),
+    "en-US-AriaNeural": ("Aria", "Female"),
+    "en-US-AnaNeural": ("Ani", "Female"),
+    "en-US-MichelleNeural": ("Mika", "Female"),
+    "en-US-EmmaNeural": ("Emma", "Female"),
+    "en-US-AvaNeural": ("Ava", "Female"),
+    "en-IN-NeerjaNeural": ("Nyla", "Female"),
+    "en-IN-NeerjaExpressiveNeural": ("Nisha", "Female"),
+    "en-GB-SoniaNeural": ("Sonia", "Female"),
+    "en-GB-LibbyNeural": ("Libby", "Female"),
+    "en-GB-MaisieNeural": ("Maisie", "Female"),
+    "en-AU-NatashaNeural": ("Tasha", "Female"),
+    "en-US-GuyNeural": ("Tiger", "Male"),
+    "en-US-BrianNeural": ("Bruno", "Male"),
+    "en-US-AndrewNeural": ("Andy", "Male"),
+    "en-US-ChristopherNeural": ("Chris", "Male"),
+    "en-US-RogerNeural": ("Roro", "Male"),
+    "en-US-EricNeural": ("Eric", "Male"),
+    "en-US-SteffanNeural": ("Stefan", "Male"),
+    "en-IN-PrabhatNeural": ("Prabhu", "Male"),
+    "en-GB-RyanNeural": ("Rian", "Male"),
+    "en-GB-ThomasNeural": ("Tomo", "Male"),
+    "hi-IN-SwaraNeural": ("Sona", "Female"),
+    "hi-IN-MadhurNeural": ("Madhu", "Male"),
+    "ta-IN-PallaviNeural": ("Paavi", "Female"),
+    "ta-IN-ValluvarNeural": ("Valli", "Male"),
+    "te-IN-ShrutiNeural": ("Shruti", "Female"),
+    "te-IN-MohanNeural": ("Mohan", "Male"),
+    "kn-IN-SapnaNeural": ("Sapna", "Female"),
+    "kn-IN-GaganNeural": ("Gagan", "Male"),
+    "ml-IN-SobhanaNeural": ("Sobha", "Female"),
+    "ml-IN-MidhunNeural": ("Midhu", "Male"),
+    "bn-IN-TanishaaNeural": ("Tanu", "Female"),
+    "bn-IN-BashkarNeural": ("Basha", "Male"),
+    "gu-IN-DhwaniNeural": ("Dhani", "Female"),
+    "gu-IN-NiranjanNeural": ("Niru", "Male"),
+    "mr-IN-AarohiNeural": ("Aaru", "Female"),
+    "mr-IN-ManoharNeural": ("Mano", "Male"),
+    "ur-IN-GulNeural": ("Gulu", "Female"),
+    "ur-IN-SalmanNeural": ("Sala", "Male"),
+    "ar-SA-ZariyahNeural": ("Zara", "Female"),
+    "ar-SA-HamedNeural": ("Hamdi", "Male"),
+    "ru-RU-SvetlanaNeural": ("Sveta", "Female"),
+    "ru-RU-DmitryNeural": ("Dima", "Male"),
+    "el-GR-AthinaNeural": ("Athina", "Female"),
+    "el-GR-NestorasNeural": ("Nest", "Male"),
+    "he-IL-HilaNeural": ("Hilly", "Female"),
+    "he-IL-AvriNeural": ("Avri", "Male"),
+    "th-TH-PremwadeeNeural": ("Prem", "Female"),
+    "th-TH-NiwatNeural": ("Niwat", "Male"),
+    "tr-TR-EmelNeural": ("Eme", "Female"),
+    "tr-TR-AhmetNeural": ("Ahmo", "Male"),
+    "pt-BR-FranciscaNeural": ("Fran", "Female"),
+    "pt-BR-AntonioNeural": ("Toni", "Male"),
+    "id-ID-GadisNeural": ("Gadis", "Female"),
+    "id-ID-ArdiNeural": ("Ardi", "Male"),
+    "ms-MY-YasminNeural": ("Yassy", "Female"),
+    "ms-MY-OsmanNeural": ("Osmi", "Male"),
+    "fil-PH-BlessicaNeural": ("Ble", "Female"),
+    "fil-PH-AngeloNeural": ("Gelo", "Male"),
+    "vi-VN-HoaiMyNeural": ("Mai", "Female"),
+    "vi-VN-NamMinhNeural": ("Minh", "Male"),
+    "zh-CN-XiaoxiaoNeural": ("Xiao", "Female"),
+    "zh-CN-XiaoyiNeural": ("Xi", "Female"),
+    "zh-CN-YunxiNeural": ("Yunxi", "Male"),
+    "zh-CN-YunjianNeural": ("Yunjian", "Male"),
+    "zh-CN-YunyangNeural": ("Yang", "Male"),
+    "zh-CN-YunxiaNeural": ("Yunxia", "Male"),
+    "ja-JP-NanamiNeural": ("Nana", "Female"),
+    "ja-JP-KeitaNeural": ("Kei", "Male"),
+    "ko-KR-SunHiNeural": ("Sunny", "Female"),
+    "ko-KR-InJoonNeural": ("Inji", "Male"),
+    "ko-KR-HyunsuMultilingualNeural": ("Hyun", "Male"),
+    "es-ES-ElviraNeural": ("Elvi", "Female"),
+    "es-ES-XimenaNeural": ("Ximi", "Female"),
+    "es-ES-AlvaroNeural": ("Alvi", "Male"),
+    "fr-FR-DeniseNeural": ("Deni", "Female"),
+    "fr-FR-EloiseNeural": ("Elo", "Female"),
+    "fr-FR-HenriNeural": ("Henri", "Male"),
+    "fr-FR-RemyMultilingualNeural": ("Remy", "Male"),
+    "de-DE-KatjaNeural": ("Katja", "Female"),
+    "de-DE-AmalaNeural": ("Ama", "Female"),
+    "de-DE-ConradNeural": ("Conny", "Male"),
+    "de-DE-KillianNeural": ("Killi", "Male"),
+    "it-IT-ElsaNeural": ("Elsa", "Female"),
+    "it-IT-IsabellaNeural": ("Bella", "Female"),
+    "it-IT-DiegoNeural": ("Diego", "Male"),
+    "bg-BG-KalinaNeural": ("Kala", "Female"),
+    "bg-BG-BorislavNeural": ("Bori", "Male"),
+    "hr-HR-GabrijelaNeural": ("Gabi", "Female"),
+    "hr-HR-SreckoNeural": ("Srecky", "Male"),
+    "cs-CZ-VlastaNeural": ("Vlasta", "Female"),
+    "cs-CZ-AntoninNeural": ("Anton", "Male"),
+    "da-DK-ChristelNeural": ("Chris", "Female"),
+    "da-DK-JeppeNeural": ("Jeppe", "Male"),
+    "nl-NL-FennaNeural": ("Fen", "Female"),
+    "nl-NL-ColetteNeural": ("Colette", "Female"),
+    "nl-NL-MaartenNeural": ("Maart", "Male"),
+    "fi-FI-NooraNeural": ("Noora", "Female"),
+    "fi-FI-HarriNeural": ("Harri", "Male"),
+    "hu-HU-NoemiNeural": ("Noemi", "Female"),
+    "hu-HU-TamasNeural": ("Tamas", "Male"),
+    "nb-NO-PernilleNeural": ("Peri", "Female"),
+    "nb-NO-FinnNeural": ("Fin", "Male"),
+    "pl-PL-ZofiaNeural": ("Zofia", "Female"),
+    "pl-PL-MarekNeural": ("Marek", "Male"),
+    "ro-RO-AlinaNeural": ("Aly", "Female"),
+    "ro-RO-EmilNeural": ("Emilio", "Male"),
+    "sk-SK-ViktoriaNeural": ("Vicky", "Female"),
+    "sk-SK-LukasNeural": ("Luka", "Male"),
+    "sv-SE-SofieNeural": ("Sofie", "Female"),
+    "sv-SE-MattiasNeural": ("Mattia", "Male"),
+    "uk-UA-PolinaNeural": ("Poli", "Female"),
+    "uk-UA-OstapNeural": ("Osta", "Male"),
 }
 
 def _cat_label(voice, plain_label):
@@ -3838,12 +3955,6 @@ def tts_task(task_id):
     if not text:
         return jsonify({"error": "No text to convert"}), 400
 
-    word_count = len(text.split())
-    if word_count > TTS_MAX_WORDS:
-        return jsonify({
-            "error": f"This document is too long to convert ({word_count} words; limit {TTS_MAX_WORDS}).",
-        }), 400
-
     data = request.get_json(silent=True) or {}
     voice = (data.get("voice") or "").strip()
     if voice and not any(vn == voice for grp in TTS_VOICES.values() for vn, _, _ in grp):
@@ -3935,6 +4046,34 @@ def text2audio_voices():
     return jsonify(TTS_CAT_VOICES)
 
 
+@app.route('/api/text2audio/preview')
+def text2audio_preview():
+    """Synthesize a short sample with the chosen voice/rate/pitch and stream it for live playback."""
+    voice = (request.args.get("voice") or "").strip()
+    if not _looks_like_cat_voice(voice):
+        voice = ""
+    rate = request.args.get("rate", 100)
+    pitch = request.args.get("pitch", 0)
+    try:
+        rate = max(TTS_RATE_MIN, min(TTS_RATE_MAX, int(rate)))
+        pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, int(pitch)))
+    except (TypeError, ValueError):
+        rate, pitch = 100, 0
+    sample = ("Meow! This is a quick voice test, so you can hear how it sounds "
+              "before converting. Ready when you are. 🐱")
+    try:
+        import tempfile
+        fd, tmp = tempfile.mkstemp(suffix=".mp3")
+        os.close(fd)
+        _synthesize_to_mp3(sample, voice, rate, pitch, tmp)
+        resp = send_file(tmp, mimetype="audio/mpeg")
+        resp.call_on_close(lambda: (os.path.exists(tmp) and os.remove(tmp)))
+        return resp
+    except Exception as e:
+        logger.error(f"text2audio preview error: {e}", exc_info=True)
+        return jsonify({"error": "Could not generate a voice preview."}), 500
+
+
 def _text2audio_worker(token, text, voice, rate, pitch):
     """Background: synthesize MP3, persist, upload to cloud, store link/status."""
     try:
@@ -3980,12 +4119,6 @@ def text2audio_create():
     text = (data.get("text") or "").strip()
     if not text:
         return jsonify({"error": "Please enter some text to convert."}), 400
-    wc = len(text.split())
-    if wc > TTS_MAX_WORDS:
-        return jsonify({
-            "error": f"Text is too long ({wc} words; limit {TTS_MAX_WORDS}).",
-        }), 400
-
     voice = (data.get("voice") or "").strip()
     if voice and not _looks_like_cat_voice(voice):
         voice = ""
