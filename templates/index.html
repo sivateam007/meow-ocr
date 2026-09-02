@@ -1366,7 +1366,12 @@
                             statusEl.textContent = d.error || 'Conversion failed.';
                             goBtn.disabled = false;
                         } else {
-                            statusEl.textContent = 'Converting... ' + (d.progress || 0) + '%';
+                            var pct = d.progress || 0;
+                            var msg = 'Converting... ' + pct + '%';
+                            if (d.words_done && d.total_words) {
+                                msg = 'Generating word ' + (d.words_done > d.total_words ? d.total_words : d.words_done) + ' of ' + d.total_words + ' · ' + pct + '%';
+                            }
+                            statusEl.textContent = msg;
                         }
                     })
                     .catch(function () { });

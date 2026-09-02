@@ -4036,6 +4036,71 @@ def _synthesize_to_mp3(text, voice, rate, pitch, mp3_path):
     return mp3_path
 
 
+def _split_text_for_tts(text, max_chars=2400):
+    """Split text into natural chunks on sentence boundaries, each <= max_chars."""
+    import re
+    sentences = re.split(r'(?<=[.!?।])\s+|\n+', text)
+    chunks, cur = [], ""
+    for s in sentences:
+        s = s.strip()
+        if not s:
+            continue
+        if cur and len(cur) + len(s) + 1 > max_chars:
+            chunks.append(cur)
+            cur = s
+        else:
+            cur = f"{cur} {s}".strip()
+    if cur:
+        chunks.append(cur)
+    return chunks if chunks else [text]
+
+
+def _synth_segment_to_bytes(segment, voice, rate, pitch):
+    """Synthesize one segment and return its MP3 bytes. Raises on failure."""
+    import asyncio as _asyncio
+    import edge_tts
+    rate_str = f"+{int(rate - 100)}%" if rate >= 100 else f"{int(rate - 100)}%"
+    pitch_str = f"{int(pitch)+0:+}Hz"
+    data = bytearray()
+
+    async def _do():
+        communicate = edge_tts.Communicate(
+            segment,
+            voice=voice or "en-US-JennyNeural",
+            rate=rate_str,
+            pitch=pitch_str,
+        )
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                data.extend(chunk["data"])
+
+    _asyncio.run(_do())
+    if not data:
+        raise RuntimeError("TTS produced empty audio for segment")
+    return bytes(data)
+
+
+def _synth_chunked_to_mp3(text, voice, rate, pitch, mp3_path, progress_cb=None):
+    """Synthesize long text in chunks, appending each segment's MP3 to mp3_path.
+    Calls progress_cb(words_done, total_words) after each segment."""
+    words = text.split()
+    total_words = max(1, len(words))
+    segments = _split_text_for_tts(text)
+    total_segments = len(segments)
+    words_done = 0
+    with open(mp3_path, "wb") as out:
+        for idx, seg in enumerate(segments, 1):
+            seg_data = _synth_segment_to_bytes(seg, voice, rate, pitch)
+            out.write(seg_data)
+            seg_words = len(seg.split())
+            words_done += seg_words
+            if progress_cb:
+                progress_cb(words_done, total_words)
+    if os.path.getsize(mp3_path) == 0:
+        raise RuntimeError("TTS produced empty audio")
+    return mp3_path
+
+
 def _looks_like_cat_voice(voice):
     allv = {v for grp in TTS_VOICES.values() for v, _, _ in grp}
     return voice in allv
@@ -4076,20 +4141,32 @@ def text2audio_preview():
 
 
 def _text2audio_worker(token, text, voice, rate, pitch):
-    """Background: synthesize MP3, persist, upload to cloud, update My Downloads."""
+    """Background: synthesize MP3 (chunked), persist, upload to cloud, update My Downloads."""
     p_id = f"t2a_{token}"
+    _total_words = len(text.split())
     try:
         base = f"text2audio_{token}"
         mp3_filename = f"{base}.mp3"
         mp3_path = os.path.join(OUTPUT_DIR, f"{token}_{mp3_filename}")
         with text2audio_lock:
             text2audio_tasks[token]["status"] = "generating"
-            text2audio_tasks[token]["progress"] = 5
+            text2audio_tasks[token]["progress"] = 1
+            text2audio_tasks[token]["total_words"] = _total_words
+            text2audio_tasks[token]["words_done"] = 0
         with progress_lock:
             if p_id in progress_tracker:
-                progress_tracker[p_id]["percentage"] = 5
+                progress_tracker[p_id]["percentage"] = 1
 
-        _synthesize_to_mp3(text, voice, rate, pitch, mp3_path)
+        def _on_segment(words_done, total_words):
+            pct = max(1, int(80 * words_done / total_words))
+            with text2audio_lock:
+                text2audio_tasks[token]["progress"] = pct
+                text2audio_tasks[token]["words_done"] = words_done
+            with progress_lock:
+                if p_id in progress_tracker:
+                    progress_tracker[p_id]["percentage"] = pct
+
+        _synth_chunked_to_mp3(text, voice, rate, pitch, mp3_path, progress_cb=_on_segment)
 
         with text2audio_lock:
             text2audio_tasks[token]["status"] = "done"
@@ -4203,6 +4280,8 @@ def text2audio_status(token):
             "progress": t.get("progress", 0),
             "error": t.get("error", ""),
             "link": t.get("link", "") or t.get("mega_link", ""),
+            "words_done": t.get("words_done", 0),
+            "total_words": t.get("total_words", 0),
         })
 
 
