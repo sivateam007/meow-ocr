@@ -2827,7 +2827,7 @@ def share_link(task_id):
                         return jsonify({"link": link})
         except Exception as e:
             logger.error(f"Share link Mega error for {task_id}: {e}")
-    return jsonify({"link": url_for('download_file', task_id=task_id, _external=True)})
+    return jsonify({"link": url_for('download_result', task_id=task_id, _external=True)})
 
 
 @app.route('/cancel/<task_id>', methods=['POST'])
@@ -3021,6 +3021,18 @@ def health():
 def too_large(e):
     flash('File too large. Please upload a smaller file.')
     return redirect(url_for('index'))
+
+
+@app.errorhandler(500)
+def internal_error(e):
+    import traceback
+    try:
+        with open("oc_error.log", "a") as f:
+            f.write("\n===== 500 %s =====\n" % request.path)
+            traceback.print_exc(file=f)
+    except Exception:
+        logger.error("500 handler failed to write error log", exc_info=True)
+    return "Something went wrong on our side. Please go back and try again.", 500
 
 
 @app.route('/clear-downloads', methods=['POST'])
@@ -3278,7 +3290,7 @@ def downloads_page():
 # =====================================================================
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 GROQ_CHAT_MODEL = os.environ.get("GROQ_CHAT_MODEL", "llama-3.1-8b-instant")
-GROQ_VISION_MODEL = os.environ.get("GROQ_VISION_MODEL", "llama-3.2-90b-vision-preview")
+GROQ_VISION_MODEL = os.environ.get("GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
 _GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 _GROQ_MAX_MESSAGE = 500
 _GROQ_MAX_IMAGE_BYTES = 25 * 1024 * 1024  # covers typical 15-20MB camera photos
@@ -3490,6 +3502,7 @@ def api_handwrite():
             if text:
                 return jsonify({"text": text}), 200
         logger.warning("Groq vision non-200 status=%s", resp.status_code)
+        return jsonify({"error": "The AI scanner hit a snag (HTTP %s). Please try again in a moment." % resp.status_code}), 502
     except Exception:
         logger.error("Groq vision error", exc_info=True)
     return jsonify({"error": "The AI scanner is busy right now — please try again in a moment."}), 502
