@@ -104,9 +104,6 @@
                 <a href="#" class="submit-btn" id="view-btn" style="display: none; text-decoration: none; background: linear-gradient(135deg, #4f7cff 0%, #2563eb 100%);">
                     <i class="fas fa-copy"></i> View &amp; Copy
                 </a>
-                <a href="#" class="submit-btn" id="docx-btn" style="display: none; text-decoration: none; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
-                    <i class="fas fa-file-word"></i> Download .docx
-                </a>
                 <button class="submit-btn" id="cancel-btn" onclick="cancelProcessing()" style="display: none; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border: none; cursor: pointer;">
                     <i class="fas fa-times-circle"></i> Cancel
                 </button>
@@ -171,7 +168,6 @@
         const etaSection = document.getElementById('eta-section2');
         const cancelBtn = document.getElementById('cancel-btn');
         const viewBtn = document.getElementById('view-btn');
-        const docxBtn = document.getElementById('docx-btn');
 
         let currentETA = null;
         let etaTimer = null;

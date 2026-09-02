@@ -130,9 +130,6 @@
                 <a href="#" class="submit-btn" id="view-btn" style="display: none; text-decoration: none; background: linear-gradient(135deg, #4f7cff 0%, #2563eb 100%);">
                     <i class="fas fa-copy"></i> View &amp; Copy
                 </a>
-                <a href="#" class="submit-btn" id="docx-btn" style="display: none; text-decoration: none; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
-                    <i class="fas fa-file-word"></i> Download .docx
-                </a>
                 <a href="/" class="submit-btn" id="back-btn" style="display: none; text-decoration: none; background: linear-gradient(135deg, #64748b 0%, #475569 100%);">
                     Process Another File
                 </a>
@@ -172,7 +169,6 @@
         const errorText = document.getElementById('error-text');
         const downloadBtn = document.getElementById('download-btn');
         const viewBtn = document.getElementById('view-btn');
-        const docxBtn = document.getElementById('docx-btn');
         const backBtn = document.getElementById('back-btn');
         const cancelBtn = document.getElementById('cancel-btn');
         const filenameEl = document.getElementById('filename');
@@ -340,8 +336,6 @@
                             downloadBtn.href = `/download/${taskId}`;
                             viewBtn.style.display = 'inline-block';
                             viewBtn.href = `/result/${taskId}`;
-                            docxBtn.style.display = 'inline-block';
-                            docxBtn.href = `/download/${taskId}?format=docx`;
                             backBtn.style.display = 'inline-block';
                             clearInterval(pollInterval);
                         } else if (data.status === 'error') {
@@ -452,8 +446,6 @@
                         downloadBtn.href = `/download/${taskId}`;
                         viewBtn.style.display = 'inline-block';
                         viewBtn.href = `/result/${taskId}`;
-                        docxBtn.style.display = 'inline-block';
-                        docxBtn.href = `/download/${taskId}?format=docx`;
                         backBtn.style.display = 'inline-block';
                         clearInterval(pollInterval);
                     } else if (data.status === 'interrupted') {
