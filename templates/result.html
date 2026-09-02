@@ -253,6 +253,9 @@
             rateRange.addEventListener('input', function () { rateVal.textContent = parseFloat(rateRange.value).toFixed(1) + 'x'; });
             pitchRange.addEventListener('input', function () { pitchVal.textContent = parseFloat(pitchRange.value).toFixed(1); });
 
+            var currentSentence = -1;
+            var sentencesRef = [];
+
             function getSelectedVoice() {
                 var name = voiceSel.value;
                 var found = voices.filter(function (v) { return v.name === name; })[0];
@@ -264,6 +267,38 @@
                 return voices[0] || null;
             }
 
+            // Split text into sentences keeping track of their start offsets
+            function splitSentences(text) {
+                var parts = [];
+                var re = /[^.!?…\n]+[.!?…]*[\s\n]*/g;
+                var m;
+                while ((m = re.exec(text)) !== null) {
+                    if (m[0].trim()) parts.push({ text: m[0], start: m.index });
+                }
+                if (!parts.length && text.trim()) parts.push({ text: text, start: 0 });
+                return parts;
+            }
+
+            function highlightSentence(sentence, sentenceIndex) {
+                if (!textarea) return;
+                var start = sentence ? sentence.start : 0;
+                var len = sentence ? sentence.text.length : 0;
+                if (sentenceIndex < 0) {
+                    textarea.blur();
+                    return;
+                }
+                textarea.focus();
+                // Highlight via native caret selection (blue selection highlight)
+                textarea.setSelectionRange(start, start + len);
+                // Scroll the textarea so the highlighted sentence is visible
+                var scrollStart = textarea.scrollTop;
+                // approximate: scroll to selection start based on line estimate
+                var perLine = Math.max(1, (textarea.clientHeight * 1.0) / Math.max(1, textarea.rows));
+                textarea.scrollTop = Math.max(0, start * perLine - textarea.clientHeight / 2);
+                // Re-apply selection after scroll (browser may clear it)
+                textarea.setSelectionRange(start, start + len);
+            }
+
             function speak() {
                 var text = (textarea.value || '').trim();
                 if (!text) {
@@ -271,57 +306,90 @@
                     return;
                 }
                 synth.cancel();
-                // sentence-by-sentence step through
-                var sentences = text.match(/[^.!?…]+[.!?…]*[\s\n]*/g) || [text];
-                var fullUtterance = new SpeechSynthesisUtterance(text);
+                var sentences = splitSentences(text);
+                sentencesRef = sentences;
                 var voice = getSelectedVoice();
-                if (voice) {
-                    fullUtterance.voice = voice;
-                    fullUtterance.lang = voice.lang || langSel.value || 'en-US';
-                } else if (langSel.value) {
-                    fullUtterance.lang = langSel.value;
-                }
-                fullUtterance.rate = parseFloat(rateRange.value) || 1;
-                fullUtterance.pitch = parseFloat(pitchRange.value) || 1;
-                fullUtterance.onstart = function () { status.textContent = 'Reading...'; playBtn.style.display = 'none'; pauseBtn.style.display = 'inline-block'; };
-                fullUtterance.onend = function () { status.textContent = 'Finished.'; playBtn.style.display = ''; pauseBtn.style.display = 'none'; isPaused = false; };
-                fullUtterance.onerror = function (e) {
-                    if (e.error && e.error !== 'canceled' && e.error !== 'interrupted') {
-                        status.textContent = 'Speech error.';
-                    }
-                    playBtn.style.display = ''; pauseBtn.style.display = 'none';
-                };
-                if (voices.length > 1) {
-                    // queue sentences for step-by-step following
-                    var n = sentences.filter(function (s) { return s.trim(); }).length;
-                    var started = 0, ended = 0;
-                    sentences.forEach(function (s) {
-                        if (!s.trim()) return;
-                        var u = new SpeechSynthesisUtterance(s);
-                        u.voice = fullUtterance.voice;
-                        u.lang = fullUtterance.lang;
-                        u.rate = fullUtterance.rate;
-                        u.pitch = fullUtterance.pitch;
-                        u.onstart = function () { status.textContent = 'Reading...'; playBtn.style.display = 'none'; pauseBtn.style.display = 'inline-block'; };
-                        u.onend = function () {
-                            ended++;
-                            if (ended >= n) {
-                                status.textContent = 'Finished.';
-                                playBtn.style.display = ''; pauseBtn.style.display = 'none'; isPaused = false;
+                var chosenVoiceName = voice ? voice.name : (voices.length ? voices[0].name : 'Default voice');
+                var chosenLang = voice ? voice.lang : (langSel.value || 'en-US');
+
+                var rate = parseFloat(rateRange.value) || 1;
+                var pitch = parseFloat(pitchRange.value) || 1;
+
+                // If a single voice, read the whole text in one utterance with word boundary tracking
+                if (voices.length <= 1) {
+                    var full = new SpeechSynthesisUtterance(text);
+                    if (voice) { full.voice = voice; full.lang = voice.lang || langSel.value || 'en-US'; }
+                    else if (langSel.value) full.lang = langSel.value;
+                    full.rate = rate; full.pitch = pitch;
+                    full.onstart = function () {
+                        status.textContent = 'Reading with "' + chosenVoiceName + '"';
+                        playBtn.style.display = 'none'; pauseBtn.style.display = 'inline-block';
+                    };
+                    full.onboundary = function (e) {
+                        // find sentence containing charIndex
+                        var idx = e.charIndex || 0;
+                        for (var i = 0; i < sentences.length; i++) {
+                            var s = sentences[i];
+                            if (idx >= s.start && idx < s.start + s.text.length) {
+                                currentSentence = i;
+                                highlightSentence(s, i);
+                                break;
                             }
-                        };
-                        synth.speak(u);
-                    });
-                } else {
-                    synth.speak(fullUtterance);
+                        }
+                    };
+                    full.onend = function () {
+                        status.textContent = 'Finished.';
+                        playBtn.style.display = ''; pauseBtn.style.display = 'none'; isPaused = false;
+                        highlightSentence(null, -1);
+                    };
+                    full.onerror = function (e) {
+                        if (e.error && e.error !== 'canceled' && e.error !== 'interrupted') {
+                            status.textContent = 'Speech error.';
+                        }
+                        playBtn.style.display = ''; pauseBtn.style.display = 'none';
+                    };
+                    synth.speak(full);
+                    return;
                 }
-                isPaused = false;
+
+                // Multiple voices: queue each sentence and highlight it as it starts
+                var n = sentences.length;
+                var ended = 0;
+                sentences.forEach(function (s, i) {
+                    var u = new SpeechSynthesisUtterance(s.text);
+                    u.voice = voice; u.lang = chosenLang; u.rate = rate; u.pitch = pitch;
+                    u.onstart = function () {
+                        currentSentence = i;
+                        highlightSentence(s, i);
+                        status.textContent = 'Reading: "' + s.text.replace(/\s+/g, ' ').trim().slice(0, 60) + '"';
+                        playBtn.style.display = 'none'; pauseBtn.style.display = 'inline-block';
+                    };
+                    u.onend = function () {
+                        ended++;
+                        if (ended >= n) {
+                            status.textContent = 'Finished.';
+                            playBtn.style.display = ''; pauseBtn.style.display = 'none'; isPaused = false;
+                            highlightSentence(null, -1);
+                        }
+                    };
+                    u.onerror = function (e) {
+                        if (e.error && e.error !== 'canceled' && e.error !== 'interrupted') {
+                            status.textContent = 'Speech error for: ' + s.text.trim().slice(0, 40);
+                        }
+                    };
+                    synth.speak(u);
+                });
+                if (voice) status.textContent = 'Reading with "' + chosenVoiceName + '"';
             }
 
             playBtn.addEventListener('click', function () {
                 if (isPaused) {
                     synth.resume();
                     isPaused = false;
+                    // restore highlight
+                    if (currentSentence >= 0 && sentencesRef.length) {
+                        highlightSentence(sentencesRef[currentSentence], currentSentence);
+                    }
                     status.textContent = 'Reading...';
                     playBtn.style.display = 'none'; pauseBtn.style.display = 'inline-block';
                     return;
@@ -340,6 +408,7 @@
                 isPaused = false;
                 status.textContent = 'Stopped.';
                 playBtn.style.display = ''; pauseBtn.style.display = 'none';
+                highlightSentence(null, -1);
             });
         })();
     </script>
