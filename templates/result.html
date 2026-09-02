@@ -268,6 +268,13 @@
 
             function nLang(code) { return (langLabels[code] || code || '?'); }
 
+            function detectGender(name) {
+                var n = name.toLowerCase();
+                if (/david|george|james|daniel|guy|richard|tom|dan|mark|paul|steve|jack|roy|martin|won|hyun|sung|jong|young|kangkang|yunxi|haruki|ichiro|prabhat|ravi|felix|henning|taariq|jay/i.test(n)) return 'Male';
+                if (/zira|samantha|moira|anna|fiona|karen|susan|alice|emma|amy|hazel|linda|heera|swara|veena|kabita|rupa|mei|xiaoxiao|xiaohan|yaoyao|yuna|sachi|ayumi|emiri|kanako|tomoko|hidemi|haruka|sakura|sayuri|kumiko|kanya|catherine|sophie|michelle/i.test(n)) return 'Female';
+                return null;
+            }
+
             function populateVoices() {
                 voices = synth.getVoices() || [];
                 var prevLang = langSel.value;
@@ -294,23 +301,55 @@
                 });
                 if (!langSel.value && sorted.length) langSel.value = sorted[0].lang.split('-')[0];
 
-                voiceSel.innerHTML = '<option value="auto">Auto (browser default)</option>';
+                var autoOpt = document.createElement('option');
+                autoOpt.value = 'auto';
+                autoOpt.textContent = 'Auto (best available)';
+                voiceSel.innerHTML = '';
+                voiceSel.appendChild(autoOpt);
+
+                var maleList = [], femaleList = [], otherList = [];
                 sorted.forEach(function (v) {
-                    var label = nLang(v.lang.split('-')[0]);
-                    var opt = document.createElement('option');
-                    opt.value = v.name;
-                    opt.textContent = label + ' - ' + v.name + (v.localService ? ' (local)' : ' (online)');
-                    if (v.name === prevVoice) opt.selected = true;
-                    voiceSel.appendChild(opt);
+                    var g = detectGender(v.name);
+                    if (g === 'Male') maleList.push(v);
+                    else if (g === 'Female') femaleList.push(v);
+                    else otherList.push(v);
                 });
+
+                function addGroup(label, arr) {
+                    if (!arr.length) return;
+                    var og = document.createElement('optgroup');
+                    og.label = label;
+                    arr.forEach(function (v) {
+                        var opt = document.createElement('option');
+                        opt.value = v.name;
+                        var tag = v.localService ? 'local' : 'online';
+                        opt.textContent = v.name + ' (' + tag + ')';
+                        og.appendChild(opt);
+                    });
+                    voiceSel.appendChild(og);
+                }
+                addGroup('Male Voices', maleList);
+                addGroup('Female Voices', femaleList);
+                if (otherList.length) addGroup('Other Voices', otherList);
+
+                if (prevVoice) voiceSel.value = prevVoice;
+                if (!voiceSel.value) voiceSel.value = 'auto';
             }
 
             function getSelectedVoice() {
                 var want = voiceSel.value;
                 if (!want || want === 'auto') {
                     var l = langSel.value;
-                    var byLang = voices.filter(function (v) { return l && v.lang.split('-')[0] === l; });
-                    if (byLang.length) return byLang[0];
+                    var localVoices = voices.filter(function (v) { return v.localService; });
+                    if (l) {
+                        var localLang = localVoices.filter(function (v) { return v.lang.split('-')[0] === l; });
+                        if (localLang.length) return localLang[0];
+                    }
+                    if (localVoices.length) return localVoices[0];
+                    if (l) {
+                        var anyLang = voices.filter(function (v) { return v.lang.split('-')[0] === l; });
+                        if (anyLang.length) return anyLang[0];
+                    }
                     return voices[0] || null;
                 }
                 var found = voices.filter(function (v) { return v.name === want; })[0];
