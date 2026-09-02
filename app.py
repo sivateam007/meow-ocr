@@ -213,6 +213,68 @@ TTS_VOICES = {
     "ita":  [("it-IT-ElsaNeural", "Elsa (Female)", "Female"), ("it-IT-DiegoNeural", "Diego (Male)", "Male")],
 }
 
+# Cat-mascot brand names for voices (voice name -> [cat name, gender]). Curated for the
+# main English + Indian languages; non-curated voices fall back to their plain label.
+TTS_CAT_NAMES = {
+    "en-US-JennyNeural":     ("Misty",   "Female"),
+    "en-US-GuyNeural":       ("Tiger",   "Male"),
+    "en-IN-NeerjaNeural":    ("Nyla",    "Female"),
+    "en-IN-PrabhatNeural":   ("Prabhu",  "Male"),
+    "ta-IN-PallaviNeural":   ("Paavi",   "Female"),
+    "ta-IN-ValluvarNeural":  ("Valli",   "Male"),
+    "hi-IN-SwaraNeural":     ("Sona",    "Female"),
+    "hi-IN-MadhurNeural":    ("Madhu",   "Male"),
+    "te-IN-ShrutiNeural":    ("Shruti",  "Female"),
+    "te-IN-MohanNeural":     ("Mohan",   "Male"),
+    "kn-IN-SapnaNeural":     ("Sapna",   "Female"),
+    "kn-IN-GaganNeural":     ("Gagan",   "Male"),
+    "ml-IN-SobhanaNeural":   ("Sobha",   "Female"),
+    "ml-IN-MidhunNeural":    ("Midhu",   "Male"),
+    "bn-IN-TanishaaNeural":  ("Tanu",    "Female"),
+    "bn-IN-BashkarNeural":   ("Basha",   "Male"),
+    "gu-IN-DhwaniNeural":    ("Dhani",   "Female"),
+    "gu-IN-NiranjanNeural":  ("Niru",    "Male"),
+    "mr-IN-AarohiNeural":    ("Aaru",    "Female"),
+    "mr-IN-ManoharNeural":   ("Mano",    "Male"),
+    "ar-SA-ZariyahNeural":   ("Zara",    "Female"),
+    "ar-SA-HamedNeural":     ("Hamdi",   "Male"),
+    "ru-RU-SvetlanaNeural":  ("Sveta",   "Female"),
+    "ru-RU-DmitryNeural":    ("Dima",    "Male"),
+    "es-ES-ElviraNeural":    ("Elvi",    "Female"),
+    "es-ES-AlvaroNeural":    ("Alvi",    "Male"),
+    "fr-FR-DeniseNeural":    ("Deni",    "Female"),
+    "fr-FR-HenriNeural":     ("Henri",   "Male"),
+    "de-DE-KatjaNeural":     ("Katja",   "Female"),
+    "de-DE-ConradNeural":    ("Conny",   "Male"),
+    "it-IT-ElsaNeural":      ("Elsa",    "Female"),
+    "it-IT-DiegoNeural":     ("Diego",   "Male"),
+    "zh-CN-XiaoxiaoNeural":  ("Xiao",    "Female"),
+    "zh-CN-YunxiNeural":     ("Yunxi",   "Male"),
+    "ja-JP-NanamiNeural":    ("Nana",    "Female"),
+    "ja-JP-KeitaNeural":     ("Kei",     "Male"),
+    "ko-KR-SunHiNeural":     ("Sunny",   "Female"),
+    "ko-KR-InJoonNeural":    ("Inji",    "Male"),
+    "el-GR-AthinaNeural":    ("Athina",  "Female"),
+    "el-GR-NestorasNeural":  ("Nest",    "Male"),
+    "he-IL-HilaNeural":      ("Hilly",   "Female"),
+    "he-IL-AvriNeural":      ("Avri",    "Male"),
+    "th-TH-PremwadeeNeural": ("Prem",    "Female"),
+    "th-TH-NiwatNeural":     ("Niwat",   "Male"),
+}
+
+def _cat_label(voice, plain_label):
+    """Return a cat-branded voice label if a cat name exists, else the plain label."""
+    cat = TTS_CAT_NAMES.get(voice)
+    if cat:
+        return f"{cat[0]} 🐱 ({cat[1]})"
+    return plain_label
+
+# Voices for the Text-to-Audio tab: label each with its cat name (or plain label).
+TTS_CAT_VOICES = {
+    code: [(v, _cat_label(v, lbl), g) for v, lbl, g in grp]
+    for code, grp in TTS_VOICES.items()
+}
+
 # Anonymous free usage limit (docs convertible without signing in)
 FREE_DOCS_WITHOUT_LOGIN = int(os.environ.get("FREE_DOCS_WITHOUT_LOGIN", "1"))
 _COOKIE_COUNTER = "scan_docs_done"  # cookie name counting anonymous conversions
@@ -1454,6 +1516,24 @@ def cleanup_old_tasks():
             if progress_tracker[task_id].get("temp_dir"):
                 shutil.rmtree(progress_tracker[task_id]["temp_dir"], ignore_errors=True)
             del progress_tracker[task_id]
+    # Clean up stale standalone text-to-audio tasks (no progress_tracker entry)
+    if text2audio_tasks:
+        t2a_delete = []
+        t2a_mega = []
+        with text2audio_lock:
+            for token, t in list(text2audio_tasks.items()):
+                if current_time - t.get("created_at", 0) > AUTO_DELETE_DAYS * 86400:
+                    t2a_delete.append(token)
+                    if t.get("filename"):
+                        t2a_mega.append(t["filename"])
+                    path = t.get("path")
+                    if path and os.path.exists(path):
+                        try: os.remove(path)
+                        except Exception: pass
+            for token in t2a_delete:
+                del text2audio_tasks[token]
+        if t2a_delete and t2a_mega and os.environ.get("MEGA_EMAIL") and os.environ.get("MEGA_PWD"):
+            mega_delete_files(t2a_mega)
     if to_delete:
         _save_progress()
         # Also remove files from Mega cloud storage (auto-delete)
@@ -3814,6 +3894,146 @@ def download_tts_mp3(task_id):
     flash('Audio not ready yet')
     return redirect(url_for('index'))
 
+
+# ================= Text to Audio (standalone) =================
+text2audio_tasks = {}  # token -> {...}  in-memory (client-side token keeps it off progress_tracker)
+text2audio_lock = threading.Lock()
+
+def _synthesize_to_mp3(text, voice, rate, pitch, mp3_path):
+    """Run edge-tts, write audio bytes to mp3_path. Returns mp3_path. Raises on failure."""
+    import asyncio as _asyncio
+    import edge_tts
+    rate_str = f"+{int(rate - 100)}%" if rate >= 100 else f"{int(rate - 100)}%"
+    pitch_str = f"{int(pitch)+0:+}Hz"
+
+    async def _do():
+        communicate = edge_tts.Communicate(
+            text,
+            voice=voice or "en-US-JennyNeural",
+            rate=rate_str,
+            pitch=pitch_str,
+        )
+        with open(mp3_path, "wb") as f:
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    f.write(chunk["data"])
+
+    _asyncio.run(_do())
+    if not os.path.exists(mp3_path) or os.path.getsize(mp3_path) == 0:
+        raise RuntimeError("TTS produced empty audio")
+    return mp3_path
+
+
+def _looks_like_cat_voice(voice):
+    allv = {v for grp in TTS_VOICES.values() for v, _, _ in grp}
+    return voice in allv
+
+
+@app.route('/api/text2audio/voices')
+def text2audio_voices():
+    """Return cat-branded voices grouped by app language code."""
+    return jsonify(TTS_CAT_VOICES)
+
+
+def _text2audio_worker(token, text, voice, rate, pitch):
+    """Background: synthesize MP3, persist, upload to cloud, store link/status."""
+    try:
+        base = f"text2audio_{token}"
+        mp3_filename = f"{base}.mp3"
+        mp3_path = os.path.join(OUTPUT_DIR, f"{token}_{mp3_filename}")
+        with text2audio_lock:
+            text2audio_tasks[token]["status"] = "generating"
+            text2audio_tasks[token]["progress"] = 5
+
+        _synthesize_to_mp3(text, voice, rate, pitch, mp3_path)
+
+        with text2audio_lock:
+            text2audio_tasks[token]["status"] = "done"
+            text2audio_tasks[token]["progress"] = 85
+            text2audio_tasks[token]["path"] = mp3_path
+            text2audio_tasks[token]["filename"] = mp3_filename
+
+        # Save to Mega cloud (ocr-outputs) so it appears in My Downloads later.
+        link = ""
+        try:
+            link = upload_to_mega(mp3_path, mp3_filename)
+            with text2audio_lock:
+                text2audio_tasks[token]["mega_link"] = link
+        except Exception as e:
+            logger.warning(f"text2audio {token}: cloud upload failed: {e}")
+
+        with text2audio_lock:
+            text2audio_tasks[token]["status"] = "done"
+            text2audio_tasks[token]["progress"] = 100
+            text2audio_tasks[token]["link"] = link or f"/download/text2audio/{token}"
+    except Exception as e:
+        logger.error(f"text2audio {token}: error: {e}", exc_info=True)
+        with text2audio_lock:
+            text2audio_tasks[token]["status"] = "error"
+            text2audio_tasks[token]["error"] = str(e)
+
+
+@app.route('/api/text2audio', methods=['POST'])
+def text2audio_create():
+    """Accept pasted/uploaded text, start MP3 conversion, return a token for polling."""
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "Please enter some text to convert."}), 400
+    wc = len(text.split())
+    if wc > TTS_MAX_WORDS:
+        return jsonify({
+            "error": f"Text is too long ({wc} words; limit {TTS_MAX_WORDS}).",
+        }), 400
+
+    voice = (data.get("voice") or "").strip()
+    if voice and not _looks_like_cat_voice(voice):
+        voice = ""
+    rate = int(data.get("rate", 100))
+    rate = max(TTS_RATE_MIN, min(TTS_RATE_MAX, rate))
+    pitch = int(data.get("pitch", 0))
+    pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, pitch))
+
+    token = uuid.uuid4().hex[:16]
+    with text2audio_lock:
+        text2audio_tasks[token] = {
+            "status": "queued", "progress": 0, "error": "",
+            "link": "", "mega_link": "", "path": None, "filename": None,
+            "created_at": time.time(),
+        }
+    threading.Thread(target=_text2audio_worker, args=(token, text, voice, rate, pitch), daemon=True).start()
+    return jsonify({"ok": True, "token": token}), 202
+
+
+@app.route('/api/text2audio/<token>')
+def text2audio_status(token):
+    """Return progress/link for a text2audio token."""
+    with text2audio_lock:
+        t = text2audio_tasks.get(token)
+        if not t:
+            return jsonify({"error": "Not found"}), 404
+        return jsonify({
+            "status": t.get("status", "idle"),
+            "progress": t.get("progress", 0),
+            "error": t.get("error", ""),
+            "link": t.get("link", "") or t.get("mega_link", ""),
+        })
+
+
+@app.route('/download/text2audio/<token>')
+def download_text2audio(token):
+    """Serve the generated MP3 for a text2audio token."""
+    with text2audio_lock:
+        t = text2audio_tasks.get(token)
+        if not t:
+            flash('Audio not found')
+            return redirect(url_for('index'))
+        path = t.get("path")
+        filename = t.get("filename", "audio.mp3")
+    if path and os.path.exists(path):
+        return send_file(path, as_attachment=True, download_name=filename, mimetype="audio/mpeg")
+    flash('Audio not ready yet')
+    return redirect(url_for('index'))
 
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)

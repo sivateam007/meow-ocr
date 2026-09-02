@@ -186,6 +186,9 @@
                 <button type="button" class="tab-btn" id="translate-tab" style="padding: 1rem 2rem; border: 2px solid #ddd; background: white; color: var(--dark); border-radius: 10px; cursor: pointer; font-weight: 600; font-family: 'Segoe UI', sans-serif; transition: all 0.3s;">
                     <i class="fas fa-language"></i> Translate
                 </button>
+                <button type="button" class="tab-btn" id="tts-tab" style="padding: 1rem 2rem; border: 2px solid #ddd; background: white; color: var(--dark); border-radius: 10px; cursor: pointer; font-weight: 600; font-family: 'Segoe UI', sans-serif; transition: all 0.3s;">
+                    <i class="fas fa-file-audio"></i> Text to Audio
+                </button>
             </div>
 
             <form method="POST" enctype="multipart/form-data" class="upload-form" id="upload-form" action="/">
@@ -355,6 +358,56 @@
 
             <p class="language-note" id="ocr-note">Supports: PDF, Images (JPG, PNG, BMP, TIFF), Documents (DOCX, PPTX, RTF, ODT), Data (XLSX, CSV, XML, JSON, HTML) · Up to 5 files at once — each converts and lands in My Downloads · Up to 100 MB per file</p>
             <p class="language-note" id="translate-note" style="display: none;">Upload a .txt file to translate. Multiple languages supported.</p>
+
+            <!-- ===== TEXT TO AUDIO ===== -->
+            <div class="tts-card" id="tts-section" style="display: none; background:#fff; border:1px solid #e5e0f0; border-radius:14px; padding:1.5rem; max-width:820px; margin:1.5rem auto;">
+                <div class="tts-head" style="display:flex; align-items:center; gap:.6rem; margin-bottom:.4rem;">
+                    <h3 style="margin:0; color:#6c3483; font-size:1.15rem;"><i class="fas fa-file-audio" style="margin-right:.4rem;"></i>Text to Audio</h3>
+                    <span class="heading-cat">🐱🎧</span>
+                </div>
+                <p class="page-subtitle" style="margin-top:.25rem;">Paste or type text, pick a cat voice, then convert it into a downloadable MP3 that's saved to cloud.</p>
+
+                <div class="file-input-wrapper" style="margin-bottom:.75rem;">
+                    <input type="file" id="t2a-file" accept=".txt" style="display:none;">
+                    <label for="t2a-file" class="upload-box" style="padding:1.5rem; background:#faf8ff; border-color:#ddd; cursor:pointer;">
+                        <i class="fas fa-file-upload" style="font-size:1.5rem; color:#8e44ad; margin-bottom:.4rem;"></i>
+                        <div class="upload-text" style="margin:0;">Click to load a .txt file, or paste below</div>
+                    </label>
+                </div>
+
+                <textarea id="t2a-text" rows="7" spellcheck="false" style="width:100%; border:1px solid #ddd; border-radius:10px; padding:.8rem .9rem; font-size:.95rem; resize:vertical;" placeholder="Type or paste the text you want to listen to..."></textarea>
+                <p class="tts-status" id="t2a-count" style="font-size:.82rem; color:#8a6d3b; margin:.4rem 0 .8rem;">0 words</p>
+
+                <div class="options-grid" id="t2a-controls" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem;">
+                    <div class="option-group">
+                        <label class="option-label"><i class="fas fa-globe"></i> Language</label>
+                        <select id="t2a-lang" class="select-input"></select>
+                    </div>
+                    <div class="option-group">
+                        <label class="option-label"><i class="fas fa-cat"></i> Voice</label>
+                        <select id="t2a-voice" class="select-input"></select>
+                    </div>
+                    <div class="option-group">
+                        <label class="option-label"><i class="fas fa-tachometer-alt"></i> Speed <span id="t2a-rate-val">1.00x</span></label>
+                        <input type="range" id="t2a-rate" min="50" max="200" step="5" value="100" style="width:100%;">
+                    </div>
+                    <div class="option-group">
+                        <label class="option-label"><i class="fas fa-child"></i> Pitch <span id="t2a-pitch-val">0Hz</span></label>
+                        <input type="range" id="t2a-pitch" min="-50" max="50" step="5" value="0" style="width:100%;">
+                    </div>
+                </div>
+
+                <div class="tts-status" id="t2a-status" style="color:#6c3483; min-height:1.6em; margin-top:.9rem;"></div>
+                <div id="t2a-ready" style="display:none; margin-top:.75rem; padding:1rem; background:#faf8ff; border:1px solid #e5d9f0; border-radius:10px;">
+                    <a id="t2a-download" class="submit-btn tta-dl" style="text-decoration:none; background:linear-gradient(135deg,#8e44ad 0%,#6c3483 100%); width:100%; text-align:center;"><i class="fas fa-download"></i> Download MP3</a>
+                    <p style="font-size:.84rem; color:#8a6d3b; margin:.6rem 0 0;">Your audio is saved to cloud storage &amp; My Downloads — you can come back to it later. 🐾</p>
+                </div>
+
+                <div class="tts-modal-actions" style="display:flex; gap:.6rem; margin-top:1.1rem;">
+                    <button type="button" id="t2a-reset" style="flex:1; border:none; border-radius:8px; padding:.65rem; font-weight:600; background:#ecf0f1; color:#555;"><i class="fas fa-redo"></i> Reset</button>
+                    <button type="button" id="t2a-go" style="flex:1.4; border:none; border-radius:8px; padding:.65rem; font-weight:600; background:linear-gradient(135deg,#8e44ad 0%,#6c3483 100%); color:#fff;"><i class="fas fa-cog"></i> Convert to Audio</button>
+                </div>
+            </div>
         </section>
 
         <!-- ===== HANDWRITTEN NOTES (AI) ===== -->
@@ -690,10 +743,12 @@
         const docTab = document.getElementById('doc-tab');
         const dataTab = document.getElementById('data-tab');
         const translateTab = document.getElementById('translate-tab');
+        const ttsTab = document.getElementById('tts-tab');
+        const ttsSection = document.getElementById('tts-section');
         const modeInput = document.getElementById('mode-input');
 
         function switchTab(tab) {
-            const allTabs = [pdfTab, imageTab, docTab, dataTab, translateTab];
+            const allTabs = [pdfTab, imageTab, docTab, dataTab, translateTab, ttsTab];
             allTabs.forEach(t => {
                 t.style.background = 'white';
                 t.style.color = 'var(--dark)';
@@ -790,10 +845,29 @@
                 ocrNote.style.display = 'none';
                 translateNote.style.display = 'block';
                 modeInput.disabled = false;
+            } else if (tab === 'tts') {
+                ttsTab.style.background = 'var(--git-color)';
+                ttsTab.style.color = 'white';
+                ttsTab.style.borderColor = 'var(--git-color)';
+                ttsTab.classList.add('active');
+                currentTab = 'tts';
+                uploadForm.style.display = 'none';
+                ocrOptions.style.display = 'none';
+                translateOptions.style.display = 'none';
+                ocrInfoBox.style.display = 'none';
+                translateInfoBox.style.display = 'none';
+                ocrNote.style.display = 'none';
+                translateNote.style.display = 'none';
+                ttsSection.style.display = 'block';
             }
 
             fileInput.accept = accept;
             uploadHint.textContent = hint;
+            if (tab === 'tts') {
+                uploadForm.style.display = 'none';
+            } else {
+                uploadForm.style.display = '';
+            }
         }
 
         pdfTab.addEventListener('click', () => switchTab('pdf'));
@@ -801,6 +875,7 @@
         docTab.addEventListener('click', () => switchTab('doc'));
         dataTab.addEventListener('click', () => switchTab('data'));
         translateTab.addEventListener('click', () => switchTab('translate'));
+        ttsTab.addEventListener('click', () => switchTab('tts'));
 
         fileInput.addEventListener('change', function() {
             if (this.files.length > 0) {
@@ -1143,6 +1218,160 @@
             // 16. Footer cats wave hello
             anime({ targets: '.meow-tagline', rotate: [-3, 3, -3], duration: 1400, delay: 2200, loop: true, easing: 'easeInOutSine' });
         });
+
+        (function () {
+            'use strict';
+            var textEl = document.getElementById('t2a-text');
+            var langSel = document.getElementById('t2a-lang');
+            var voiceSel = document.getElementById('t2a-voice');
+            var rateRange = document.getElementById('t2a-rate');
+            var pitchRange = document.getElementById('t2a-pitch');
+            var rateVal = document.getElementById('t2a-rate-val');
+            var pitchVal = document.getElementById('t2a-pitch-val');
+            var countEl = document.getElementById('t2a-count');
+            var statusEl = document.getElementById('t2a-status');
+            var readyEl = document.getElementById('t2a-ready');
+            var dlLink = document.getElementById('t2a-download');
+            var goBtn = document.getElementById('t2a-go');
+            var resetBtn = document.getElementById('t2a-reset');
+            var fileInput = document.getElementById('t2a-file');
+            var voices = {};
+            var pollTimer = null;
+            var LABELS = {
+                tam:'Tamil', eng:'English', hin:'Hindi', tel:'Telugu', kan:'Kannada',
+                mal:'Malayalam', ben:'Bengali', guj:'Gujarati', mar:'Marathi', pan:'Punjabi',
+                ara:'Arabic', rus:'Russian', ell:'Greek', heb:'Hebrew', tha:'Thai',
+                chi_sim:'Chinese', jpn:'Japanese', kor:'Korean', spa:'Spanish', fra:'French',
+                deu:'German', ita:'Italian'
+            };
+            if (!textEl) return;
+
+            function show(el, on) { if (el) el.style.display = on ? '' : 'none'; }
+
+            function loadVoices() {
+                fetch('/api/text2audio/voices')
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        voices = data || {};
+                        populateLangs();
+                    })
+                    .catch(function () { statusEl.textContent = 'Could not load voices. Please try again.'; });
+            }
+
+            function populateLangs() {
+                langSel.innerHTML = '';
+                var keys = Object.keys(voices);
+                keys.forEach(function (code) {
+                    var opt = document.createElement('option');
+                    opt.value = code;
+                    opt.textContent = (LABELS[code] || code) + ' (' + code + ')';
+                    langSel.appendChild(opt);
+                });
+                var def = keys.indexOf('tam') >= 0 ? 'tam' : (keys[0] || 'en');
+                if (def) langSel.value = def;
+                populateVoices();
+            }
+
+            function populateVoices() {
+                voiceSel.innerHTML = '';
+                var list = voices[langSel.value] || [];
+                if (!list.length) {
+                    var o = document.createElement('option');
+                    o.value = '';
+                    o.textContent = 'Default cat voice';
+                    voiceSel.appendChild(o);
+                    return;
+                }
+                list.forEach(function (v) {
+                    var opt = document.createElement('option');
+                    opt.value = v[0];
+                    opt.textContent = v[1];
+                    voiceSel.appendChild(opt);
+                });
+            }
+
+            function updateCount() {
+                var v = textEl.value || '';
+                var wc = v.trim() ? v.trim().split(/\s+/).length : 0;
+                if (countEl) countEl.textContent = wc + ' word' + (wc === 1 ? '' : 's') + (wc ? ' · est. ~' + Math.round(wc / 160 * 2 * 10) / 10 + ' min audio' : '');
+            }
+
+            if (rateRange) rateRange.addEventListener('input', function () {
+                rateVal.textContent = (parseInt(rateRange.value, 10) / 100).toFixed(2) + 'x';
+            });
+            if (pitchRange) pitchRange.addEventListener('input', function () {
+                pitchVal.textContent = parseInt(pitchRange.value, 10) + 'Hz';
+            });
+            if (langSel) langSel.addEventListener('change', populateVoices);
+            if (textEl) textEl.addEventListener('input', updateCount);
+            if (fileInput) fileInput.addEventListener('change', function () {
+                var f = fileInput.files[0];
+                if (!f) return;
+                var reader = new FileReader();
+                reader.onload = function () { textEl.value = (reader.result || '').slice(0, 200000); updateCount(); };
+                reader.readAsText(f);
+            });
+
+            goBtn.addEventListener('click', function () {
+                var text = (textEl.value || '').trim();
+                if (!text) { statusEl.textContent = 'Please enter some text to convert.'; return; }
+                if (text.split(/\s+/).length > 2500) { statusEl.textContent = 'Text is too long (limit 2500 words).'; return; }
+                var body = {
+                    text: text,
+                    voice: voiceSel.value || '',
+                    rate: parseInt(rateRange ? rateRange.value : 100, 10) || 100,
+                    pitch: parseInt(pitchRange ? pitchRange.value : 0, 10) || 0
+                };
+                goBtn.disabled = true;
+                statusEl.textContent = 'Starting conversion...';
+                show(readyEl, false);
+                fetch('/api/text2audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                })
+                    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { goBtn.disabled = false; statusEl.textContent = res.d.error || 'Could not start conversion.'; return; }
+                        statusEl.textContent = 'Converting... 0%';
+                        pollTimer = setInterval(function () { pollStatus(res.d.token); }, 1500);
+                    })
+                    .catch(function () { goBtn.disabled = false; statusEl.textContent = 'Network error. Please try again.'; });
+            });
+
+            function pollStatus(token) {
+                fetch('/api/text2audio/' + token)
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (d.status === 'done') {
+                            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                            statusEl.textContent = 'Ready! Your audio is saved to cloud.';
+                            show(readyEl, true);
+                            dlLink.href = d.link || ('/download/text2audio/' + token);
+                            dlLink.setAttribute('download', '');
+                            goBtn.disabled = false;
+                        } else if (d.status === 'error') {
+                            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                            statusEl.textContent = d.error || 'Conversion failed.';
+                            goBtn.disabled = false;
+                        } else {
+                            statusEl.textContent = 'Converting... ' + (d.progress || 0) + '%';
+                        }
+                    })
+                    .catch(function () { });
+            }
+
+            if (resetBtn) resetBtn.addEventListener('click', function () {
+                textEl.value = '';
+                updateCount();
+                statusEl.textContent = '';
+                show(readyEl, false);
+                goBtn.disabled = false;
+                if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+            });
+
+            loadVoices();
+        })();
     </script>
 
     <!-- ads removed -->
