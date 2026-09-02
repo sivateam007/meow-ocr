@@ -190,7 +190,11 @@
                             </td>
                             <td class="col-dl">{{ d.download_count }}</td>
                             <td class="col-action">
-                                {% if d.status == 'completed' and d.download_link %}
+                                {% if d.audio and d.status == 'completed' and d.download_link %}
+                                <a href="{{ d.download_link }}" target="_blank" onclick="trackDownload('{{ d.task_id }}')" class="act-link" title="Download MP3">
+                                    <i class="fas fa-file-audio"></i>
+                                </a>
+                                {% elif d.status == 'completed' and d.download_link %}
                                 <a href="{{ d.download_link }}" target="_blank" onclick="trackDownload('{{ d.task_id }}')" class="act-link" title="Download">
                                     <i class="fas fa-cloud-download-alt"></i>
                                 </a>

@@ -3528,7 +3528,8 @@ def downloads_page():
                 "source_lang": task.get("source_lang", ""),
                 "target_lang": task.get("target_lang", ""),
                 "current_chunk": task.get("current_chunk", 0),
-                "total_chunks": task.get("total_chunks")
+                "total_chunks": task.get("total_chunks"),
+                "audio": task.get("audio", False),
             }
             all_tasks.append(info)
     all_tasks.reverse()
@@ -4101,10 +4102,34 @@ def _text2audio_worker(token, text, voice, rate, pitch):
         except Exception as e:
             logger.warning(f"text2audio {token}: cloud upload failed: {e}")
 
+        dl_link = link or f"/download/text2audio/{token}"
         with text2audio_lock:
             text2audio_tasks[token]["status"] = "done"
             text2audio_tasks[token]["progress"] = 100
-            text2audio_tasks[token]["link"] = link or f"/download/text2audio/{token}"
+            text2audio_tasks[token]["link"] = dl_link
+
+        # Register into progress_tracker so the MP3 shows up in My Downloads.
+        p_id = f"t2a_{token}"
+        with progress_lock:
+            progress_tracker[p_id] = {
+                "status": "completed",
+                "file_type": "text_to_audio",
+                "audio": True,
+                "output_filename": mp3_filename,
+                "output_path": mp3_path,
+                "download_link": dl_link,
+                "mega_uploaded": bool(link),
+                "mega_status": "uploaded" if link else "",
+                "pages_processed": 1,
+                "percentage": 100,
+                "detected_language": "",
+                "created_at": time.time(),
+                "completed_at": time.time(),
+                "tts_filename": mp3_filename,
+                "tts_path": mp3_path,
+                "tts_download_link": dl_link,
+            }
+        _save_progress(force=True)
     except Exception as e:
         logger.error(f"text2audio {token}: error: {e}", exc_info=True)
         with text2audio_lock:
