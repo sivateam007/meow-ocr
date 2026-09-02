@@ -104,7 +104,11 @@ def _check_rate(limit, window_seconds):
 @app.template_filter('datetimeformat')
 def datetimeformat(timestamp):
     import datetime
-    return datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M')
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.datetime.fromtimestamp(timestamp, tz=ZoneInfo("Asia/Kolkata")).strftime('%Y-%m-%d %H:%M')
+    except Exception:
+        return datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M')
 
 
 @app.context_processor
@@ -1527,7 +1531,6 @@ def rebuild_completed_from_mega():
             logger.info("Mega ocr-outputs folder is empty — nothing to restore")
             return
 
-        now = time.time()
         restored = 0
         for nid, finfo in files.items():
             if not isinstance(finfo, dict):
@@ -1545,7 +1548,25 @@ def rebuild_completed_from_mega():
 
             with progress_lock:
                 if tid in progress_tracker:
+                    # Preserve the original date on re-scan — never re-stamp to "now".
                     continue
+
+            # Use the file's real Mega timestamp (last modified) so the date is stable
+            # across refreshes instead of always showing the scan time. The field name can
+            # vary (`ts` on standard nodes); fall back to current time if unavailable.
+            file_ts = None
+            for key in ('ts', 'tm', 't'):
+                v = finfo.get(key)
+                if isinstance(v, (int, float)):
+                    try:
+                        v = float(v)
+                        if 1000000000 < v < 5000000000:  # sane unix-ts window
+                            file_ts = v
+                            break
+                    except (TypeError, ValueError):
+                        continue
+            if file_ts is None:
+                file_ts = time.time()
 
             if is_ocr:
                 orig_name = name[:-8].rstrip('_')
@@ -1564,7 +1585,7 @@ def rebuild_completed_from_mega():
                     "mega_uploaded": True, "mega_status": "uploaded",
                     "file_type": file_type, "detected_language": "",
                     "pages_processed": 0, "percentage": 100,
-                    "download_count": 0, "completed_at": now, "created_at": now
+                    "download_count": 0, "completed_at": file_ts, "created_at": file_ts
                 }
                 restored += 1
 
