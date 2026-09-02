@@ -194,14 +194,9 @@
                                 <a href="{{ d.download_link }}" target="_blank" onclick="trackDownload('{{ d.task_id }}')" class="act-link" title="Download">
                                     <i class="fas fa-cloud-download-alt"></i>
                                 </a>
-                                <a href="/result/{{ d.task_id }}" class="act-link act-btn" title="Open result page">
-                                    <i class="fas fa-eye"></i> Open
-                                </a>
-                                {% if not d.translating %}
-                                <button onclick="copyTaskText('{{ d.task_id }}', this)" class="act-btn" title="Copy extracted text">
-                                    <i class="fas fa-copy"></i> Copy
+                                <button onclick="openAndCopy('{{ d.task_id }}', this)" class="act-btn act-link" title="Open result page &amp; copy text">
+                                    <i class="fas fa-eye"></i> Open &amp; Copy
                                 </button>
-                                {% endif %}
                                 <button onclick="shareTask('{{ d.task_id }}', this)" class="act-btn">
                                     <i class="fas fa-share-alt"></i> Share
                                 </button>
@@ -209,14 +204,9 @@
                                 <button onclick="getMegaLink('{{ d.task_id }}', this)" class="act-btn act-link">
                                     <i class="fas fa-link"></i> Get Link
                                 </button>
-                                <a href="/result/{{ d.task_id }}" class="act-link act-btn" title="Open result page">
-                                    <i class="fas fa-eye"></i> Open
-                                </a>
-                                {% if not d.translating %}
-                                <button onclick="copyTaskText('{{ d.task_id }}', this)" class="act-btn" title="Copy extracted text">
-                                    <i class="fas fa-copy"></i> Copy
+                                <button onclick="openAndCopy('{{ d.task_id }}', this)" class="act-btn act-link" title="Open result page &amp; copy text">
+                                    <i class="fas fa-eye"></i> Open &amp; Copy
                                 </button>
-                                {% endif %}
                                 <button onclick="shareTask('{{ d.task_id }}', this)" class="act-btn">
                                     <i class="fas fa-share-alt"></i> Share
                                 </button>
@@ -224,14 +214,9 @@
                                 <a href="/download/{{ d.task_id }}" class="act-link act-btn">
                                     <i class="fas fa-download"></i> Download
                                 </a>
-                                <a href="/result/{{ d.task_id }}" class="act-link act-btn" title="Open result page">
-                                    <i class="fas fa-eye"></i> Open
-                                </a>
-                                {% if not d.translating %}
-                                <button onclick="copyTaskText('{{ d.task_id }}', this)" class="act-btn" title="Copy extracted text">
-                                    <i class="fas fa-copy"></i> Copy
+                                <button onclick="openAndCopy('{{ d.task_id }}', this)" class="act-btn act-link" title="Open result page &amp; copy text">
+                                    <i class="fas fa-eye"></i> Open &amp; Copy
                                 </button>
-                                {% endif %}
                                 <button onclick="shareTask('{{ d.task_id }}', this)" class="act-btn">
                                     <i class="fas fa-share-alt"></i> Share
                                 </button>
@@ -305,6 +290,27 @@
                     } else {
                         fallbackCopy(text); done();
                     }
+                })
+                .catch(function () {
+                    btn.innerHTML = '<i class="fas fa-times"></i> Error';
+                    setTimeout(function () { btn.innerHTML = orig; }, 1800);
+                });
+        }
+
+        function openAndCopy(taskId, btn) {
+            var orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
+            fetch('/download/' + taskId)
+                .then(function (r) { if (!r.ok) throw new Error('bad'); return r.text(); })
+                .then(function (text) {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        navigator.clipboard.writeText(text)
+                            .then(goResult)
+                            .catch(function () { fallbackCopy(text); goResult(); });
+                    } else {
+                        fallbackCopy(text); goResult();
+                    }
+                    function goResult() { window.location.href = '/result/' + taskId; }
                 })
                 .catch(function () {
                     btn.innerHTML = '<i class="fas fa-times"></i> Error';

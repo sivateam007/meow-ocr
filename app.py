@@ -3291,6 +3291,12 @@ def downloads_page():
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 GROQ_CHAT_MODEL = os.environ.get("GROQ_CHAT_MODEL", "llama-3.1-8b-instant")
 GROQ_VISION_MODEL = os.environ.get("GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
+# Fallback vision models tried in order if the primary (or a configured one) is
+# unavailable on this account (e.g. model decommissioned or not granted).
+GROQ_VISION_FALLBACKS = [
+    "llama-4-scout-17b-16e-instruct",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+]
 _GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 _GROQ_MAX_MESSAGE = 500
 _GROQ_MAX_IMAGE_BYTES = 25 * 1024 * 1024  # covers typical 15-20MB camera photos
@@ -3473,38 +3479,58 @@ def api_handwrite():
         "Do not describe the image. If there is no readable handwriting, reply "
         "exactly: '(No readable text detected on this image)'."
     )
-    try:
-        resp = requests.post(
-            _GROQ_URL,
-            headers={
-                "Authorization": f"Bearer {GROQ_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": GROQ_VISION_MODEL,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {"url": data_url}},
-                        ],
-                    }
-                ],
-                "temperature": 0.2,
-                "max_tokens": 2000,
-            },
-            timeout=60,
-        )
-        if resp.status_code == 200:
-            body = resp.json()
-            text = (body.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
-            if text:
-                return jsonify({"text": text}), 200
-        logger.warning("Groq vision non-200 status=%s", resp.status_code)
-        return jsonify({"error": "The AI scanner hit a snag (HTTP %s). Please try again in a moment." % resp.status_code}), 502
-    except Exception:
-        logger.error("Groq vision error", exc_info=True)
+    # Build the candidate model list (primary first, then fallbacks), dedup in order.
+    models = []
+    for m in [GROQ_VISION_MODEL] + GROQ_VISION_FALLBACKS:
+        m = (m or "").strip()
+        if m and m not in models:
+            models.append(m)
+    last_status = None
+    for model in models:
+        try:
+            resp = requests.post(
+                _GROQ_URL,
+                headers={
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "image_url", "image_url": {"url": data_url}},
+                            ],
+                        }
+                    ],
+                    "temperature": 0.2,
+                    "max_tokens": 2000,
+                },
+                timeout=60,
+            )
+            last_status = resp.status_code
+            if resp.status_code == 200:
+                body = resp.json()
+                text = (body.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
+                if text:
+                    return jsonify({"text": text}), 200
+            if resp.status_code == 400 and "decommissioned" in resp.text.lower():
+                logger.warning("Vision model %s decommissioned, trying next", model)
+                continue
+            # other 4xx (e.g. 401/403 invalid key, 404 model not available)
+            if 400 <= resp.status_code < 500:
+                logger.warning("Vision model %s HTTP %s: %s", model, resp.status_code, resp.text[:200])
+                continue
+            # 429 rate limited or 5xx: don't burn through fallbacks pointlessly
+            logger.warning("Groq vision HTTP %s with model %s", resp.status_code, model)
+            continue
+        except Exception:
+            logger.error("Groq vision error with model %s", model, exc_info=True)
+            continue
+    if last_status and 400 <= last_status < 500:
+        return jsonify({"error": "The AI scanner hit a snag (HTTP %s). Please try again in a moment." % last_status}), 502
     return jsonify({"error": "The AI scanner is busy right now — please try again in a moment."}), 502
 
 
