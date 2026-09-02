@@ -221,14 +221,20 @@
             var voices = [];
             var isPaused = false;
             var stopped = false;
+            var session = 0;
             var currentSentence = -1;
             var currentVoiceLabel = 'Default voice';
             var allSentences = [];
+            var queueTxt = [];
             var caretAtPointerDown = -1;
             var lineStartOffsets = [0];
             var lineHeightPx = 26;
             var charsPerLine = 60;
-            var textOffsetBase = 0;
+            var voiceCurrent = null;
+            var langCurrent = 'en-US';
+            var rateCurrent = 1;
+            var pitchCurrent = 1;
+            var errorStreak = 0;
 
             var langLabels = {
                 'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German',
@@ -405,15 +411,6 @@
                 return sentences.length ? sentences.length - 1 : 0;
             }
 
-            function findSentenceFor(offset) {
-                for (var i = 0; i < allSentences.length; i++) {
-                    var s = allSentences[i];
-                    if (offset >= s.start && offset < s.start + s.text.length) return i;
-                }
-                if (allSentences.length && offset >= 0 && offset < allSentences[0].start) return 0;
-                return -1;
-            }
-
             function resolveStartFromHere() {
                 if (caretAtPointerDown >= 0) {
                     var idx = findSentenceIndex(caretAtPointerDown);
@@ -458,11 +455,89 @@
                 renderOverlay(textarea.value, -1, 0);
             }
 
+            function chunkize(text, idx) {
+                var MAX = 180;
+                if (text.length <= MAX) return [{ text: text, idx: idx }];
+                var out = [];
+                var rest = text;
+                while (rest.length > MAX) {
+                    var cut = rest.lastIndexOf(' ', MAX);
+                    if (cut <= MAX * 0.5) cut = MAX;
+                    out.push({ text: rest.substring(0, cut + 1), idx: idx });
+                    rest = rest.substring(cut + 1);
+                }
+                if (rest.length) out.push({ text: rest, idx: idx });
+                return out;
+            }
+
+            function buildQueue(raw, startIdx) {
+                var q = [];
+                for (var i = startIdx; i < allSentences.length; i++) {
+                    var chunks = chunkize(allSentences[i].text, i);
+                    for (var j = 0; j < chunks.length; j++) q.push(chunks[j]);
+                }
+                return q;
+            }
+
+            function kick(tok) {
+                if (tok !== session || stopped) return;
+                if (isPaused) {
+                    setTimeout(function () { kick(tok); }, 200);
+                    return;
+                }
+                if (synth.speaking || synth.pending) {
+                    setTimeout(function () { kick(tok); }, 90);
+                    return;
+                }
+                var item = queueTxt.shift();
+                if (!item) {
+                    finishReading();
+                    if (tok === session && !stopped) status.textContent = 'Finished.';
+                    return;
+                }
+                var u = new SpeechSynthesisUtterance(item.text);
+                if (voiceCurrent) { u.voice = voiceCurrent; u.lang = voiceCurrent.lang; }
+                else u.lang = langCurrent;
+                u.rate = rateCurrent; u.pitch = pitchCurrent;
+                u.onstart = function () {
+                    if (tok !== session) return;
+                    updateReading(item.idx);
+                    playBtn.style.display = 'none'; pauseBtn.style.display = '';
+                };
+                u.onend = function () {
+                    if (tok !== session) return;
+                    errorStreak = 0;
+                    setTimeout(function () { kick(tok); }, 30);
+                };
+                u.onerror = function (e) {
+                    if (tok !== session) return;
+                    var code = e && e.error || '';
+                    if (code === 'canceled' || code === 'interrupted') {
+                        if (!stopped) status.textContent = 'Reading stopped.';
+                        finishReading();
+                        return;
+                    }
+                    errorStreak++;
+                    if (errorStreak >= 6) {
+                        finishReading();
+                        status.textContent = 'Speech engine error - try a different Voice, or tap Listen again.';
+                        return;
+                    }
+                    setTimeout(function () { kick(tok); }, 120);
+                };
+                try { synth.speak(u); } catch (err) {
+                    setTimeout(function () { kick(tok); }, 120);
+                }
+                try { synth.resume(); } catch (err) { }
+            }
+
             function startReading(startIdx) {
                 var raw = textarea.value || '';
                 if (!raw.trim()) { status.textContent = 'No text to read.'; return; }
+                session++;
+                var tok = session;
                 stopped = false;
-                synth.cancel();
+                errorStreak = 0;
                 allSentences = splitSentences(raw);
                 if (startIdx == null || isNaN(startIdx) || startIdx < 0) startIdx = 0;
                 if (allSentences.length) startIdx = Math.min(startIdx, allSentences.length - 1);
@@ -470,48 +545,17 @@
                 refreshMetrics();
                 lineStartOffsets = buildLineStarts(raw);
                 var voice = getSelectedVoice();
+                voiceCurrent = voice;
                 currentVoiceLabel = voice ? voice.name : (voices.length ? voices[0].name : 'Default voice');
-                var chosenLang = voice ? voice.lang : (langSel.value || 'en-US');
-                var rate = parseFloat(rateRange.value) || 1;
-                var pitch = parseFloat(pitchRange.value) || 1;
-                textOffsetBase = allSentences[startIdx].start;
-                var rest = raw.substring(textOffsetBase);
-                if (!rest.trim()) { status.textContent = 'No text from here.'; return; }
+                langCurrent = voice ? voice.lang : (langSel.value || 'en-US');
+                rateCurrent = parseFloat(rateRange.value) || 1;
+                pitchCurrent = parseFloat(pitchRange.value) || 1;
+                queueTxt = buildQueue(raw, startIdx);
+                if (!queueTxt.length) { status.textContent = 'No text from here.'; return; }
+                currentSentence = startIdx - 1;
                 status.textContent = 'Starting with "' + currentVoiceLabel + '"...';
-                var u = new SpeechSynthesisUtterance(rest);
-                if (voice) { u.voice = voice; u.lang = voice.lang; }
-                else u.lang = chosenLang;
-                u.rate = rate; u.pitch = pitch;
-                var primed = false;
-                u.onstart = function () {
-                    if (stopped) return;
-                    primed = true;
-                    updateReading(startIdx);
-                    playBtn.style.display = 'none'; pauseBtn.style.display = '';
-                };
-                u.onboundary = function (e) {
-                    if (stopped) return;
-                    var idx = textOffsetBase + (e.charIndex || 0);
-                    var i = findSentenceFor(idx);
-                    if (i < 0) return;
-                    if (i !== currentSentence || !primed) updateReading(i);
-                    primed = true;
-                };
-                u.onend = function () {
-                    if (stopped) return;
-                    finishReading();
-                    status.textContent = 'Finished.';
-                };
-                u.onerror = function (e) {
-                    var code = e && e.error || '';
-                    if (code === 'canceled' || code === 'interrupted') {
-                        if (!stopped) status.textContent = 'Reading stopped.';
-                    } else {
-                        status.textContent = 'Speech error - please try Listen again.';
-                    }
-                    finishReading();
-                };
-                synth.speak(u);
+                if (synth.speaking || synth.paused || synth.pending) synth.cancel();
+                setTimeout(function () { kick(tok); }, 250);
             }
 
             function pauseReading() {
@@ -532,6 +576,7 @@
             }
 
             function stopReading() {
+                session++;
                 stopped = true;
                 synth.cancel();
                 isPaused = false;
