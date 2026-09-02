@@ -73,6 +73,8 @@
                 .btn-here{ background:linear-gradient(135deg,#1abc9c 0%,#16a085 100%); }
                 .btn-pause{ background:linear-gradient(135deg,#f39c12 0%,#e67e22 100%); }
                 .btn-stop{ background:linear-gradient(135deg,#95a5a6 0%,#7f8c8d 100%); }
+                .btn-screen{ background:linear-gradient(135deg,#3498db 0%,#2e86c1 100%); }
+                .btn-screen.on{ background:linear-gradient(135deg,#27ae60 0%,#1e8449 100%); }
                 .tts-status{ font-size:.85rem; color:#b06a1e; flex:1 1 100%; min-height:1.2em; }
                 #reader-box{ position:relative; background:#fafaff; }
                 #result-text{
@@ -106,6 +108,15 @@
                     .tts-rows label{ width:100%; }
                     .tts-rows select{ width:100%; max-width:none; }
                 }
+                .tts-modal{ position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding:1rem; }
+                .tts-modal.open{ display:flex; }
+                .tts-modal-box{ background:#fff; border-radius:14px; max-width:420px; width:100%; padding:1.25rem; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+                .tts-modal-box h3{ margin:0 0 .25rem; color:#7a4a12; font-size:1.05rem; }
+                .tts-modal-box p{ margin:0 0 1rem; color:#8a6d3b; font-size:.88rem; }
+                .tts-modal-box label{ display:block; font-size:.9rem; color:#7a4a12; margin-bottom:.3rem; font-weight:600; }
+                .tts-modal-box select{ width:100%; padding:.5rem .6rem; border-radius:8px; border:1px solid #ddd; margin-bottom:1rem; font-size:.95rem; }
+                .tts-modal-actions{ display:flex; gap:.6rem; margin-top:.25rem; }
+                .tts-modal-actions button{ flex:1; border:none; border-radius:8px; padding:.6rem; font-weight:600; font-size:.95rem; cursor:pointer; touch-action:manipulation; }
             </style>
 
             <div style="max-width:820px; margin:1.5rem auto;">
@@ -117,6 +128,7 @@
                             <button id="tts-here" class="tts-btn btn-here" type="button" title="Start reading from where your cursor is, or from the top of the visible text"><i class="fas fa-arrow-right"></i> From here</button>
                             <button id="tts-pause" class="tts-btn btn-pause" type="button" style="display:none;"><i class="fas fa-pause"></i> Pause</button>
                             <button id="tts-stop" class="tts-btn btn-stop" type="button"><i class="fas fa-stop"></i> Stop</button>
+                            <button id="tts-screen" class="tts-btn btn-screen" type="button" title="Keep the screen on while reading"><i class="fas fa-sun"></i> Screen on</button>
                             <span id="tts-status" class="tts-status"></span>
                         </div>
                     </div>
@@ -175,6 +187,20 @@
         </div>
     </footer>
 
+    <div id="tts-modal" class="tts-modal" role="dialog" aria-modal="true">
+        <div class="tts-modal-box">
+            <h3><i class="fas fa-microphone-alt" style="color:#e67e22;"></i> Choose voice &amp; language</h3>
+            <p>Pick an audio voice and language to start reading aloud.</p>
+            <label for="tts-modal-lang">Language</label>
+            <select id="tts-modal-lang"></select>
+            <label for="tts-modal-voice">Voice (audio)</label>
+            <select id="tts-modal-voice"></select>
+            <div class="tts-modal-actions">
+                <button id="tts-modal-cancel" type="button" style="background:#ecf0f1; color:#555;">Cancel</button>
+                <button id="tts-modal-go" type="button" style="background:linear-gradient(135deg,#e67e22 0%,#d35400 100%); color:#fff;"><i class="fas fa-play"></i> Start reading</button>
+            </div>
+        </div>
+    </div>
     <div id="copy-toast" style="position:fixed; bottom:2rem; left:50%; transform:translateX(-50%); background:#2ecc71; color:#fff; padding:0.75rem 1.5rem; border-radius:30px; display:none; z-index:999; box-shadow:0 4px 15px rgba(0,0,0,0.2);">Copied to clipboard ✓</div>
 
     <script>
@@ -218,6 +244,14 @@
             var nowEl = document.getElementById('tts-now');
             var optToggle = document.getElementById('tts-options-toggle');
             var optBox = document.getElementById('tts-options');
+            var screenBtn = document.getElementById('tts-screen');
+            var modal = document.getElementById('tts-modal');
+            var modalLang = document.getElementById('tts-modal-lang');
+            var modalVoice = document.getElementById('tts-modal-voice');
+            var modalCancel = document.getElementById('tts-modal-cancel');
+            var modalGo = document.getElementById('tts-modal-go');
+            var pendingStartFromHere = false;
+            var pendingStartIdx = 0;
             var voices = [];
             var isPaused = false;
             var stopped = false;
@@ -629,7 +663,7 @@
                         navigator.wakeLock.request('screen').then(function (lock) {
                             wakeLock = lock;
                             lock.addEventListener('release', function () { wakeLock = null; });
-                        }).catch(function () { });
+                        }, function () { });
                     }
                 } catch (e) { }
             }
@@ -682,6 +716,51 @@
                 stopSilentAudio();
             }
 
+            /* --- Screen-on toggle --- */
+            var screenOn = false;
+            function setScreenOn(on) {
+                screenOn = on;
+                if (on) {
+                    screenBtn.classList.add('on');
+                    screenBtn.innerHTML = '<i class="fas fa-sun"></i> Screen on';
+                    requestWakeLock();
+                    startSilentAudio();
+                } else {
+                    screenBtn.classList.remove('on');
+                    screenBtn.innerHTML = '<i class="fas fa-sun"></i> Screen on';
+                    releaseWakeLock();
+                    stopSilentAudio();
+                }
+            }
+
+            /* --- Selection modal --- */
+            var modalPendingIdx = 0;
+            function syncModalFromSelects() {
+                modalLang.innerHTML = langSel.innerHTML;
+                modalVoice.innerHTML = voiceSel.innerHTML;
+                modalLang.value = langSel.value;
+                if (voiceSel.value) modalVoice.value = voiceSel.value;
+                else if (modalVoice.options.length) modalVoice.selectedIndex = 0;
+            }
+            function openModal(idx) {
+                modalPendingIdx = idx || 0;
+                syncModalFromSelects();
+                modal.classList.add('open');
+            }
+            function closeModal() {
+                modal.classList.remove('open');
+            }
+            function applyModalAndStart() {
+                langSel.value = modalLang.value;
+                voiceSel.value = modalVoice.value;
+                closeModal();
+                startReading(modalPendingIdx);
+            }
+            function ensureVoiceSelected(idx) {
+                pendingStartIdx = idx || 0;
+                openModal(idx || 0);
+            }
+
             if ('onvoiceschanged' in synth) synth.onvoiceschanged = function () { populateVoices(); };
             populateVoices();
             if (langSel) langSel.addEventListener('change', function () { populateVoices(); });
@@ -702,7 +781,7 @@
                 var isOpen = optBox.style.display === 'flex';
                 optBox.style.display = isOpen ? 'none' : 'flex';
             });
-            [playBtn, hereBtn, pauseBtn, stopBtn, optToggle].forEach(function (btn) {
+            [playBtn, hereBtn, pauseBtn, stopBtn, optToggle, screenBtn].forEach(function (btn) {
                 btn.addEventListener('pointerdown', function (e) { e.preventDefault(); });
             });
 
@@ -711,11 +790,17 @@
             });
             playBtn.addEventListener('click', function () {
                 if (isPaused) { resumeReading(); return; }
-                startReading(0);
+                ensureVoiceSelected(0);
             });
-            hereBtn.addEventListener('click', function () { startReading(resolveStartFromHere()); });
+            hereBtn.addEventListener('click', function () { ensureVoiceSelected(resolveStartFromHere()); });
             pauseBtn.addEventListener('click', pauseReading);
             stopBtn.addEventListener('click', stopReading);
+            screenBtn.addEventListener('click', function () { setScreenOn(!screenOn); });
+            modalCancel.addEventListener('click', closeModal);
+            modalGo.addEventListener('click', applyModalAndStart);
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closeModal();
+            });
         })();
     </script>
 {% include 'chatbot.html' %}
