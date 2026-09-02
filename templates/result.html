@@ -64,31 +64,45 @@
             {% endif %}
 
             <style>
-                .reader-wrap{ position:relative; }
-                #result-text, #reader-overlay{
-                    width:100%; min-height:380px; padding:1rem; font-size:1rem; line-height:1.6;
-                    border:2px solid #ddd; border-radius:10px; font-family:inherit;
-                    background:#fafaff; box-sizing:border-box; white-space:pre-wrap; word-wrap:break-word;
-                    overflow:auto; scrollbar-gutter:stable; margin:0;
+                .reader-wrap{ background:#fff; border:2px solid #ffd9b3; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.06); overflow:hidden; }
+                .reader-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.6rem .85rem; background:linear-gradient(135deg,#fff7ef 0%,#fef0e6 100%); border-bottom:1px solid #ffd9b3; }
+                .reader-bar .reader-title{ color:#7a4a12; font-weight:700; font-size:.95rem; display:flex; align-items:center; gap:.45rem; }
+                .reader-actions{ display:flex; gap:.4rem; margin-left:auto; align-items:center; flex:1 1 auto; justify-content:flex-end; flex-wrap:wrap; }
+                .tts-btn{ border:none; cursor:pointer; padding:.5rem .9rem; border-radius:8px; color:#fff; font-weight:600; font-size:.85rem; white-space:nowrap; touch-action:manipulation; }
+                .btn-listen{ background:linear-gradient(135deg,#e67e22 0%,#d35400 100%); }
+                .btn-here{ background:linear-gradient(135deg,#1abc9c 0%,#16a085 100%); }
+                .btn-pause{ background:linear-gradient(135deg,#f39c12 0%,#e67e22 100%); }
+                .btn-stop{ background:linear-gradient(135deg,#95a5a6 0%,#7f8c8d 100%); }
+                .tts-status{ font-size:.85rem; color:#b06a1e; flex:1 1 100%; min-height:1.2em; }
+                #reader-box{ position:relative; background:#fafaff; }
+                #result-text{
+                    display:block; width:100%; min-height:200px; max-height:min(56vh,460px);
+                    padding:1rem; font-size:1rem; line-height:1.65; font-family:inherit;
+                    color:#222; border:none; outline:none; resize:none; box-sizing:border-box;
+                    white-space:pre-wrap; word-wrap:break-word; overflow:auto; scrollbar-gutter:stable;
                 }
-                #result-text{ resize:vertical; color:#222; }
-                #reader-overlay{ position:absolute; top:0; left:0; overflow:hidden; pointer-events:none; display:none; }
-                #reader-overlay mark.reading{ background:#bcd9ff; color:#0b2e6b; border-radius:3px; padding:0; }
-                .tts-panel{ background:linear-gradient(135deg,#fff7ef 0%,#fef0e6 100%); border:2px solid #ffd9b3; border-radius:12px; padding:1rem 1.25rem; }
-                .tts-head{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
-                .tts-head .title{ color:#7a4a12; font-weight:700; }
-                .tts-controls{ display:flex; flex-wrap:wrap; gap:.5rem; margin-left:auto; }
-                .tts-btn{ border:none; cursor:pointer; padding:0.6rem 0.9rem; border-radius:8px; color:#fff; font-weight:600; font-size:0.9rem; flex:1 1 auto; min-width:110px; }
-                .tts-btn.wide{ min-width:150px; }
-                .tts-status{ font-size:0.9rem; color:#b06a1e; flex:1 1 100%; min-height:1.2em; }
-                .tts-rows{ display:flex; gap:.6rem 1rem; flex-wrap:wrap; align-items:center; margin-top:.6rem; }
-                .tts-rows label{ font-size:0.9rem; color:#7a4a12; display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; }
-                .tts-rows select{ padding:0.3rem 0.5rem; border-radius:6px; border:1px solid #ddd; max-width:210px; }
-                .tts-rows input[type=range]{ vertical-align:middle; width:110px; }
-                .tts-now{ margin:.6rem 0 0; background:#eef6ff; border:1px solid #cfe4ff; border-radius:8px; padding:.5rem .75rem; font-size:.9rem; color:#1d4e89; display:none; }
+                #reader-overlay{
+                    position:absolute; top:0; left:0; width:100%; height:100%; overflow:hidden;
+                    pointer-events:none; display:none; padding:1rem; box-sizing:border-box;
+                    font-size:1rem; line-height:1.65; font-family:inherit;
+                    white-space:pre-wrap; word-wrap:break-word; color:transparent;
+                }
+                #reader-overlay mark.reading{ background:#bcd9ff; color:#0b2e6b; border-radius:3px; }
+                .reader-foot{ padding:.6rem .85rem .8rem; background:#fff; border-top:1px solid #ffe0c0; }
+                .reader-foot .row{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+                .tts-opt-toggle{ border:1px solid #ffb06a; background:#fff6ee; color:#a6520a; border-radius:8px; padding:.4rem .7rem; font-size:.85rem; font-weight:600; cursor:pointer; touch-action:manipulation; }
+                .tts-now{ flex:1 1 100%; background:#eef6ff; border:1px solid #cfe4ff; border-radius:8px; padding:.45rem .7rem; font-size:.88rem; color:#1d4e89; display:none; }
                 .tts-now b{ color:#0b2e6b; }
+                .tts-rows{ display:none; gap:.6rem 1rem; flex-wrap:wrap; align-items:center; margin-top:.6rem; }
+                .tts-rows.open{ display:flex; }
+                .tts-rows label{ font-size:.9rem; color:#7a4a12; display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; }
+                .tts-rows select{ padding:.3rem .5rem; border-radius:6px; border:1px solid #ddd; max-width:210px; }
+                .tts-rows input[type=range]{ vertical-align:middle; width:110px; }
                 @media (max-width:560px){
-                    .tts-controls, .tts-controls .tts-btn, .tts-controls .tts-btn.wide{ flex:1 1 100%; }
+                    .reader-bar{ padding:.5rem .6rem; }
+                    .reader-actions{ display:grid; grid-template-columns:1fr 1fr; gap:.4rem; width:100%; flex:none; justify-content:stretch; }
+                    .reader-actions .tts-btn{ width:100%; }
+                    #result-text{ max-height:46vh; min-height:140px; }
                     .tts-rows label{ width:100%; }
                     .tts-rows select{ width:100%; max-width:none; }
                 }
@@ -96,30 +110,33 @@
 
             <div style="max-width:820px; margin:1.5rem auto;">
                 <div class="reader-wrap">
-                    <textarea id="result-text" spellcheck="false">{{ text }}</textarea>
-                    <div id="reader-overlay" aria-hidden="true"></div>
-                </div>
-            </div>
-
-            <div id="tts-panel" class="tts-panel" style="max-width:820px; margin:0 auto 1.5rem;">
-                <div class="tts-head">
-                    <i class="fas fa-volume-up" style="color:#e67e22; font-size:1.2rem;"></i>
-                    <span class="title">Read Aloud</span>
-                    <div class="tts-controls">
-                        <button id="tts-play" class="tts-btn" style="background:linear-gradient(135deg,#e67e22 0%,#d35400 100%);"><i class="fas fa-play"></i> Listen</button>
-                        <button id="tts-here" class="tts-btn wide" style="background:linear-gradient(135deg,#1abc9c 0%,#16a085 100%);" title="Start reading from where your cursor is, or from the top of the visible text"><i class="fas fa-arrow-right"></i> Start from here</button>
-                        <button id="tts-pause" class="tts-btn" style="background:linear-gradient(135deg,#f39c12 0%,#e67e22 100%); display:none;"><i class="fas fa-pause"></i> Pause</button>
-                        <button id="tts-stop" class="tts-btn" style="background:linear-gradient(135deg,#95a5a6 0%,#7f8c8d 100%);"><i class="fas fa-stop"></i> Stop</button>
-                        <span id="tts-status" class="tts-status"></span>
+                    <div class="reader-bar">
+                        <span class="reader-title"><i class="fas fa-volume-up" style="color:#e67e22;"></i> Read Aloud</span>
+                        <div class="reader-actions">
+                            <button id="tts-play" class="tts-btn btn-listen" type="button"><i class="fas fa-play"></i> Listen</button>
+                            <button id="tts-here" class="tts-btn btn-here" type="button" title="Start reading from where your cursor is, or from the top of the visible text"><i class="fas fa-arrow-right"></i> From here</button>
+                            <button id="tts-pause" class="tts-btn btn-pause" type="button" style="display:none;"><i class="fas fa-pause"></i> Pause</button>
+                            <button id="tts-stop" class="tts-btn btn-stop" type="button"><i class="fas fa-stop"></i> Stop</button>
+                            <span id="tts-status" class="tts-status"></span>
+                        </div>
+                    </div>
+                    <div id="reader-box">
+                        <textarea id="result-text" spellcheck="false">{{ text }}</textarea>
+                        <div id="reader-overlay" aria-hidden="true"></div>
+                    </div>
+                    <div class="reader-foot">
+                        <div class="row">
+                            <div id="tts-now" class="tts-now"></div>
+                            <button id="tts-options-toggle" class="tts-opt-toggle" type="button"><i class="fas fa-sliders-h"></i> Voice &amp; speed</button>
+                        </div>
+                        <div id="tts-options" class="tts-rows">
+                            <label>Language <select id="tts-lang"></select></label>
+                            <label>Voice <select id="tts-voice"></select></label>
+                            <label>Speed <input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1"> <span id="tts-rate-val">1.0x</span></label>
+                            <label>Pitch <input type="range" id="tts-pitch" min="0.5" max="2" step="0.1" value="1"> <span id="tts-pitch-val">1.0</span></label>
+                        </div>
                     </div>
                 </div>
-                <div class="tts-rows">
-                    <label>Language <select id="tts-lang"></select></label>
-                    <label>Voice <select id="tts-voice"></select></label>
-                    <label>Speed <input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1"> <span id="tts-rate-val">1.0x</span></label>
-                    <label>Pitch <input type="range" id="tts-pitch" min="0.5" max="2" step="0.1" value="1"> <span id="tts-pitch-val">1.0</span></label>
-                </div>
-                <div id="tts-now" class="tts-now"></div>
             </div>
 
             <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
@@ -183,11 +200,7 @@
         });
 
 (function () {
-            if (!('speechSynthesis' in window)) {
-                var p0 = document.getElementById('tts-panel');
-                if (p0) p0.style.display = 'none';
-                return;
-            }
+            var unsupported = !('speechSynthesis' in window);
             var synth = window.speechSynthesis;
             var textarea = document.getElementById('result-text');
             var overlay = document.getElementById('reader-overlay');
@@ -203,11 +216,19 @@
             var stopBtn = document.getElementById('tts-stop');
             var status = document.getElementById('tts-status');
             var nowEl = document.getElementById('tts-now');
+            var optToggle = document.getElementById('tts-options-toggle');
+            var optBox = document.getElementById('tts-options');
             var voices = [];
             var isPaused = false;
+            var stopped = false;
             var currentSentence = -1;
-            var sentencesRef = [];
+            var currentVoiceLabel = 'Default voice';
+            var allSentences = [];
             var caretAtPointerDown = -1;
+            var lineStartOffsets = [0];
+            var lineHeightPx = 26;
+            var charsPerLine = 60;
+            var textOffsetBase = 0;
 
             var langLabels = {
                 'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German',
@@ -219,6 +240,15 @@
                 'th': 'Thai', 'sv': 'Swedish', 'id': 'Indonesian', 'el': 'Greek'
             };
 
+            if (unsupported) {
+                if (status) status.textContent = 'Speech is not supported in this browser.';
+                if (playBtn) playBtn.disabled = true;
+                if (hereBtn) hereBtn.disabled = true;
+                if (pauseBtn) pauseBtn.disabled = true;
+                if (stopBtn) stopBtn.disabled = true;
+                return;
+            }
+
             function splitSentences(text) {
                 var parts = [];
                 var re = /[^.!?…\n]+[.!?…]*[\s\n]*/g;
@@ -228,58 +258,6 @@
                 }
                 if (!parts.length && text.trim()) parts.push({ text: text, start: 0 });
                 return parts;
-            }
-
-            function syncScroll() {
-                if (!overlay) return;
-                overlay.scrollTop = textarea.scrollTop;
-                overlay.scrollLeft = textarea.scrollLeft;
-            }
-
-            function renderOverlay(raw, s, e) {
-                if (!overlay) return;
-                if (!raw || s < 0 || e <= s) {
-                    overlay.textContent = '';
-                    overlay.style.display = 'none';
-                    return;
-                }
-                var frag = document.createDocumentFragment();
-                frag.appendChild(document.createTextNode(raw.slice(0, s)));
-                var mark = document.createElement('mark');
-                mark.className = 'reading';
-                mark.appendChild(document.createTextNode(raw.slice(s, e)));
-                frag.appendChild(mark);
-                frag.appendChild(document.createTextNode(raw.slice(e)));
-                overlay.textContent = '';
-                overlay.appendChild(frag);
-                overlay.style.display = 'block';
-                syncScroll();
-            }
-
-            function findSentenceIndex(offset) {
-                var sentences = splitSentences(textarea.value || '');
-                for (var i = 0; i < sentences.length; i++) {
-                    var s = sentences[i];
-                    if (offset >= s.start && offset <= s.start + s.text.length) return i;
-                    if (s.start > offset) return i;
-                }
-                return sentences.length ? sentences.length - 1 : 0;
-            }
-
-            function resolveStartFromHere() {
-                if (caretAtPointerDown >= 0) {
-                    var idx = findSentenceIndex(caretAtPointerDown);
-                    caretAtPointerDown = -1;
-                    return idx;
-                }
-                var st = textarea.scrollTop || 0;
-                if (st > 0) {
-                    var range = Math.max(1, textarea.scrollHeight - textarea.clientHeight);
-                    var ratio = Math.min(1, st / range);
-                    var guess = Math.floor(ratio * (textarea.value.length || 0));
-                    return findSentenceIndex(guess);
-                }
-                return 0;
             }
 
             function nLang(code) { return (langLabels[code] || code || '?'); }
@@ -333,13 +311,124 @@
                 return found || voices[0] || null;
             }
 
-            if ('onvoiceschanged' in synth) synth.onvoiceschanged = function () { populateVoices(); };
-            populateVoices();
-            if (langSel) langSel.addEventListener('change', function () { populateVoices(); });
+            function refreshMetrics() {
+                var cs = window.getComputedStyle(textarea);
+                var fontSize = parseFloat(cs.fontSize) || 16;
+                var lh = parseFloat(cs.lineHeight);
+                lineHeightPx = isNaN(lh) ? Math.round(fontSize * 1.65) : lh;
+                var pr = parseInt(cs.paddingRight);
+                var pl = parseInt(cs.paddingLeft);
+                var pad = (isNaN(pr) ? 16 : pr) + (isNaN(pl) ? 16 : pl);
+                var w = Math.max(80, textarea.clientWidth - pad);
+                charsPerLine = Math.max(10, Math.floor(w / Math.max(4, fontSize * 0.52)));
+            }
 
-            rateRange.addEventListener('input', function () { rateVal.textContent = parseFloat(rateRange.value).toFixed(1) + 'x'; });
-            pitchRange.addEventListener('input', function () { pitchVal.textContent = parseFloat(pitchRange.value).toFixed(1); });
-            textarea.addEventListener('scroll', syncScroll);
+            function buildLineStarts(raw) {
+                var starts = [0];
+                var i = 0, n = raw.length;
+                while (i < n) {
+                    var nl = raw.indexOf('\n', i);
+                    var paraEnd = nl === -1 ? n : nl;
+                    var len = paraEnd - i;
+                    var idx = i;
+                    while (len > 0) {
+                        var take = Math.min(len, charsPerLine);
+                        if (len > take) {
+                            var lastSpace = -1;
+                            var k;
+                            for (k = idx + take - 1; k > idx && k >= idx + take - 14; k--) {
+                                if (raw.charAt(k) === ' ') { lastSpace = k; break; }
+                            }
+                            if (lastSpace >= 0) take = lastSpace - idx + 1;
+                        }
+                        idx += take;
+                        len -= take;
+                        if (len > 0) starts.push(idx);
+                    }
+                    if (nl === -1) break;
+                    i = paraEnd + 1;
+                    if (i < n) starts.push(i);
+                }
+                return starts;
+            }
+
+            function lineIdxFor(offset) {
+                var lo = 0, hi = lineStartOffsets.length - 1;
+                if (offset <= lineStartOffsets[0]) return 0;
+                if (offset >= lineStartOffsets[hi]) return hi;
+                while (lo < hi) {
+                    var mid = (lo + hi + 1) >> 1;
+                    if (lineStartOffsets[mid] <= offset) lo = mid; else hi = mid - 1;
+                }
+                return lo;
+            }
+
+            function scrollToSentence(i) {
+                if (!allSentences.length) return;
+                var s = allSentences[i];
+                if (!s) return;
+                var lineIdx = lineIdxFor(s.start);
+                var target = Math.max(0, lineIdx * lineHeightPx - Math.floor(textarea.clientHeight * 0.15));
+                if (Math.abs(textarea.scrollTop - target) > 6) textarea.scrollTop = target;
+                overlay.scrollTop = textarea.scrollTop;
+                overlay.scrollLeft = textarea.scrollLeft;
+            }
+
+            function renderOverlay(raw, s, e) {
+                if (!overlay) return;
+                if (!raw || s < 0 || e <= s) {
+                    overlay.textContent = '';
+                    overlay.style.display = 'none';
+                    return;
+                }
+                var frag = document.createDocumentFragment();
+                frag.appendChild(document.createTextNode(raw.slice(0, s)));
+                var mark = document.createElement('mark');
+                mark.className = 'reading';
+                mark.appendChild(document.createTextNode(raw.slice(s, e)));
+                frag.appendChild(mark);
+                frag.appendChild(document.createTextNode(raw.slice(e)));
+                overlay.textContent = '';
+                overlay.appendChild(frag);
+                overlay.style.display = 'block';
+                overlay.scrollTop = textarea.scrollTop;
+                overlay.scrollLeft = textarea.scrollLeft;
+            }
+
+            function findSentenceIndex(offset) {
+                var sentences = splitSentences(textarea.value || '');
+                for (var i = 0; i < sentences.length; i++) {
+                    var s = sentences[i];
+                    if (offset >= s.start && offset <= s.start + s.text.length) return i;
+                    if (s.start > offset) return i;
+                }
+                return sentences.length ? sentences.length - 1 : 0;
+            }
+
+            function findSentenceFor(offset) {
+                for (var i = 0; i < allSentences.length; i++) {
+                    var s = allSentences[i];
+                    if (offset >= s.start && offset < s.start + s.text.length) return i;
+                }
+                if (allSentences.length && offset >= 0 && offset < allSentences[0].start) return 0;
+                return -1;
+            }
+
+            function resolveStartFromHere() {
+                if (caretAtPointerDown >= 0) {
+                    var idx = findSentenceIndex(caretAtPointerDown);
+                    caretAtPointerDown = -1;
+                    return idx;
+                }
+                var st = textarea.scrollTop || 0;
+                if (st > 0) {
+                    var range = Math.max(1, textarea.scrollHeight - textarea.clientHeight);
+                    var ratio = Math.min(1, st / range);
+                    var guess = Math.floor(ratio * (textarea.value.length || 0));
+                    return findSentenceIndex(guess);
+                }
+                return 0;
+            }
 
             function showNow(i, total, sentence, voiceName) {
                 if (!nowEl) return;
@@ -352,129 +441,132 @@
                 nowEl.style.display = 'block';
             }
 
-            function speakFrom(startIdx) {
+            function updateReading(i) {
+                if (stopped) return;
+                currentSentence = i;
+                var s = allSentences[i];
+                if (!s) return;
+                renderOverlay(textarea.value, s.start, s.start + s.text.length);
+                showNow(i, allSentences.length, s.text, currentVoiceLabel);
+                scrollToSentence(i);
+            }
+
+            function finishReading() {
+                playBtn.style.display = ''; pauseBtn.style.display = 'none';
+                isPaused = false;
+                if (nowEl) nowEl.style.display = 'none';
+                renderOverlay(textarea.value, -1, 0);
+            }
+
+            function startReading(startIdx) {
                 var raw = textarea.value || '';
-                if (!raw.trim()) { status.textContent = 'No text to read.'; if (nowEl) nowEl.style.display = 'none'; return; }
+                if (!raw.trim()) { status.textContent = 'No text to read.'; return; }
+                stopped = false;
                 synth.cancel();
-                var sentences = splitSentences(raw);
-                sentencesRef = sentences;
-                if (typeof startIdx !== 'number' || startIdx < 0) startIdx = 0;
-                if (sentences.length) startIdx = Math.min(startIdx, sentences.length - 1);
-                var slice = startIdx > 0 ? sentences.slice(startIdx) : sentences;
+                allSentences = splitSentences(raw);
+                if (startIdx == null || isNaN(startIdx) || startIdx < 0) startIdx = 0;
+                if (allSentences.length) startIdx = Math.min(startIdx, allSentences.length - 1);
+                if (!allSentences.length) { status.textContent = 'No text to read.'; return; }
+                refreshMetrics();
+                lineStartOffsets = buildLineStarts(raw);
                 var voice = getSelectedVoice();
-                var chosenVoiceName = voice ? voice.name : (voices.length ? voices[0].name : 'Default voice');
+                currentVoiceLabel = voice ? voice.name : (voices.length ? voices[0].name : 'Default voice');
                 var chosenLang = voice ? voice.lang : (langSel.value || 'en-US');
                 var rate = parseFloat(rateRange.value) || 1;
                 var pitch = parseFloat(pitchRange.value) || 1;
-
-                function startHint() {
-                    status.textContent = 'Speaking with "' + chosenVoiceName + '"';
+                textOffsetBase = allSentences[startIdx].start;
+                var rest = raw.substring(textOffsetBase);
+                if (!rest.trim()) { status.textContent = 'No text from here.'; return; }
+                status.textContent = 'Starting with "' + currentVoiceLabel + '"...';
+                var u = new SpeechSynthesisUtterance(rest);
+                if (voice) { u.voice = voice; u.lang = voice.lang; }
+                else u.lang = chosenLang;
+                u.rate = rate; u.pitch = pitch;
+                var primed = false;
+                u.onstart = function () {
+                    if (stopped) return;
+                    primed = true;
+                    updateReading(startIdx);
                     playBtn.style.display = 'none'; pauseBtn.style.display = '';
-                }
-                function finish() {
+                };
+                u.onboundary = function (e) {
+                    if (stopped) return;
+                    var idx = textOffsetBase + (e.charIndex || 0);
+                    var i = findSentenceFor(idx);
+                    if (i < 0) return;
+                    if (i !== currentSentence || !primed) updateReading(i);
+                    primed = true;
+                };
+                u.onend = function () {
+                    if (stopped) return;
+                    finishReading();
                     status.textContent = 'Finished.';
-                    playBtn.style.display = ''; pauseBtn.style.display = 'none';
-                    isPaused = false;
-                    if (nowEl) nowEl.style.display = 'none';
-                    renderOverlay(raw, -1, 0);
-                }
-
-                if (voices.length <= 1) {
-                    var offset = slice.length ? slice[0].start : 0;
-                    var rest = raw.substring(offset);
-                    if (!rest.trim()) { status.textContent = 'No text from here.'; return; }
-                    var full = new SpeechSynthesisUtterance(rest);
-                    if (voice) { full.voice = voice; full.lang = voice.lang || langSel.value || 'en-US'; }
-                    else if (langSel.value) full.lang = langSel.value;
-                    full.rate = rate; full.pitch = pitch;
-                    var started = false;
-                    full.onstart = function () {
-                        startHint();
-                        if (slice.length) {
-                            renderOverlay(raw, slice[0].start, slice[0].start + slice[0].text.length);
-                            showNow(startIdx, sentences.length, slice[0].text, chosenVoiceName);
-                        }
-                        started = true;
-                    };
-                    full.onboundary = function (e) {
-                        var idx = (e.charIndex || 0) + offset;
-                        for (var i = 0; i < sentences.length; i++) {
-                            var s = sentences[i];
-                            if (idx >= s.start && idx < s.start + s.text.length) {
-                                if (currentSentence !== i || !started) {
-                                    currentSentence = i;
-                                    renderOverlay(raw, s.start, s.start + s.text.length);
-                                    showNow(i, sentences.length, s.text, chosenVoiceName);
-                                    started = true;
-                                }
-                                break;
-                            }
-                        }
-                    };
-                    full.onend = finish;
-                    full.onerror = function (e) {
-                        if (e.error && e.error !== 'canceled' && e.error !== 'interrupted') status.textContent = 'Speech error.';
-                        playBtn.style.display = ''; pauseBtn.style.display = 'none';
-                    };
-                    synth.speak(full);
-                    return;
-                }
-
-                var n = slice.length;
-                var ended = 0;
-                slice.forEach(function (s, localIdx) {
-                    var u = new SpeechSynthesisUtterance(s.text);
-                    u.voice = voice; u.lang = chosenLang; u.rate = rate; u.pitch = pitch;
-                    u.onstart = function () {
-                        currentSentence = startIdx + localIdx;
-                        renderOverlay(raw, s.start, s.start + s.text.length);
-                        showNow(startIdx + localIdx, sentences.length, s.text, chosenVoiceName);
-                        startHint();
-                    };
-                    u.onend = function () {
-                        ended++;
-                        if (ended >= n) finish();
-                    };
-                    u.onerror = function (e) {
-                        if (e.error && e.error !== 'canceled' && e.error !== 'interrupted') status.textContent = 'Speech error.';
-                        if (ended + 1 >= n) { ended = n; finish(); }
-                    };
-                    synth.speak(u);
-                });
+                };
+                u.onerror = function (e) {
+                    var code = e && e.error || '';
+                    if (code === 'canceled' || code === 'interrupted') {
+                        if (!stopped) status.textContent = 'Reading stopped.';
+                    } else {
+                        status.textContent = 'Speech error - please try Listen again.';
+                    }
+                    finishReading();
+                };
+                synth.speak(u);
             }
 
-            hereBtn.addEventListener('pointerdown', function (e) {
-                try { caretAtPointerDown = textarea.selectionStart; } catch (err) { caretAtPointerDown = 0; }
-                e.preventDefault();
-            });
-            playBtn.addEventListener('click', function () {
-                if (isPaused) {
-                    synth.resume();
-                    isPaused = false;
-                    var s = sentencesRef[currentSentence];
-                    if (currentSentence >= 0 && s) renderOverlay(textarea.value, s.start, s.start + s.text.length);
-                    status.textContent = 'Reading...';
-                    playBtn.style.display = 'none'; pauseBtn.style.display = '';
-                    return;
-                }
-                speakFrom(0);
-            });
-            hereBtn.addEventListener('click', function () { speakFrom(resolveStartFromHere()); });
-            pauseBtn.addEventListener('click', function () {
+            function pauseReading() {
                 if (synth.speaking && !synth.paused) {
                     synth.pause();
                     isPaused = true;
-                    status.textContent = 'Paused.';
+                    status.textContent = 'Paused - tap Listen to continue.';
+                    playBtn.style.display = ''; pauseBtn.style.display = 'none';
                 }
-            });
-            stopBtn.addEventListener('click', function () {
+            }
+
+            function resumeReading() {
+                synth.resume();
+                isPaused = false;
+                status.textContent = 'Reading...';
+                playBtn.style.display = 'none'; pauseBtn.style.display = '';
+                if (currentSentence >= 0 && allSentences[currentSentence]) updateReading(currentSentence);
+            }
+
+            function stopReading() {
+                stopped = true;
                 synth.cancel();
                 isPaused = false;
+                finishReading();
                 status.textContent = 'Stopped.';
-                playBtn.style.display = ''; pauseBtn.style.display = 'none';
-                if (nowEl) nowEl.style.display = 'none';
-                renderOverlay(textarea.value, -1, 0);
+            }
+
+            if ('onvoiceschanged' in synth) synth.onvoiceschanged = function () { populateVoices(); };
+            populateVoices();
+            if (langSel) langSel.addEventListener('change', function () { populateVoices(); });
+            rateRange.addEventListener('input', function () { rateVal.textContent = parseFloat(rateRange.value).toFixed(1) + 'x'; });
+            pitchRange.addEventListener('input', function () { pitchVal.textContent = parseFloat(pitchRange.value).toFixed(1); });
+            textarea.addEventListener('scroll', function () {
+                overlay.scrollTop = textarea.scrollTop;
+                overlay.scrollLeft = textarea.scrollLeft;
             });
+
+            optToggle.addEventListener('click', function () {
+                var isOpen = optBox.style.display === 'flex';
+                optBox.style.display = isOpen ? 'none' : 'flex';
+            });
+            [playBtn, hereBtn, pauseBtn, stopBtn, optToggle].forEach(function (btn) {
+                btn.addEventListener('pointerdown', function (e) { e.preventDefault(); });
+            });
+
+            hereBtn.addEventListener('pointerdown', function (e) {
+                try { caretAtPointerDown = textarea.selectionStart; } catch (err) { caretAtPointerDown = 0; }
+            });
+            playBtn.addEventListener('click', function () {
+                if (isPaused) { resumeReading(); return; }
+                startReading(0);
+            });
+            hereBtn.addEventListener('click', function () { startReading(resolveStartFromHere()); });
+            pauseBtn.addEventListener('click', pauseReading);
+            stopBtn.addEventListener('click', stopReading);
         })();
     </script>
 {% include 'chatbot.html' %}
