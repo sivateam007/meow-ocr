@@ -1248,6 +1248,7 @@
             var testMsg = document.getElementById('t2a-test-msg');
             var player = document.getElementById('t2a-player');
             var fileInput = document.getElementById('t2a-file');
+            var t2aFilename = '';
             var voices = {};
             var pollTimer = null;
             var LABELS = {
@@ -1323,6 +1324,7 @@
             if (fileInput) fileInput.addEventListener('change', function () {
                 var f = fileInput.files[0];
                 if (!f) return;
+                t2aFilename = f.name || '';
                 var reader = new FileReader();
                 reader.onload = function () { textEl.value = (reader.result || '').slice(0, 200000); updateCount(); };
                 reader.readAsText(f);
@@ -1331,11 +1333,13 @@
             goBtn.addEventListener('click', function () {
                 var text = (textEl.value || '').trim();
                 if (!text) { statusEl.textContent = 'Please enter some text to convert.'; return; }
+                var filename = (t2aFilename || '').replace(/\.txt$/i, '') || 'audio';
                 var body = {
                     text: text,
                     voice: voiceSel.value || '',
                     rate: parseInt(rateRange ? rateRange.value : 100, 10) || 100,
-                    pitch: parseInt(pitchRange ? pitchRange.value : 0, 10) || 0
+                    pitch: parseInt(pitchRange ? pitchRange.value : 0, 10) || 0,
+                    filename: filename
                 };
                 goBtn.disabled = true;
                 statusEl.textContent = 'Starting conversion...';
@@ -1386,6 +1390,7 @@
 
             if (resetBtn) resetBtn.addEventListener('click', function () {
                 textEl.value = '';
+                t2aFilename = '';
                 updateCount();
                 statusEl.textContent = '';
                 show(readyEl, false);

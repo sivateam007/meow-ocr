@@ -17,7 +17,7 @@ import json
 import glob
 import base64
 import io
-from flask import Flask, request, render_template, send_file, flash, redirect, url_for, jsonify, session, make_response
+from flask import Flask, request, render_template, send_file, flash, redirect, url_for, jsonify, session, make_response, Response
 from werkzeug.utils import secure_filename
 from pdf2image import convert_from_path, pdfinfo_from_path
 import pytesseract
@@ -213,7 +213,7 @@ TTS_VOICES = {
         ("en-GB-ThomasNeural", "Thomas GB (Male)", "Male"),
     ],
     "hin":  [("hi-IN-SwaraNeural", "Swara (Female)", "Female"), ("hi-IN-MadhurNeural", "Madhur (Male)", "Male")],
-    "tam":  [("ta-IN-PallaviNeural", "Pallavi (Female)", "Female"), ("ta-IN-ValluvarNeural", "Valluvar (Male)", "Male")],
+    "tam":  [("ta-IN-PallaviNeural", "Pallavi (Female)", "Female"), ("ta-IN-ValluvarNeural", "Valluvar (Male)", "Male"), ("ta-LK-SaranyaNeural", "Saranya LK (Female)", "Female"), ("ta-LK-KumarNeural", "Kumar LK (Male)", "Male"), ("ta-MY-KaniNeural", "Kani MY (Female)", "Female"), ("ta-MY-SuryaNeural", "Surya MY (Male)", "Male"), ("ta-SG-VenbaNeural", "Venba SG (Female)", "Female"), ("ta-SG-AnbuNeural", "Anbu SG (Male)", "Male")],
     "tel":  [("te-IN-ShrutiNeural", "Shruti (Female)", "Female"), ("te-IN-MohanNeural", "Mohan (Male)", "Male")],
     "kan":  [("kn-IN-SapnaNeural", "Sapna (Female)", "Female"), ("kn-IN-GaganNeural", "Gagan (Male)", "Male")],
     "mal":  [("ml-IN-SobhanaNeural", "Sobhana (Female)", "Female"), ("ml-IN-MidhunNeural", "Midhun (Male)", "Male")],
@@ -289,6 +289,12 @@ TTS_CAT_NAMES = {
     "hi-IN-MadhurNeural": ("Madhu", "Male"),
     "ta-IN-PallaviNeural": ("Paavi", "Female"),
     "ta-IN-ValluvarNeural": ("Valli", "Male"),
+    "ta-LK-SaranyaNeural": ("Sana", "Female"),
+    "ta-LK-KumarNeural": ("Kumo", "Male"),
+    "ta-MY-KaniNeural": ("Kani", "Female"),
+    "ta-MY-SuryaNeural": ("Surya", "Male"),
+    "ta-SG-VenbaNeural": ("Ven", "Female"),
+    "ta-SG-AnbuNeural": ("Anbu", "Male"),
     "te-IN-ShrutiNeural": ("Shruti", "Female"),
     "te-IN-MohanNeural": ("Mohan", "Male"),
     "kn-IN-SapnaNeural": ("Sapna", "Female"),
@@ -4128,25 +4134,23 @@ def text2audio_preview():
     sample = ("Meow! This is a quick voice test, so you can hear how it sounds "
               "before converting. Ready when you are. 🐱")
     try:
-        import tempfile
-        fd, tmp = tempfile.mkstemp(suffix=".mp3")
-        os.close(fd)
-        _synthesize_to_mp3(sample, voice, rate, pitch, tmp)
-        resp = send_file(tmp, mimetype="audio/mpeg")
-        resp.call_on_close(lambda: (os.path.exists(tmp) and os.remove(tmp)))
+        audio_bytes = _synth_segment_to_bytes(sample, voice, rate, pitch)
+        if not audio_bytes:
+            raise RuntimeError("empty preview audio")
+        resp = Response(audio_bytes, mimetype="audio/mpeg")
+        resp.headers["Cache-Control"] = "no-store"
         return resp
     except Exception as e:
         logger.error(f"text2audio preview error: {e}", exc_info=True)
         return jsonify({"error": "Could not generate a voice preview."}), 500
 
 
-def _text2audio_worker(token, text, voice, rate, pitch):
+def _text2audio_worker(token, text, voice, rate, pitch, base_name="audio"):
     """Background: synthesize MP3 (chunked), persist, upload to cloud, update My Downloads."""
     p_id = f"t2a_{token}"
     _total_words = len(text.split())
     try:
-        base = f"text2audio_{token}"
-        mp3_filename = f"{base}.mp3"
+        mp3_filename = f"{base_name}.mp3"
         mp3_path = os.path.join(OUTPUT_DIR, f"{token}_{mp3_filename}")
         with text2audio_lock:
             text2audio_tasks[token]["status"] = "generating"
@@ -4235,6 +4239,13 @@ def text2audio_create():
     rate = max(TTS_RATE_MIN, min(TTS_RATE_MAX, rate))
     pitch = int(data.get("pitch", 0))
     pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, pitch))
+    # Use the uploaded file's base name for the MP3 (fall back to 'audio').
+    base_name = (data.get("filename") or "").strip()
+    if not base_name:
+        base_name = "audio"
+    base_name = os.path.basename(base_name)
+    base_name = (base_name or "audio").split(".")[0].strip() or "audio"
+    base_name = re.sub(r'[^\w\-\s]', '', base_name).strip()[:80] or "audio"
 
     token = uuid.uuid4().hex[:16]
     p_id = f"t2a_{token}"
@@ -4264,7 +4275,7 @@ def text2audio_create():
             "completed_at": None,
         }
     _save_progress(force=True)
-    threading.Thread(target=_text2audio_worker, args=(token, text, voice, rate, pitch), daemon=True).start()
+    threading.Thread(target=_text2audio_worker, args=(token, text, voice, rate, pitch, base_name), daemon=True).start()
     return jsonify({"ok": True, "token": token}), 202
 
 
