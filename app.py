@@ -3647,6 +3647,12 @@ _GROQ_SYSTEM_PROMPT = (
     "manually from My Downloads.\n"
     "- Handwritten notes: use the 'Handwritten Notes' AI scanner on the "
     "homepage to read photos of handwriting with AI.\n"
+    "- Text to Audio: on the 'Text to Audio' tab of the homepage you can "
+    "turn any typed or uploaded text into a natural MP3 — choose a voice "
+    "from 110+ across 40+ languages (many with cat names), tune speed and "
+    "pitch, preview the voice and even listen to your text before "
+    "converting, then generate an MP3, play it inline, or download it. "
+    "Audio is saved to cloud and appears in My Downloads.\n"
     "- Built by developer Siva.\n"
     "For anything outside these facts, honestly say you're not sure and "
     "suggest visiting the homepage help section."
@@ -3657,6 +3663,13 @@ def _faq_reply(text):
     """Keyword-matched scripted replies used when Groq is not configured,
     rate-limited, or unavailable — keeps the widget working at all times."""
     t = " " + text.lower().strip() + " "
+    if any(k in t for k in ("feature", "what can", "what do you", "capab", "tool do", "options", "all tools")):
+        return ("Meow OCR has 4 main tools 🐾 1) OCR — extract text from PDFs, "
+                "images and documents in 19+ languages. 2) Translate — convert "
+                "text files between 30+ languages. 3) Handwritten Notes — AI "
+                "reads photos of handwriting. 4) Text to Audio — turn text into "
+                "an MP3 with 110+ voices across 40+ languages, with speed & "
+                "pitch control, voice preview, inline listen and cloud saves.")
     if any(k in t for k in ("hi ", "hello", "hey", "vanakkam", "good morning", "good evening")):
         return ("Hi! 🐱 I'm Meow Assistant. Ask me how Meow OCR works, whether it's "
                 "free, which languages it supports, or how your files stay private.")
@@ -3696,6 +3709,12 @@ def _faq_reply(text):
         return ("Yes, Meow OCR can translate too! 🐾 Switch to the 'Translate' tab "
                 "on the homepage, upload a .txt file, pick source and target "
                 "languages, and download your translated file.")
+    if any(k in t for k in ("audio", "listen", "voice", "mp3", "speak", "tts", "text to audio", "speech")):
+        return ("Yes! Meow OCR has Text to Audio 🐱 Go to the 'Text to Audio' tab, "
+                "type or upload text, pick a voice from 110+ across 40+ languages, "
+                "and tune speed & pitch. You can preview the voice, listen to your "
+                "own text, then convert to an MP3 — play it inline or download it. "
+                "Saves to cloud & My Downloads too.")
     if any(k in t for k in ("error", "not working", "fail", "problem", "issue", "bug")):
         return ("Sorry about that! 🐱 Try a smaller file, use a clear high-quality "
                 "scan, and pick the language manually for speedier results. If it "
