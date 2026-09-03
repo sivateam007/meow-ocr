@@ -402,7 +402,11 @@
                     <a href="/downloads" style="text-decoration:none; font-weight:600; color:#6c3483;"><i class="fas fa-tasks"></i> Check progress in My Downloads →</a>
                 </div>
                 <div id="t2a-ready" style="display:none; margin-top:.75rem; padding:1rem; background:#faf8ff; border:1px solid #e5d9f0; border-radius:10px;">
-                    <a id="t2a-download" class="submit-btn tta-dl" style="text-decoration:none; background:linear-gradient(135deg,#8e44ad 0%,#6c3483 100%); width:100%; text-align:center;"><i class="fas fa-download"></i> Download MP3</a>
+                    <div style="display:flex; align-items:center; gap:.6rem; margin-bottom:.75rem; flex-wrap:wrap;">
+                        <button type="button" id="t2a-listen" style="border:none; border-radius:8px; padding:.6rem 1rem; font-weight:600; background:linear-gradient(135deg,#11998e 0%,#38ef7d 100%); color:#fff; cursor:pointer;"><i class="fas fa-headphones"></i> Listen</button>
+                    </div>
+                    <audio id="t2a-ready-player" controls preload="none" style="width:100%; height:44px; display:none;"></audio>
+                    <a id="t2a-download" class="submit-btn tta-dl" style="text-decoration:none; background:linear-gradient(135deg,#8e44ad 0%,#6c3483 100%); width:100%; text-align:center; margin-top:.75rem;"><i class="fas fa-download"></i> Download MP3</a>
                     <p style="font-size:.84rem; color:#8a6d3b; margin:.6rem 0 0;">Your audio is saved to cloud storage &amp; My Downloads — you can come back to it later. 🐾</p>
                 </div>
 
@@ -1247,6 +1251,8 @@
             var testBtn = document.getElementById('t2a-test');
             var testMsg = document.getElementById('t2a-test-msg');
             var player = document.getElementById('t2a-player');
+            var listenBtn = document.getElementById('t2a-listen');
+            var readyPlayer = document.getElementById('t2a-ready-player');
             var fileInput = document.getElementById('t2a-file');
             var t2aFilename = '';
             var voices = {};
@@ -1365,11 +1371,16 @@
                     .then(function (d) {
                         if (d.status === 'done') {
                             if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                            var audioSrc = d.link || ('/download/text2audio/' + token);
                             statusEl.textContent = 'Ready! Your audio is saved to cloud.';
                             show(checkEl, false);
                             show(readyEl, true);
-                            dlLink.href = d.link || ('/download/text2audio/' + token);
+                            dlLink.href = audioSrc;
                             dlLink.setAttribute('download', '');
+                            readyPlayer.pause();
+                            readyPlayer.removeAttribute('src');
+                            readyPlayer.style.display = 'none';
+                            readyPlayer.__audioSrc = audioSrc;
                             goBtn.disabled = false;
                         } else if (d.status === 'error') {
                             if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
@@ -1434,6 +1445,33 @@
                         testMsg.textContent = 'Could not generate preview.';
                     });
             });
+
+            if (listenBtn && readyPlayer) {
+                listenBtn.addEventListener('click', function () {
+                    var src = readyPlayer.__audioSrc;
+                    if (!src) { listenBtn.textContent = 'No audio ready'; return; }
+                    if (readyPlayer.style.display !== 'none' && !readyPlayer.paused && !readyPlayer.ended) {
+                        readyPlayer.pause();
+                        readyPlayer.currentTime = 0;
+                        show(readyPlayer, false);
+                        listenBtn.innerHTML = '<i class="fas fa-headphones"></i> Listen';
+                        return;
+                    }
+                    readyPlayer.src = src;
+                    readyPlayer.oncanplay = function () {
+                        show(readyPlayer, true);
+                        readyPlayer.play().catch(function(){});
+                        listenBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+                    };
+                    readyPlayer.onpause = function () {
+                        if (!readyPlayer.ended) listenBtn.innerHTML = '<i class="fas fa-headphones"></i> Listen';
+                    };
+                    readyPlayer.onended = function () {
+                        listenBtn.innerHTML = '<i class="fas fa-headphones"></i> Listen';
+                    };
+                    readyPlayer.load();
+                });
+            }
 
             loadVoices();
         })();
