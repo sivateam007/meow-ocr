@@ -288,10 +288,7 @@
                             percentageText.textContent = '...';
                         }
                         progressFill.style.width = (data.percentage > 0 ? data.percentage : 2) + '%';
-                        if (data.audio) {
-                            stopETACountdown();
-                            etaSection.style.display = 'none';
-                        } else if (data.eta) {
+                        if (data.eta) {
                             startETACountdown(data.eta);
                         } else {
                             stopETACountdown();

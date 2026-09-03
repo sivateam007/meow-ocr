@@ -2873,6 +2873,12 @@ def get_progress(task_id):
                     remaining = max(0, total - pages_done)
                     if remaining > 0:
                         eta = int(avg * remaining)
+                elif task.get("audio"):
+                    eta = task.get("eta_seconds") or None
+
+            # Resolve the cat name for the stored voice (so the UI shows a friendly name).
+            _voice = task.get("voice_name", "")
+            _cat = TTS_CAT_NAMES.get(_voice)
             
             return jsonify({
                 "status": task["status"],
@@ -2889,7 +2895,7 @@ def get_progress(task_id):
                 "audio": bool(task.get("audio")),
                 "words_done": task.get("words_done", 0),
                 "total_words": task.get("total_words", 0),
-                "voice_name": task.get("voice_name", ""),
+                "voice_name": (_cat[0] if _cat else _voice),
             })
     except Exception as e:
         logger.error(f"Progress endpoint error for {task_id}: {e}")
@@ -4244,14 +4250,31 @@ def _text2audio_worker(token, text, voice, rate, pitch, base_name="audio"):
 
         def _on_segment(words_done, total_words):
             pct = max(1, int(80 * words_done / total_words))
+            now = time.time()
+            start = text2audio_tasks[token].get("synth_start") or now
+            rate = 0.0
+            eta = 0
+            if start and now > start:
+                rate = words_done / (now - start)
+                if rate > 0 and words_done < total_words:
+                    eta = int((total_words - words_done) / rate)
             with text2audio_lock:
                 text2audio_tasks[token]["progress"] = pct
                 text2audio_tasks[token]["words_done"] = words_done
+                text2audio_tasks[token]["eta_seconds"] = eta
             with progress_lock:
                 if p_id in progress_tracker:
                     progress_tracker[p_id]["percentage"] = pct
                     progress_tracker[p_id]["words_done"] = words_done
                     progress_tracker[p_id]["total_words"] = total_words
+                    progress_tracker[p_id]["eta_seconds"] = eta
+
+        synth_start = time.time()
+        with text2audio_lock:
+            text2audio_tasks[token]["synth_start"] = synth_start
+        with progress_lock:
+            if p_id in progress_tracker:
+                progress_tracker[p_id]["synth_start"] = synth_start
 
         _synth_chunked_to_mp3(text, voice, rate, pitch, mp3_path, progress_cb=_on_segment)
 
@@ -4354,6 +4377,10 @@ def text2audio_create():
             "percentage": 0,
             "detected_language": "",
             "voice_name": voice,
+            "words_done": 0,
+            "total_words": 0,
+            "eta_seconds": None,
+            "synth_start": None,
             "created_at": time.time(),
             "completed_at": None,
         }
