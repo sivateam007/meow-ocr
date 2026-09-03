@@ -194,6 +194,12 @@
                                 <a href="{{ d.download_link }}" target="_blank" onclick="trackDownload('{{ d.task_id }}')" class="act-link" title="Download MP3">
                                     <i class="fas fa-file-audio"></i>
                                 </a>
+                                <button onclick="playAudio('{{ d.download_link }}')" class="act-btn act-link" title="Play audio">
+                                    <i class="fas fa-play"></i> Play
+                                </button>
+                                <button onclick="shareAudio('{{ d.download_link }}', '{{ d.filename }}', this)" class="act-btn" title="Share">
+                                    <i class="fas fa-share-alt"></i> Share
+                                </button>
                                 {% elif d.status == 'completed' and d.download_link %}
                                 <a href="{{ d.download_link }}" target="_blank" onclick="trackDownload('{{ d.task_id }}')" class="act-link" title="Download">
                                     <i class="fas fa-cloud-download-alt"></i>
@@ -389,6 +395,56 @@
                 });
         }
 
+        function playAudio(url) {
+            var player = document.getElementById('audio-player');
+            var modal = document.getElementById('audio-modal');
+            if (!player || !modal) return;
+            player.src = url;
+            modal.style.display = 'flex';
+            modal.style.flexDirection = 'column';
+            player.load();
+            player.play().catch(function(){});
+            var stop = document.getElementById('audio-modal-close');
+            if (stop) stop.onclick = function() {
+                player.pause();
+                player.removeAttribute('src');
+                modal.style.display = 'none';
+            };
+        }
+
+        function closeAudioModalEl(e) {
+            if (e && e.target === document.getElementById('audio-modal')) {
+                var p = document.getElementById('audio-player');
+                if (p) { p.pause(); p.removeAttribute('src'); }
+                e.target.style.display = 'none';
+            }
+        }
+
+        function shareAudio(url, name, btn) {
+            var fname = name || 'Meow OCR audio';
+            var text = 'Meow OCR audio: ' + fname + ' — ' + url;
+            if (navigator.share) {
+                navigator.share({ title: fname, text: text, url: url })
+                    .catch(function(){ copyShareFallback(url, text, btn); });
+            } else {
+                copyShareFallback(url, text, btn);
+            }
+        }
+
+        function copyShareFallback(url, text, btn) {
+            var copyText = url || text;
+            var orig = btn ? btn.innerHTML : '';
+            function done() {
+                if (btn) { btn.innerHTML = '<i class="fas fa-check"></i> Copied!'; setTimeout(function(){ btn.innerHTML = orig; }, 2000); }
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(copyText).then(done).catch(function(){ prompt('Copy link:', copyText); done(); });
+            } else {
+                prompt('Copy link:', copyText);
+                done();
+            }
+        }
+
         function cancelTask(taskId) {
             if (!confirm('Cancel this running task?')) return;
             fetch('/cancel/' + taskId, { method: 'POST' })
@@ -501,6 +557,16 @@
             });
         });
     </script>
+
+<div id="audio-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:10000; align-items:center; justify-content:center; flex-direction:column;" onclick="closeAudioModalEl(event)">
+    <div style="background:#fff; border-radius:14px; padding:1.5rem 2rem; max-width:420px; width:92%; box-shadow:0 20px 50px rgba(0,0,0,0.3); text-align:center;">
+        <div style="font-size:2.4rem; margin-bottom:.3rem;">🎧</div>
+        <h3 style="margin:0 0 1rem; color:#6c3483; font-weight:700;">Play Audio</h3>
+        <audio id="audio-player" controls autoplay style="width:100%;"></audio>
+        <button id="audio-modal-close" style="margin-top:1rem; border:none; border-radius:8px; padding:.6rem 1.4rem; font-weight:600; background:#ecf0f1; color:#555; cursor:pointer;">Close</button>
+    </div>
+</div>
+
 {% include 'chatbot.html' %}
 </body>
 </html>
