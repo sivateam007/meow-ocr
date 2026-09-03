@@ -4170,7 +4170,8 @@ def text2audio_voices():
 
 @app.route('/api/text2audio/preview')
 def text2audio_preview():
-    """Synthesize a short sample with the chosen voice/rate/pitch and stream it for live playback."""
+    """Synthesize a short sample with the chosen voice/rate/pitch and stream it for live playback.
+    If a 'text' param is given, preview that text (truncated) instead of the default phrase."""
     voice = (request.args.get("voice") or "").strip()
     if not _looks_like_cat_voice(voice):
         voice = ""
@@ -4181,8 +4182,17 @@ def text2audio_preview():
         pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, int(pitch)))
     except (TypeError, ValueError):
         rate, pitch = 100, 0
-    loc = (voice or "").split("-")[0].lower() if voice else ""
-    sample = TTS_PREVIEW_SAMPLES.get(loc, TTS_PREVIEW_SAMPLES["en"])
+    text = (request.args.get("text") or "").strip()
+    if text:
+        words = text.split()
+        if len(words) > 120:
+            words = words[:120]
+        sample = " ".join(words)
+        if not sample:
+            sample = TTS_PREVIEW_SAMPLES["en"]
+    else:
+        loc = (voice or "").split("-")[0].lower() if voice else ""
+        sample = TTS_PREVIEW_SAMPLES.get(loc, TTS_PREVIEW_SAMPLES["en"])
     try:
         audio_bytes = _synth_segment_to_bytes(sample, voice, rate, pitch)
         if not audio_bytes:

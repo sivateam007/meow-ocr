@@ -416,6 +416,12 @@
                     <span id="t2a-test-msg" style="font-size:.82rem; color:#8a6d3b;"></span>
                 </div>
 
+                <div style="margin-top:.6rem; display:flex; align-items:center; gap:.6rem; flex-wrap:wrap;">
+                    <button type="button" id="t2a-listen-text" style="border:none; border-radius:8px; padding:.6rem 1rem; font-weight:600; background:linear-gradient(135deg,#11998e 0%,#38ef7d 100%); color:#fff; cursor:pointer;"><i class="fas fa-headphones"></i> Listen to my text</button>
+                    <span id="t2a-listen-text-msg" style="font-size:.82rem; color:#8a6d3b;"></span>
+                    <audio id="t2a-listen-text-player" controls preload="none" style="width:100%; height:44px; display:none;"></audio>
+                </div>
+
                 <div class="tts-modal-actions" style="display:flex; gap:.6rem; margin-top:1.1rem;">
                     <button type="button" id="t2a-reset" style="flex:1; border:none; border-radius:8px; padding:.65rem; font-weight:600; background:#ecf0f1; color:#555;"><i class="fas fa-redo"></i> Reset</button>
                     <button type="button" id="t2a-go" style="flex:1.4; border:none; border-radius:8px; padding:.65rem; font-weight:600; background:linear-gradient(135deg,#8e44ad 0%,#6c3483 100%); color:#fff;"><i class="fas fa-cog"></i> Convert to Audio</button>
@@ -1253,6 +1259,9 @@
             var player = document.getElementById('t2a-player');
             var listenBtn = document.getElementById('t2a-listen');
             var readyPlayer = document.getElementById('t2a-ready-player');
+            var listenTextBtn = document.getElementById('t2a-listen-text');
+            var listenTextMsg = document.getElementById('t2a-listen-text-msg');
+            var listenTextPlayer = document.getElementById('t2a-listen-text-player');
             var fileInput = document.getElementById('t2a-file');
             var t2aFilename = '';
             var voices = {};
@@ -1445,6 +1454,42 @@
                         testMsg.textContent = 'Could not generate preview.';
                     });
             });
+
+            if (listenTextBtn && listenTextPlayer) {
+                listenTextBtn.addEventListener('click', function () {
+                    var txt = (textEl.value || '').trim();
+                    if (!txt) { listenTextMsg.textContent = 'Type some text first to listen.'; return; }
+                    if (!voiceSel.value) { listenTextMsg.textContent = 'Pick a voice first.'; return; }
+                    listenTextMsg.textContent = 'Generating preview of your text...';
+                    listenTextBtn.disabled = true;
+                    var url = '/api/text2audio/preview?voice=' + encodeURIComponent(voiceSel.value)
+                        + '&rate=' + (rateRange ? rateRange.value : 100)
+                        + '&pitch=' + (pitchRange ? pitchRange.value : 0)
+                        + '&text=' + encodeURIComponent(txt);
+                    fetch(url)
+                        .then(function (r) { if (!r.ok) throw new Error('bad status'); return r.blob(); })
+                        .then(function (blob) {
+                            if (listenTextPlayer.__url) URL.revokeObjectURL(listenTextPlayer.__url);
+                            listenTextPlayer.__url = URL.createObjectURL(blob);
+                            listenTextPlayer.src = listenTextPlayer.__url;
+                            listenTextPlayer.oncanplay = function () {
+                                listenTextBtn.disabled = false;
+                                listenTextMsg.textContent = '';
+                                show(listenTextPlayer, true);
+                                listenTextPlayer.play().catch(function(){});
+                            };
+                            listenTextPlayer.onerror = function () {
+                                listenTextBtn.disabled = false;
+                                listenTextMsg.textContent = 'Could not generate preview.';
+                            };
+                            listenTextPlayer.load();
+                        })
+                        .catch(function () {
+                            listenTextBtn.disabled = false;
+                            listenTextMsg.textContent = 'Could not generate preview.';
+                        });
+                });
+            }
 
             if (listenBtn && readyPlayer) {
                 listenBtn.addEventListener('click', function () {
