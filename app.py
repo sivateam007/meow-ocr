@@ -398,6 +398,52 @@ TTS_CAT_VOICES = {
     for code, grp in TTS_VOICES.items()
 }
 
+# Short "listen to the voice" sample phrase in each supported language, so the
+# Test-voice preview actually speaks in the selected language.
+TTS_PREVIEW_SAMPLES = {
+    "en": "Meow! This is a quick voice test, so you can hear how it sounds before converting. Ready when you are.",
+    "ar": "مياو! هذا اختبار سريع للصوت حتى تسمع كيف يبدو قبل التحويل. هل أنت مستعد؟",
+    "bg": "Мяу! Това е бърз тест на гласа, за да чуете как звучи преди конвертирането. Готови ли сте?",
+    "cs": "Mňau! Toto je rychlý test hlasu, abyste slyšeli, jak zní před převodem. Jste připraveni?",
+    "da": "Mjav! Dette er en hurtig stemmetest, så du kan høre, hvordan det lyder, før du konverterer. Er du klar?",
+    "de": "Miau! Das ist ein kurzer Stimmtest, damit du hörst, wie es klingt, bevor du konvertierst. Bereit?",
+    "el": "Μιαου! Αυτό είναι ένα γρήγορο τεστ φωνής για να ακούσετε πώς ακούγεται πριν τη μετατροπή. Έτοιμοι;",
+    "fil": "Meow! Ito ay isang mabilis na pagsubok ng boses upang marinig mo kung paano ito tumunog bago i-convert. Handa ka na ba?",
+    "fi": "Miau! Tämä on nopea äänitesti, jotta kuulet, miltä se kuulostaa ennen muuntamista. Oletko valmis?",
+    "fr": "Miaou ! Ceci est un test vocal rapide pour que vous puissiez entendre comment ça sonne avant de convertir. Prêt ?",
+    "he": "מיאו! זהו מבחן קול מהיר כדי שתשמעו איך זה נשמע לפני ההמרה. מוכנים?",
+    "hi": "म्याऊं! कनवर्ट करने से पहले आपको सुनने के लिए यह एक त्वरित आवाज़ परीक्षण है। क्या आप तैयार हैं?",
+    "hr": "Mjau! Ovo je brzi test glasa kako biste čuli kako zvuči prije pretvaranja. Jeste li spremni?",
+    "hu": "Miau! Ez egy gyors hangteszt, hogy hallja, hogyan szól, mielőtt átalakítja. Kész?",
+    "id": "Meong! Ini adalah tes suara cepat supaya kamu bisa mendengar bagaimana bunyinya sebelum mengonversi. Siap?",
+    "it": "Miao! Questo è un rapido test della voce per sentire come suona prima di convertire. Pronto?",
+    "ja": "ニャー！変換前にどんな風に聞こえるか確認できる簡単なボイステストです。準備はいいですか？",
+    "ko": "야옹! 변환하기 전에 어떤 소리인지 들을 수 있는 빠른 음성 테스트입니다. 준비되셨나요?",
+    "ms": "Meow! Ini adalah ujian suara pantas supaya anda dapat mendengar bunyinya sebelum menukar. Sedia?",
+    "bn": "ম্যাও! রূপান্তরের আগে শব্দ কেমন শোনাচ্ছে তা শোনার জন্য এটি একটি দ্রুত ভয়েস পরীক্ষা। আপনি কি প্রস্তুত?",
+    "gu": "મ્યાઉં! કન્વર્ટ કરતા પહેલા અવાજ કેવો લાગે તે સાંભળવા માટે આ ઝડપી અવાજ પરીક્ષણ છે. તમે તૈયાર છો?",
+    "kn": "ಮಿಯಾಂವ್! ಪರಿವರ್ತಿಸುವ ಮೊದಲು ಅದು ಹೇಗೆ ಧ್ವನಿಸುತ್ತದೆ ಎಂಬುದನ್ನು ಕೇಳಲು ಇದು ತ್ವರಿತ ಧ್ವನಿ ಪರೀಕ್ಷೆ. ನೀವು ಸಿದ್ಧರಿದ್ದೀರಾ?",
+    "ml": "മ്യാവൂ! പരിവർത്തനം ചെയ്യുന്നതിന് മുമ്പ് അത് എങ്ങനെ തോന്നുന്നുവെന്ന് കേൾക്കാൻ ഇത് ഒരു ദ്രുത ശബ്ദ പരിശോധനയാണ്. തയ്യാറാണോ?",
+    "mr": "म्याऊ! रूपांतरण करण्यापूर्वी आवाज कसा वाटतो हे ऐकण्यासाठी ही एक द्रुत आवाज चाचणी आहे. तुम्ही तयार आहात का?",
+    "ta": "மியாவ்! மாற்றும் முன் அது எப்படி ஒலிக்கிறது என்பதைக் கேட்க இது ஒரு விரைவான குரல் சோதனை. நீங்கள் தயாரா?",
+    "te": "మ్యావ్! మార్చే ముందు అది ఎలా ఉంటుందో వినడానికి ఇది శీఘ్ర వాయిస్ టెస్ట్. మీరు సిద్ధంగా ఉన్నారా?",
+    "ur": "میاؤں! تبدیل کرنے سے پہلے آواز کیسی لگتی ہے یہ سننے کے لیے یہ ایک فوری آواز کا ٹیسٹ ہے۔ کیا آپ تیار ہیں؟",
+    "zh": "喵！这是一次快速语音测试，让你在转换前听听它的声音。准备好了吗？",
+    "th": "เหมียว! นี่คือการทดสอบเสียงอย่างรวดเร็วเพื่อให้คุณได้ยินว่ามันเป็นอย่างไรก่อนแปลง พร้อมไหม?",
+    "tr": "Miyav! Dönüştürmeden önce kulağa nasıl geldiğini duymanız için hızlı bir ses testi. Hazır mısınız?",
+    "uk": "Няв! Це швидкий тест голосу, щоб ви почули, як він звучить перед конвертацією. Готові?",
+    "vi": "Meo! Đây là bài kiểm tra giọng nói nhanh để bạn nghe được âm thanh như thế nào trước khi chuyển đổi. Bạn sẵn sàng chưa?",
+    "nb": "Mjau! Dette er en rask stemmetest, så du kan høre hvordan det høres ut før du konverterer. Er du klar?",
+    "pt": "Miau! Este é um rápido teste de voz para você ouvir como soa antes de converter. Pronto?",
+    "ron": "Miau! Acesta este un test vocal rapid pentru a auzi cum sună înainte de conversie. Ești gata?",
+    "sk": "Mňau! Toto je rýchly test hlasu, aby ste počuli, ako znie pred prevodom. Ste pripravení?",
+    "es": "Miau! Esta es una prueba rápida de voz para que escuches cómo suena antes de convertir. ¿Listo?",
+    "sv": "Mjau! Detta är ett snabbt rösttest så att du kan höra hur det låter innan du konverterar. Redo?",
+    "ru": "Мяу! Это быстрый тест голоса, чтобы вы услышали, как он звучит перед конвертацией. Готовы?",
+    "nl": "Miauw! Dit is een snelle stemtest zodat je kunt horen hoe het klinkt voordat je converteert. Klaar?",
+    "pl": "Miau! To szybki test głosu, abyś usłyszał, jak brzmi przed konwersją. Gotowy?",
+}
+
 # Anonymous free usage limit (docs convertible without signing in)
 FREE_DOCS_WITHOUT_LOGIN = int(os.environ.get("FREE_DOCS_WITHOUT_LOGIN", "1"))
 _COOKIE_COUNTER = "scan_docs_done"  # cookie name counting anonymous conversions
@@ -4135,8 +4181,8 @@ def text2audio_preview():
         pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, int(pitch)))
     except (TypeError, ValueError):
         rate, pitch = 100, 0
-    sample = ("Meow! This is a quick voice test, so you can hear how it sounds "
-              "before converting. Ready when you are. 🐱")
+    loc = (voice or "").split("-")[0].lower() if voice else ""
+    sample = TTS_PREVIEW_SAMPLES.get(loc, TTS_PREVIEW_SAMPLES["en"])
     try:
         audio_bytes = _synth_segment_to_bytes(sample, voice, rate, pitch)
         if not audio_bytes:
