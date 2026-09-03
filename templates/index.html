@@ -1408,17 +1408,31 @@
                     + '&pitch=' + (pitchRange ? pitchRange.value : 0);
                 testMsg.textContent = 'Generating preview...';
                 testBtn.disabled = true;
-                player.src = url;
-                player.oncanplay = function () {
-                    testBtn.disabled = false;
-                    testMsg.textContent = '';
-                    show(player, true);
-                    player.play();
-                };
-                player.onerror = function () {
-                    testBtn.disabled = false;
-                    testMsg.textContent = 'Could not generate preview.';
-                };
+                fetch(url)
+                    .then(function (r) {
+                        if (!r.ok) throw new Error('bad status ' + r.status);
+                        return r.blob();
+                    })
+                    .then(function (blob) {
+                        if (player.__previewUrl) URL.revokeObjectURL(player.__previewUrl);
+                        player.__previewUrl = URL.createObjectURL(blob);
+                        player.src = player.__previewUrl;
+                        player.oncanplay = function () {
+                            testBtn.disabled = false;
+                            testMsg.textContent = '';
+                            show(player, true);
+                            player.play().catch(function(){});
+                        };
+                        player.onerror = function () {
+                            testBtn.disabled = false;
+                            testMsg.textContent = 'Could not generate preview.';
+                        };
+                        player.load();
+                    })
+                    .catch(function () {
+                        testBtn.disabled = false;
+                        testMsg.textContent = 'Could not generate preview.';
+                    });
             });
 
             loadVoices();
