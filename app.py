@@ -2830,16 +2830,20 @@ def get_progress(task_id):
             
             return jsonify({
                 "status": task["status"],
-                "current_page": task["current_page"],
+                "current_page": task.get("current_page", 0),
                 "total_pages": task.get("total_pages"),
                 "pdf_total_pages": task.get("pdf_total_pages"),
                 "percentage": task.get("percentage", 0),
-                "error": task["error"],
-                "filename": task["filename"],
+                "error": task.get("error", ""),
+                "filename": task.get("filename", "Unknown"),
                 "detected_language": lang_code,
                 "language_name": lang_name,
                 "file_type": task.get("file_type", "pdf"),
-                "eta": eta
+                "eta": eta,
+                "audio": bool(task.get("audio")),
+                "words_done": task.get("words_done", 0),
+                "total_words": task.get("total_words", 0),
+                "voice_name": task.get("voice_name", ""),
             })
     except Exception as e:
         logger.error(f"Progress endpoint error for {task_id}: {e}")
@@ -4160,6 +4164,8 @@ def _text2audio_worker(token, text, voice, rate, pitch, base_name="audio"):
         with progress_lock:
             if p_id in progress_tracker:
                 progress_tracker[p_id]["percentage"] = 1
+                progress_tracker[p_id]["total_words"] = _total_words
+                progress_tracker[p_id]["words_done"] = 0
 
         def _on_segment(words_done, total_words):
             pct = max(1, int(80 * words_done / total_words))
@@ -4169,6 +4175,8 @@ def _text2audio_worker(token, text, voice, rate, pitch, base_name="audio"):
             with progress_lock:
                 if p_id in progress_tracker:
                     progress_tracker[p_id]["percentage"] = pct
+                    progress_tracker[p_id]["words_done"] = words_done
+                    progress_tracker[p_id]["total_words"] = total_words
 
         _synth_chunked_to_mp3(text, voice, rate, pitch, mp3_path, progress_cb=_on_segment)
 

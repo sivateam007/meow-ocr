@@ -196,7 +196,7 @@
         }
 
         function cancelProcessing() {
-            if (!confirm('Cancel this OCR task?')) return;
+            if (!confirm('Cancel this running task?')) return;
             fetch('/cancel/' + taskId, { method: 'POST' })
                 .then(r => r.json())
                 .then(d => {
@@ -239,7 +239,7 @@
                         detectedLang.textContent = data.detected_language === 'tam' ? 'Tamil' : 'English';
                     }
                     if (data.file_type) {
-                        fileTypeEl.textContent = data.file_type.toUpperCase();
+                        fileTypeEl.textContent = data.audio ? 'AUDIO' : data.file_type.toUpperCase();
                     }
 
                     if (data.file_type === 'pdf') {
@@ -273,13 +273,25 @@
                         cancelBtn.style.display = 'inline-block';
                     } else if (data.status === 'processing' || data.status === 'resuming') {
                         const label = data.status === 'resuming' ? 'Resuming' : 'Processing';
-                        statusText.textContent = `${label} ${data.file_type.toUpperCase()}... (${data.language_name || data.detected_language || 'Detected language'})`;
-                        cancelBtn.style.display = 'inline-block';
-                        if (data.percentage > 0) {
-                            percentageText.textContent = `${data.percentage}%`;
-                            progressFill.style.width = `${data.percentage}%`;
+                        if (data.audio) {
+                            statusText.textContent = 'Generating audio' + (data.voice_name ? ' with ' + data.voice_name : '') + '...';
+                        } else {
+                            statusText.textContent = `${label} ${data.file_type.toUpperCase()}... (${data.language_name || data.detected_language || 'Detected language'})`;
                         }
-                        if (data.eta) {
+                        cancelBtn.style.display = 'inline-block';
+                        if (data.audio && data.words_done && data.total_words) {
+                            const wd = data.words_done > data.total_words ? data.total_words : data.words_done;
+                            percentageText.textContent = `Generating word ${wd} of ${data.total_words} · ${data.percentage}%`;
+                        } else if (data.percentage > 0) {
+                            percentageText.textContent = `${data.percentage}%`;
+                        } else {
+                            percentageText.textContent = '...';
+                        }
+                        progressFill.style.width = (data.percentage > 0 ? data.percentage : 2) + '%';
+                        if (data.audio) {
+                            stopETACountdown();
+                            etaSection.style.display = 'none';
+                        } else if (data.eta) {
                             startETACountdown(data.eta);
                         } else {
                             stopETACountdown();
@@ -296,7 +308,11 @@
                         spinner.style.display = 'none';
                         errorBox.style.display = 'none';
                         clearInterval(pollInterval);
-                        setTimeout(function () { window.location.href = '/result/' + taskId; }, 800);
+                        if (data.audio) {
+                            setTimeout(function () { window.location.href = '/downloads'; }, 800);
+                        } else {
+                            setTimeout(function () { window.location.href = '/result/' + taskId; }, 800);
+                        }
                     } else if (data.status === 'interrupted') {
                         statusText.textContent = 'Processing interrupted (server restarted)';
                         spinner.style.display = 'none';
