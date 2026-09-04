@@ -2996,6 +2996,19 @@ def track_download(task_id):
     return jsonify({"ok": False}), 404
 
 
+@app.route('/api/result-text/<task_id>')
+def api_result_text(task_id):
+    """Return the extracted text for a completed task as JSON.
+
+    Used by the Open & Copy button so it gets plain text (local or from Mega)
+    instead of following a redirect that may end up at a Mega HTML page.
+    """
+    text = _read_task_text(task_id)
+    if text is None:
+        return jsonify({"error": "Text not available"}), 404
+    return jsonify({"text": text})
+
+
 def _build_docx(text, title="Meow OCR — Extracted Text"):
     """Return a BytesIO of a .docx built from extracted text."""
     import io as _io
@@ -3164,7 +3177,7 @@ def share_link(task_id):
                         return jsonify({"link": link})
         except Exception as e:
             logger.error(f"Share link Mega error for {task_id}: {e}")
-    return jsonify({"link": url_for('download_result', task_id=task_id, _external=True)})
+    return jsonify({"error": "Share link unavailable — file may have been removed from cloud"}), 404
 
 
 @app.route('/cancel/<task_id>', methods=['POST'])
@@ -3613,13 +3626,25 @@ def downloads_page():
     # Deduplicate: the same completed file can be resurrected by both the local
     # (UUID key) and the Mega (mega_<md5> key) restore scans, producing duplicate
     # rows with identical output filenames. Keep only the best row per file.
+    # Status priority: completed > active/processing > interrupted/error > cancelled,
+    # so a fresh re-upload of the same file replaces a stale "cancelled" row.
+    _STATUS_ORDER = {
+        "completed": 100,
+        "processing": 60, "resuming": 60, "starting": 60,
+        "detecting_language": 60, "getting_page_count": 60, "translating": 60,
+        "interrupted": 30, "error": 20, "cancelling": 20, "cancelled": 10,
+    }
+
     def _dup_score(t):
-        if t.get("status") != "completed":
-            return 0
-        return (1 if t.get("mega_uploaded") else 0) * 10 \
-            + min(t.get("pages_processed", 0), 5) \
-            + (1 if t.get("download_link") else 0) \
-            + (1 if t.get("percentage", 0) == 100 else 0)
+        base = _STATUS_ORDER.get(t.get("status"), 0)
+        if t.get("status") == "completed":
+            base += (1 if t.get("mega_uploaded") else 0) * 10 \
+                + (1 if t.get("download_link") else 0) \
+                + (1 if t.get("percentage", 0) == 100 else 0)
+        else:
+            # Among non-completed entries of the same file, prefer the most advanced.
+            base += t.get("percentage", 0) // 25
+        return base
 
     by_file = {}
     for t in all_tasks:

@@ -200,20 +200,15 @@
                                 <button onclick="shareAudio('{{ d.audio_url }}', '{{ d.filename }}', this)" class="act-btn" title="Share">
                                     <i class="fas fa-share-alt"></i> Share
                                 </button>
-                                {% elif d.status == 'completed' and d.download_link %}
-                                <a href="{{ d.download_link }}" target="_blank" onclick="trackDownload('{{ d.task_id }}')" class="act-link" title="Download">
-                                    <i class="fas fa-cloud-download-alt"></i>
+                                {% elif d.status == 'completed' and (d.download_link or d.mega_uploaded) %}
+                                <a href="{{ d.download_link or '#' }}" target="_blank" onclick="{{ "trackDownload('" + d.task_id + "')" if d.download_link else "event.preventDefault(); getMegaLink('" + d.task_id + "', this)" }}" class="act-link act-btn" title="Download">
+                                    <i class="fas fa-cloud-download-alt"></i> Download
                                 </a>
-                                <button onclick="openAndCopy('{{ d.task_id }}', this)" class="act-btn act-link" title="Open result page &amp; copy text">
-                                    <i class="fas fa-eye"></i> Open &amp; Copy
+                                {% if d.mega_uploaded %}
+                                <button onclick="getMegaLink('{{ d.task_id }}', this)" class="act-btn" title="Refresh Mega link">
+                                    <i class="fas fa-sync-alt"></i>
                                 </button>
-                                <button onclick="shareTask('{{ d.task_id }}', this)" class="act-btn">
-                                    <i class="fas fa-share-alt"></i> Share
-                                </button>
-                                {% elif d.status == 'completed' and d.mega_uploaded %}
-                                <button onclick="getMegaLink('{{ d.task_id }}', this)" class="act-btn act-link">
-                                    <i class="fas fa-link"></i> Get Link
-                                </button>
+                                {% endif %}
                                 <button onclick="openAndCopy('{{ d.task_id }}', this)" class="act-btn act-link" title="Open result page &amp; copy text">
                                     <i class="fas fa-eye"></i> Open &amp; Copy
                                 </button>
@@ -310,13 +305,11 @@
         function openAndCopy(taskId, btn) {
             var orig = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
-            fetch('/download/' + taskId)
-                .then(function (r) {
+            fetch('/api/result-text/' + taskId)
+                .then(function (r) { if (!r.ok) throw new Error('bad'); return r.json(); })
+                .then(function (d) {
                     btn.innerHTML = orig;
-                    if (!r.ok) throw new Error('bad');
-                    return r.text();
-                })
-                .then(function (text) {
+                    var text = d.text || '';
                     if (navigator.clipboard && window.isSecureContext) {
                         navigator.clipboard.writeText(text).catch(function () { fallbackCopy(text); });
                     } else {
@@ -325,6 +318,7 @@
                     window.location.href = '/result/' + taskId;
                 })
                 .catch(function () {
+                    btn.innerHTML = orig;
                     window.location.href = '/result/' + taskId;
                 });
         }

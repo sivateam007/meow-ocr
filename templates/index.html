@@ -47,12 +47,7 @@
       "operatingSystem": "Web",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
       "description": "Free online OCR tool to extract text from PDF, images (JPG, PNG, TIFF) and documents in 19+ languages. No signup, no watermark.",
-      "url": "{{ canonical_url or 'https://www.meowocr.work.gd/' }}",
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.8",
-        "ratingCount": "120"
-      }
+      "url": "{{ canonical_url or 'https://www.meowocr.work.gd/' }}"
     }
     </script>
     <script type="application/ld+json">
@@ -594,46 +589,6 @@
             </div>
         </section>
 
-        <!-- ===== CUSTOMER REVIEWS ===== -->
-        <section class="content-section info-page" id="reviews">
-            <h2><i class="fas fa-comments"></i> What Our Users Say <span class="heading-cat">🐱</span></h2>
-            <p class="page-subtitle">Why people love Meow OCR — free, private and fast.</p>
-            <div class="rating-summary">
-                <div class="stars"><i class="fas fa-check-circle"></i><i class="fas fa-check-circle"></i><i class="fas fa-check-circle"></i><i class="fas fa-check-circle"></i></div>
-                <span class="count">No signup · No watermark · Files auto-delete in 2 days · 19+ languages</span>
-            </div>
-            <div class="reviews-grid">
-                <div class="review-card">
-                    <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <img src="{{ url_for('static', filename='images/meow-hero.jpg') }}" alt="happy cat customer avatar" class="review-cat" loading="lazy">
-                    <p class="review-text">"Amazing free tool! Extracted text from a 80-page Tamil PDF perfectly in minutes, no signup needed. Saved me hours of typing."</p>
-                    <div class="review-author"><span class="avatar">P</span><div class="who"><b>Priya R.</b><span>Chennai, India</span></div></div>
-                    <span class="review-verified"><i class="fas fa-check-circle"></i> Happy user</span>
-                </div>
-                <div class="review-card">
-                    <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <img src="{{ url_for('static', filename='images/meow-smile.jpg') }}" alt="happy cat customer avatar" class="review-cat" loading="lazy">
-                    <p class="review-text">"The auto language detection is spot-on. I convert invoices and receipts to editable text every day. Fast and private."</p>
-                    <div class="review-author"><span class="avatar">A</span><div class="who"><b>Arun K.</b><span>Coimbatore, India</span></div></div>
-                    <span class="review-verified"><i class="fas fa-check-circle"></i> Happy user</span>
-                </div>
-                <div class="review-card">
-                    <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <img src="{{ url_for('static', filename='images/meow-cute.jpg') }}" alt="happy cat customer avatar" class="review-cat" loading="lazy">
-                    <p class="review-text">"Clean, professional and genuinely unlimited after signing in. I love that my files auto-delete from cloud storage after 2 days — very secure."</p>
-                    <div class="review-author"><span class="avatar">S</span><div class="who"><b>Selvi M.</b><span>Madurai, India</span></div></div>
-                    <span class="review-verified"><i class="fas fa-check-circle"></i> Happy user</span>
-                </div>
-                <div class="review-card">
-                    <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
-                    <img src="{{ url_for('static', filename='images/meow-yawn.jpg') }}" alt="happy cat customer avatar" class="review-cat" loading="lazy">
-                    <p class="review-text">"Works on my phone, supports Hindi and English, and there's no watermark. Definitely my go-to OCR website now."</p>
-                    <div class="review-author"><span class="avatar">V</span><div class="who"><b>Vikram S.</b><span>Hyderabad, India</span></div></div>
-                    <span class="review-verified"><i class="fas fa-check-circle"></i> Happy user</span>
-                </div>
-            </div>
-            <p class="reviews-footnote" style="text-align:center; color:#8a8a8a; font-size:0.85rem; margin-top:1.5rem;"><i class="fas fa-info-circle"></i> Representative examples of everyday files people convert. See the full workflow in <a href="/how-to-use">How It Works</a>.</p>
-        </section>
 
         <!-- ===== MEOW GALLERY (fun, shareable) ===== -->
         <section class="content-section info-page" id="meow">
@@ -1062,7 +1017,7 @@
                 }
 
                 // Scroll-triggered reveal for cards (steps, features, reviews, chips, cats)
-                var reveals = document.querySelectorAll('.step-card, .feature-card, .review-card, .format-chip, .cat-card, .faq-cat, .review-cat');
+                var reveals = document.querySelectorAll('.step-card, .feature-card, .format-chip, .cat-card, .faq-cat');
                 reveals.forEach(function (el) {
                     el.style.opacity = '0';
                     el.style.transform = 'translateY(25px)';
@@ -1204,8 +1159,7 @@
                 });
             });
 
-            // 11. Twinkling stars in the rating summary
-            anime({ targets: '.rating-summary .stars i', scale: [1, 1.35, 1], rotate: [0, 25, -25, 0], delay: anime.stagger(150, { start: 600 }), loop: true, duration: 1600, easing: 'easeInOutSine' });
+            // 11. (removed: rating-summary stars animation)
 
             // 12. Stat numbers win-bounce then hold
             var statNums = document.querySelectorAll('.stat-num');
