@@ -191,8 +191,8 @@
                             <td class="col-dl">{{ d.download_count }}</td>
                             <td class="col-action">
                                 {% if d.audio and d.status == 'completed' and d.audio_url %}
-                                <a href="{{ d.audio_url }}" target="_blank" onclick="trackDownload('{{ d.task_id }}')" class="act-link" title="Download MP3">
-                                    <i class="fas fa-file-audio"></i>
+                                <a href="{{ d.audio_url }}" target="_blank" onclick="trackDownload('{{ d.task_id }}')" class="act-link act-btn" title="Download MP3">
+                                    <i class="fas fa-file-audio"></i> Download
                                 </a>
                                 <button onclick="playAudio('{{ d.audio_url }}')" class="act-btn act-link" title="Play audio">
                                     <i class="fas fa-play"></i> Play
