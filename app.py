@@ -1828,7 +1828,8 @@ def rebuild_completed_from_mega():
                 continue
             is_ocr = name.endswith('_ocr.txt')
             is_translation = '_translated_' in name and name.endswith('.txt')
-            if not is_ocr and not is_translation:
+            is_audio = name.lower().endswith('.mp3')
+            if not is_ocr and not is_translation and not is_audio:
                 continue
 
             hashlib = __import__('hashlib')
@@ -1859,19 +1860,31 @@ def rebuild_completed_from_mega():
             if is_ocr:
                 orig_name = name[:-8].rstrip('_')
                 file_type = "pdf"
+            elif is_audio:
+                orig_name = name.rsplit('.', 1)[0]
+                file_type = "text_to_audio"
             else:
                 orig_name = name
                 file_type = "translation"
+            # For audio files, resolve a playable Mega link up-front so the
+            # Download/Play/Share actions work directly (like live t2a tasks).
+            dl = None
+            if is_audio:
+                try:
+                    dl = mega_call(m, "get_link", finfo, timeout=20)
+                except Exception as e:
+                    logger.warning(f"Mega restore: could not get audio link for {name}: {e}")
             with progress_lock:
                 progress_tracker[tid] = {
                     "current_page": 0, "status": "completed",
                     "result_path": None, "error": None,
                     "filename": orig_name, "output_filename": name,
-                    "download_link": None,
+                    "download_link": (dl or None),
                     "mega_node_id": nid,
                     "mega_node_info": finfo,
                     "mega_uploaded": True, "mega_status": "uploaded",
                     "file_type": file_type, "detected_language": "",
+                    "audio": bool(is_audio),
                     "pages_processed": 0, "percentage": 100,
                     "download_count": 0, "completed_at": file_ts, "created_at": file_ts
                 }
@@ -3572,7 +3585,7 @@ def downloads_page():
             is_translation = task.get("translating") or task.get("file_type") == "translation"
             info = {
                 "task_id": task_id,
-                "filename": task.get("output_filename", task.get("filename", "Unknown")),
+                "filename": task.get("output_filename") or task.get("filename") or "Unknown",
                 "download_link": task.get("download_link", ""),
                 "language": task.get("detected_language", ""),
                 "file_type": task.get("file_type", ""),
@@ -3594,6 +3607,29 @@ def downloads_page():
                 "audio": task.get("audio", False),
             }
             all_tasks.append(info)
+
+    # Deduplicate: the same completed file can be resurrected by both the local
+    # (UUID key) and the Mega (mega_<md5> key) restore scans, producing duplicate
+    # rows with identical output filenames. Keep only the best row per file.
+    def _dup_score(t):
+        if t.get("status") != "completed":
+            return 0
+        return (1 if t.get("mega_uploaded") else 0) * 10 \
+            + min(t.get("pages_processed", 0), 5) \
+            + (1 if t.get("download_link") else 0) \
+            + (1 if t.get("percentage", 0) == 100 else 0)
+
+    by_file = {}
+    for t in all_tasks:
+        key = (t.get("output_filename") or t.get("filename"), bool(t.get("audio")))
+        if key[0] not in (None, ""):
+            cur = by_file.get(key)
+            if cur is None or _dup_score(t) > _dup_score(cur):
+                by_file[key] = t
+        else:
+            # No filename — keep this row as-is (unique by task id).
+            by_file[(t["task_id"], bool(t.get("audio")))] = t
+    all_tasks = [t for t in all_tasks if any(t is keep for keep in by_file.values())]
     all_tasks.reverse()
     return render_template(
         "downloads.html",
