@@ -5,6 +5,7 @@ Flask application for rendering PDF OCR via web interface
 """
 
 import os
+import html
 import tempfile
 import threading
 import uuid
@@ -4109,6 +4110,24 @@ def tts_status(task_id):
         })
 
 
+def _audio_error_page(message):
+    """Small self-contained HTML error page for audio fetch failures (no redirect home)."""
+    return (
+        "<!doctype html><html><head><meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+        "<title>Audio unavailable - Meow OCR</title></head>"
+        "<body style='font-family:Segoe UI,Arial,sans-serif;margin:0;padding:0;background:#faf7f2;color:#333'>"
+        "<div style='max-width:520px;margin:70px auto;text-align:center;padding:30px;border:1px solid #e8e0d4;"
+        "border-radius:14px;background:#fff'>"
+        "<div style='font-size:46px'>🎧</div>"
+        f"<h2 style='margin:12px 0 8px'>Audio unavailable</h2>"
+        f"<p style='color:#666;font-size:15px;line-height:1.5'>{html.escape(message)}</p>"
+        "<a href='/downloads' style='display:inline-block;margin-top:14px;padding:10px 18px;border-radius:8px;"
+        "background:#6c3483;color:#fff;text-decoration:none;font-weight:600'>"
+        "Back to My Downloads</a></div></body></html>", 200
+    )
+
+
 @app.route('/download/tts/<task_id>')
 def download_tts_mp3(task_id):
     """Stream the generated MP3 for a task (works for live and restored-cloud audio).
@@ -4120,8 +4139,7 @@ def download_tts_mp3(task_id):
     with progress_lock:
         task = progress_tracker.get(task_id)
         if not task or task.get("file_type") != "text_to_audio" or not task.get("audio"):
-            flash('Audio not found')
-            return redirect(url_for('index'))
+            return _audio_error_page("Audio not found")
         mp3_path = task.get("tts_path")
         mp3_filename = task.get("tts_filename") or (task.get("output_filename") or f"{task_id}.mp3")
         cached = task.get("tts_cached_path")
@@ -4131,22 +4149,25 @@ def download_tts_mp3(task_id):
         return send_file(cached, as_attachment=True, download_name=mp3_filename, mimetype="audio/mpeg")
 
     if not (os.environ.get("MEGA_EMAIL") and os.environ.get("MEGA_PWD")):
-        flash('Audio not available')
-        return redirect(url_for('index'))
+        return _audio_error_page("Audio is stored in cloud storage, but cloud login is not configured on this server right now.")
 
     m = init_mega()
     if not m:
-        flash('Could not connect to cloud to stream audio')
-        return redirect(url_for('index'))
+        return _audio_error_page("Could not connect to cloud storage to fetch your audio. Please try again shortly.")
+
+    nid = task.get("mega_node_id")
+    nfo = task.get("mega_node_info")
+    temp_dir = _tf.mkdtemp(prefix="meowtts_")
     try:
-        nid = task.get("mega_node_id")
-        nfo = task.get("mega_node_info")
-        temp_dir = _tf.mkdtemp(prefix="meowtts_")
         if nid and nfo:
-            mega_call(m, "download", (nid, nfo), dest_path=temp_dir)
+            try:
+                mega_call(m, "download", (nid, nfo), dest_path=temp_dir, timeout=180)
+            except Exception:
+                # Fall back to the bare node handle form.
+                mega_call(m, "download", nid, dest_path=temp_dir, timeout=180)
         else:
             # Fall back to looking the file up by name in ocr-outputs.
-            mega_call(m, "download", f"ocr-outputs/{mp3_filename}", dest_path=temp_dir)
+            mega_call(m, "download", f"ocr-outputs/{mp3_filename}", dest_path=temp_dir, timeout=180)
         local = os.path.join(temp_dir, mp3_filename)
         if not os.path.exists(local):
             # Mega may name the downloaded file without our suffix assumptions.
@@ -4164,8 +4185,7 @@ def download_tts_mp3(task_id):
         return send_file(local, as_attachment=True, download_name=mp3_filename, mimetype="audio/mpeg")
     except Exception as e:
         logger.error(f"Audio stream for {task_id} failed: {e}")
-        flash('Audio not available')
-        return redirect(url_for('index'))
+        return _audio_error_page("Could not fetch your audio from cloud storage. Please try again shortly.")
 
 
 # ================= Text to Audio (standalone) =================
