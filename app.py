@@ -3605,6 +3605,7 @@ def downloads_page():
                 "current_chunk": task.get("current_chunk", 0),
                 "total_chunks": task.get("total_chunks"),
                 "audio": task.get("audio", False),
+                "audio_url": (f"/download/tts/{task_id}" if task.get("audio") else ""),
             }
             all_tasks.append(info)
 
@@ -4110,18 +4111,61 @@ def tts_status(task_id):
 
 @app.route('/download/tts/<task_id>')
 def download_tts_mp3(task_id):
-    """Serve the generated MP3 file if present locally."""
+    """Stream the generated MP3 for a task (works for live and restored-cloud audio).
+
+    Serves the local file when present, otherwise downloads the file from Mega
+    to a temp copy and streams it, caching the copy so repeated plays are fast.
+    """
+    import tempfile as _tf
     with progress_lock:
         task = progress_tracker.get(task_id)
-        if not task:
-            flash('Task not found')
+        if not task or task.get("file_type") != "text_to_audio" or not task.get("audio"):
+            flash('Audio not found')
             return redirect(url_for('index'))
         mp3_path = task.get("tts_path")
-        mp3_filename = task.get("tts_filename", "audio.mp3")
+        mp3_filename = task.get("tts_filename") or (task.get("output_filename") or f"{task_id}.mp3")
+        cached = task.get("tts_cached_path")
     if mp3_path and os.path.exists(mp3_path):
         return send_file(mp3_path, as_attachment=True, download_name=mp3_filename, mimetype="audio/mpeg")
-    flash('Audio not ready yet')
-    return redirect(url_for('index'))
+    if cached and os.path.exists(cached):
+        return send_file(cached, as_attachment=True, download_name=mp3_filename, mimetype="audio/mpeg")
+
+    if not (os.environ.get("MEGA_EMAIL") and os.environ.get("MEGA_PWD")):
+        flash('Audio not available')
+        return redirect(url_for('index'))
+
+    m = init_mega()
+    if not m:
+        flash('Could not connect to cloud to stream audio')
+        return redirect(url_for('index'))
+    try:
+        nid = task.get("mega_node_id")
+        nfo = task.get("mega_node_info")
+        temp_dir = _tf.mkdtemp(prefix="meowtts_")
+        if nid and nfo:
+            mega_call(m, "download", (nid, nfo), dest_path=temp_dir)
+        else:
+            # Fall back to looking the file up by name in ocr-outputs.
+            mega_call(m, "download", f"ocr-outputs/{mp3_filename}", dest_path=temp_dir)
+        local = os.path.join(temp_dir, mp3_filename)
+        if not os.path.exists(local):
+            # Mega may name the downloaded file without our suffix assumptions.
+            for fn in os.listdir(temp_dir):
+                if not fn.startswith('.'):
+                    local = os.path.join(temp_dir, fn)
+                    break
+            if not os.path.exists(local):
+                raise RuntimeError("Downloaded file not found in temp directory")
+        mp3_filename = os.path.basename(local)
+        with progress_lock:
+            task = progress_tracker.get(task_id)
+            if task:
+                task["tts_cached_path"] = local
+        return send_file(local, as_attachment=True, download_name=mp3_filename, mimetype="audio/mpeg")
+    except Exception as e:
+        logger.error(f"Audio stream for {task_id} failed: {e}")
+        flash('Audio not available')
+        return redirect(url_for('index'))
 
 
 # ================= Text to Audio (standalone) =================
