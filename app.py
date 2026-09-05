@@ -4355,6 +4355,158 @@ def text2audio_preview():
         return jsonify({"error": "Could not generate a voice preview."}), 500
 
 
+# ================= My Voice (pitch/speed matching) =================
+VOICE_PROFILES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "voice_f0_profiles.json")
+MY_VOICES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "my_voices.json")
+my_voices_lock = threading.Lock()
+
+# Lazy-loaded measured-pitch profiles for every built-in voice: {voice: {"hz", "frames"}}.
+_voice_profiles = None
+_voice_profiles_lock = threading.Lock()
+
+
+def _load_voice_profiles():
+    global _voice_profiles
+    with _voice_profiles_lock:
+        if _voice_profiles is None:
+            try:
+                with open(VOICE_PROFILES_PATH, encoding="utf-8") as f:
+                    _voice_profiles = json.load(f)
+            except Exception:
+                _voice_profiles = {}
+        return _voice_profiles
+
+
+def _lang_gender_voices():
+    """Map app language code -> gender -> [voice names], from TTS_VOICES."""
+    m = {}
+    for code, grp in TTS_VOICES.items():
+        gmap = m.setdefault(code, {})
+        for v, _, g in grp:
+            gk = "male" if g.lower().startswith("m") else "female"
+            gmap.setdefault(gk, []).append(v)
+    return m
+
+
+@app.route('/api/voice/analyze', methods=['POST'])
+@_rate_limit(10, 60)
+def voice_analyze():
+    """Analyze an uploaded/recorded voice sample and suggest the closest built-in voice."""
+    f = request.files.get("audio")
+    if not f:
+        return jsonify({"error": "Please provide an audio file."}), 400
+    filename = f.filename or "sample.webm"
+    ext = os.path.splitext(filename)[1].lower() or ".webm"
+    if ext not in (".wav", ".mp3", ".m4a", ".webm", ".ogg", ".flac", ".aac", ".aiff", ".mp4", ".weba", ".opus"):
+        return jsonify({"error": "Unsupported audio format."}), 400
+    lang = (request.form.get("lang") or "").strip() or "en"
+    tmp_path = None
+    try:
+        fd, tmp_path = tempfile.mkstemp(suffix=ext)
+        try:
+            with os.fdopen(fd, "wb") as out:
+                out.write(f.read())
+        except Exception:
+            os.close(fd)
+        import voice_analyzer as va
+        pcm = va.decode_to_pcm(tmp_path)
+        pitch = va.analyze_pitch(pcm)
+        if not pitch:
+            return jsonify({"error": "Couldn't detect a clear voice in that sample. Please speak clearly for a few seconds, away from background noise."}), 422
+        wpm = va.estimate_wpm(pcm)
+        gender = va.gender_from_hz(pitch["median_hz"])
+        profiles = _load_voice_profiles()
+        match = va.suggest_voice(pitch["median_hz"], gender, lang, profiles, _lang_gender_voices())
+        rate = va.suggest_rate(wpm)
+        if match:
+            # Attach the cat-branded label for the suggested voice.
+            label = None
+            for grp in TTS_VOICES.values():
+                for v, lbl, _ in grp:
+                    if v == match["voice"]:
+                        label = _cat_label(v, lbl)
+                        break
+            match["label"] = label
+        return jsonify({
+            "median_hz": pitch["median_hz"],
+            "min_hz": pitch["min_hz"],
+            "max_hz": pitch["max_hz"],
+            "frames": pitch["frames"],
+            "gender": gender,
+            "wpm": wpm,
+            "suggested_rate": rate,
+            "match": match,
+        })
+    except ValueError as e:
+        return jsonify({"error": str(e) or "Could not analyze that audio."}), 422
+    except Exception:
+        logger.error("voice analyze error", exc_info=True)
+        return jsonify({"error": "Could not analyze that audio. Please try another clip."}), 500
+    finally:
+        if tmp_path:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+
+
+def _load_my_voices():
+    try:
+        with open(MY_VOICES_FILE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+
+def _save_my_voices(data):
+    tmp = MY_VOICES_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(data, fh)
+    os.replace(tmp, MY_VOICES_FILE)
+
+
+@app.route('/api/voice/preset', methods=['GET'])
+def voice_preset_get():
+    """Return the saved My Voice preset for the signed-in user (cross-device)."""
+    uid = session.get("uid")
+    if not uid:
+        return jsonify({"error": "Not signed in"}), 401
+    with my_voices_lock:
+        rec = _load_my_voices().get(uid)
+    if not rec:
+        return jsonify({"error": "No My Voice preset yet"}), 404
+    return jsonify(rec)
+
+
+@app.route('/api/voice/preset', methods=['POST'])
+@_rate_limit(5, 60)
+def voice_preset_set():
+    """Save/update the signed-in user's My Voice preset."""
+    uid = session.get("uid")
+    if not uid:
+        return jsonify({"error": "Not signed in"}), 401
+    data = request.get_json(silent=True) or {}
+    voice = (data.get("voice") or "").strip()
+    if not voice or not _looks_like_cat_voice(voice):
+        return jsonify({"error": "Invalid voice"}), 400
+    rate = int(data.get("rate", 100))
+    rate = max(TTS_RATE_MIN, min(TTS_RATE_MAX, rate))
+    pitch = int(data.get("pitch", 0))
+    pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, pitch))
+    try:
+        hz = float(data.get("hz", 0)) or None
+    except (TypeError, ValueError):
+        hz = None
+    label = (data.get("label") or "").strip()[:40] or "My Voice"
+    rec = {"voice": voice, "rate": rate, "pitch": pitch, "label": label,
+           "hz": hz, "saved_at": time.time()}
+    with my_voices_lock:
+        m = _load_my_voices()
+        m[uid] = rec
+        _save_my_voices(m)
+    return jsonify({"ok": True})
+
+
 def _text2audio_worker(token, text, voice, rate, pitch, base_name="audio"):
     """Background: synthesize MP3 (chunked), persist, upload to cloud, update My Downloads."""
     p_id = f"t2a_{token}"

@@ -1,0 +1,478 @@
+{
+ "en-US-JennyNeural": {
+  "hz": 190.5,
+  "frames": 166
+ },
+ "en-US-AriaNeural": {
+  "hz": 216.2,
+  "frames": 176
+ },
+ "en-US-AnaNeural": {
+  "hz": 301.9,
+  "frames": 197
+ },
+ "en-US-MichelleNeural": {
+  "hz": 192.8,
+  "frames": 161
+ },
+ "en-US-EmmaNeural": {
+  "hz": 173.0,
+  "frames": 158
+ },
+ "en-US-AvaNeural": {
+  "hz": 196.3,
+  "frames": 152
+ },
+ "en-IN-NeerjaNeural": {
+  "hz": 271.2,
+  "frames": 191
+ },
+ "en-GB-SoniaNeural": {
+  "hz": 210.5,
+  "frames": 174
+ },
+ "en-GB-LibbyNeural": {
+  "hz": 200.0,
+  "frames": 196
+ },
+ "en-GB-MaisieNeural": {
+  "hz": 301.9,
+  "frames": 175
+ },
+ "en-AU-NatashaNeural": {
+  "hz": 213.3,
+  "frames": 172
+ },
+ "en-US-GuyNeural": {
+  "hz": 166.7,
+  "frames": 160
+ },
+ "en-US-BrianNeural": {
+  "hz": 124.0,
+  "frames": 159
+ },
+ "en-US-AndrewNeural": {
+  "hz": 116.4,
+  "frames": 126
+ },
+ "en-US-ChristopherNeural": {
+  "hz": 115.9,
+  "frames": 136
+ },
+ "en-US-RogerNeural": {
+  "hz": 161.6,
+  "frames": 166
+ },
+ "en-US-EricNeural": {
+  "hz": 111.9,
+  "frames": 157
+ },
+ "en-US-SteffanNeural": {
+  "hz": 131.1,
+  "frames": 150
+ },
+ "en-IN-PrabhatNeural": {
+  "hz": 136.8,
+  "frames": 185
+ },
+ "en-GB-RyanNeural": {
+  "hz": 127.0,
+  "frames": 135
+ },
+ "en-GB-ThomasNeural": {
+  "hz": 125.0,
+  "frames": 141
+ },
+ "hi-IN-SwaraNeural": {
+  "hz": 250.0,
+  "frames": 229
+ },
+ "hi-IN-MadhurNeural": {
+  "hz": 107.4,
+  "frames": 207
+ },
+ "ta-IN-PallaviNeural": {
+  "hz": 246.2,
+  "frames": 268
+ },
+ "ta-IN-ValluvarNeural": {
+  "hz": 149.5,
+  "frames": 248
+ },
+ "ta-LK-SaranyaNeural": {
+  "hz": 235.3,
+  "frames": 276
+ },
+ "ta-LK-KumarNeural": {
+  "hz": 142.9,
+  "frames": 256
+ },
+ "ta-MY-KaniNeural": {
+  "hz": 258.1,
+  "frames": 253
+ },
+ "ta-MY-SuryaNeural": {
+  "hz": 156.9,
+  "frames": 256
+ },
+ "ta-SG-VenbaNeural": {
+  "hz": 235.3,
+  "frames": 255
+ },
+ "ta-SG-AnbuNeural": {
+  "hz": 142.2,
+  "frames": 236
+ },
+ "te-IN-ShrutiNeural": {
+  "hz": 254.0,
+  "frames": 230
+ },
+ "te-IN-MohanNeural": {
+  "hz": 129.0,
+  "frames": 225
+ },
+ "kn-IN-SapnaNeural": {
+  "hz": 200.0,
+  "frames": 232
+ },
+ "kn-IN-GaganNeural": {
+  "hz": 117.6,
+  "frames": 229
+ },
+ "ml-IN-SobhanaNeural": {
+  "hz": 190.5,
+  "frames": 220
+ },
+ "ml-IN-MidhunNeural": {
+  "hz": 108.8,
+  "frames": 193
+ },
+ "bn-IN-TanishaaNeural": {
+  "hz": 254.0,
+  "frames": 225
+ },
+ "bn-IN-BashkarNeural": {
+  "hz": 123.1,
+  "frames": 184
+ },
+ "gu-IN-DhwaniNeural": {
+  "hz": 235.3,
+  "frames": 271
+ },
+ "gu-IN-NiranjanNeural": {
+  "hz": 98.2,
+  "frames": 233
+ },
+ "mr-IN-AarohiNeural": {
+  "hz": 238.8,
+  "frames": 269
+ },
+ "mr-IN-ManoharNeural": {
+  "hz": 102.9,
+  "frames": 228
+ },
+ "ur-IN-GulNeural": {
+  "hz": 200.0,
+  "frames": 216
+ },
+ "ur-IN-SalmanNeural": {
+  "hz": 118.5,
+  "frames": 213
+ },
+ "ar-SA-ZariyahNeural": {
+  "hz": 228.6,
+  "frames": 213
+ },
+ "ar-SA-HamedNeural": {
+  "hz": 125.5,
+  "frames": 160
+ },
+ "ru-RU-SvetlanaNeural": {
+  "hz": 177.8,
+  "frames": 159
+ },
+ "ru-RU-DmitryNeural": {
+  "hz": 114.3,
+  "frames": 135
+ },
+ "el-GR-AthinaNeural": {
+  "hz": 238.8,
+  "frames": 158
+ },
+ "el-GR-NestorasNeural": {
+  "hz": 115.1,
+  "frames": 146
+ },
+ "he-IL-HilaNeural": {
+  "hz": 213.3,
+  "frames": 159
+ },
+ "he-IL-AvriNeural": {
+  "hz": 107.4,
+  "frames": 166
+ },
+ "th-TH-PremwadeeNeural": {
+  "hz": 192.8,
+  "frames": 191
+ },
+ "th-TH-NiwatNeural": {
+  "hz": 142.9,
+  "frames": 147
+ },
+ "tr-TR-EmelNeural": {
+  "hz": 200.0,
+  "frames": 193
+ },
+ "tr-TR-AhmetNeural": {
+  "hz": 135.6,
+  "frames": 198
+ },
+ "pt-BR-FranciscaNeural": {
+  "hz": 258.1,
+  "frames": 176
+ },
+ "pt-BR-AntonioNeural": {
+  "hz": 155.3,
+  "frames": 159
+ },
+ "id-ID-GadisNeural": {
+  "hz": 222.2,
+  "frames": 256
+ },
+ "id-ID-ArdiNeural": {
+  "hz": 111.5,
+  "frames": 206
+ },
+ "ms-MY-YasminNeural": {
+  "hz": 213.3,
+  "frames": 235
+ },
+ "ms-MY-OsmanNeural": {
+  "hz": 155.3,
+  "frames": 199
+ },
+ "fil-PH-BlessicaNeural": {
+  "hz": 216.2,
+  "frames": 223
+ },
+ "fil-PH-AngeloNeural": {
+  "hz": 114.3,
+  "frames": 231
+ },
+ "vi-VN-HoaiMyNeural": {
+  "hz": 231.9,
+  "frames": 226
+ },
+ "vi-VN-NamMinhNeural": {
+  "hz": 144.1,
+  "frames": 190
+ },
+ "zh-CN-XiaoxiaoNeural": {
+  "hz": 238.8,
+  "frames": 182
+ },
+ "zh-CN-XiaoyiNeural": {
+  "hz": 307.7,
+  "frames": 167
+ },
+ "zh-CN-YunxiNeural": {
+  "hz": 173.9,
+  "frames": 118
+ },
+ "zh-CN-YunjianNeural": {
+  "hz": 142.9,
+  "frames": 123
+ },
+ "zh-CN-YunyangNeural": {
+  "hz": 130.1,
+  "frames": 98
+ },
+ "zh-CN-YunxiaNeural": {
+  "hz": 296.3,
+  "frames": 169
+ },
+ "ja-JP-NanamiNeural": {
+  "hz": 258.1,
+  "frames": 233
+ },
+ "ja-JP-KeitaNeural": {
+  "hz": 109.6,
+  "frames": 171
+ },
+ "ko-KR-SunHiNeural": {
+  "hz": 246.2,
+  "frames": 205
+ },
+ "ko-KR-InJoonNeural": {
+  "hz": 164.9,
+  "frames": 190
+ },
+ "ko-KR-HyunsuMultilingualNeural": {
+  "hz": 140.4,
+  "frames": 218
+ },
+ "es-ES-ElviraNeural": {
+  "hz": 200.0,
+  "frames": 167
+ },
+ "es-ES-XimenaNeural": {
+  "hz": 213.3,
+  "frames": 166
+ },
+ "es-ES-AlvaroNeural": {
+  "hz": 122.1,
+  "frames": 139
+ },
+ "fr-FR-DeniseNeural": {
+  "hz": 210.5,
+  "frames": 183
+ },
+ "fr-FR-EloiseNeural": {
+  "hz": 290.9,
+  "frames": 175
+ },
+ "fr-FR-HenriNeural": {
+  "hz": 111.1,
+  "frames": 146
+ },
+ "fr-FR-RemyMultilingualNeural": {
+  "hz": 106.7,
+  "frames": 147
+ },
+ "de-DE-KatjaNeural": {
+  "hz": 197.5,
+  "frames": 165
+ },
+ "de-DE-AmalaNeural": {
+  "hz": 210.5,
+  "frames": 159
+ },
+ "de-DE-ConradNeural": {
+  "hz": 132.2,
+  "frames": 123
+ },
+ "de-DE-KillianNeural": {
+  "hz": 105.6,
+  "frames": 124
+ },
+ "it-IT-ElsaNeural": {
+  "hz": 238.8,
+  "frames": 199
+ },
+ "it-IT-IsabellaNeural": {
+  "hz": 207.8,
+  "frames": 190
+ },
+ "it-IT-DiegoNeural": {
+  "hz": 173.9,
+  "frames": 192
+ },
+ "bg-BG-KalinaNeural": {
+  "hz": 175.8,
+  "frames": 174
+ },
+ "bg-BG-BorislavNeural": {
+  "hz": 151.7,
+  "frames": 144
+ },
+ "hr-HR-SreckoNeural": {
+  "hz": 132.8,
+  "frames": 150
+ },
+ "cs-CZ-VlastaNeural": {
+  "hz": 179.8,
+  "frames": 177
+ },
+ "cs-CZ-AntoninNeural": {
+  "hz": 144.8,
+  "frames": 116
+ },
+ "da-DK-ChristelNeural": {
+  "hz": 205.1,
+  "frames": 157
+ },
+ "da-DK-JeppeNeural": {
+  "hz": 148.1,
+  "frames": 157
+ },
+ "nl-NL-FennaNeural": {
+  "hz": 225.4,
+  "frames": 163
+ },
+ "nl-NL-ColetteNeural": {
+  "hz": 216.2,
+  "frames": 163
+ },
+ "nl-NL-MaartenNeural": {
+  "hz": 158.4,
+  "frames": 130
+ },
+ "fi-FI-NooraNeural": {
+  "hz": 210.5,
+  "frames": 194
+ },
+ "fi-FI-HarriNeural": {
+  "hz": 113.9,
+  "frames": 158
+ },
+ "hu-HU-NoemiNeural": {
+  "hz": 200.0,
+  "frames": 162
+ },
+ "hu-HU-TamasNeural": {
+  "hz": 168.4,
+  "frames": 139
+ },
+ "nb-NO-PernilleNeural": {
+  "hz": 160.0,
+  "frames": 152
+ },
+ "nb-NO-FinnNeural": {
+  "hz": 90.4,
+  "frames": 137
+ },
+ "pl-PL-ZofiaNeural": {
+  "hz": 190.5,
+  "frames": 143
+ },
+ "pl-PL-MarekNeural": {
+  "hz": 133.3,
+  "frames": 133
+ },
+ "ro-RO-AlinaNeural": {
+  "hz": 225.4,
+  "frames": 141
+ },
+ "ro-RO-EmilNeural": {
+  "hz": 146.8,
+  "frames": 162
+ },
+ "sk-SK-ViktoriaNeural": {
+  "hz": 183.9,
+  "frames": 174
+ },
+ "sk-SK-LukasNeural": {
+  "hz": 146.8,
+  "frames": 130
+ },
+ "sv-SE-SofieNeural": {
+  "hz": 188.2,
+  "frames": 173
+ },
+ "sv-SE-MattiasNeural": {
+  "hz": 116.8,
+  "frames": 163
+ },
+ "uk-UA-PolinaNeural": {
+  "hz": 197.5,
+  "frames": 132
+ },
+ "uk-UA-OstapNeural": {
+  "hz": 102.6,
+  "frames": 137
+ },
+ "hr-HR-GabrijelaNeural": {
+  "hz": 166.7,
+  "frames": 178
+ }
+}

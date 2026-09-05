@@ -39,6 +39,7 @@ Desktop.ini
 # Generated translations & runtime state
 ocr-outputs/
 progress_tracker.json
+my_voices.json
 
 # Local dev binaries (not needed for deployment)
 poppler/

@@ -393,6 +393,31 @@
                     </div>
                 </div>
 
+                <div class="myvoice-card" id="myvoice-card" style="display:none; margin-top:.9rem; padding:1rem 1.1rem; background:#fffdf6; border:1px dashed #e0b94a; border-radius:12px;">
+                    <div style="display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-bottom:.55rem;">
+                        <h4 style="margin:0; color:#7d6608; font-size:.98rem;"><i class="fas fa-microphone-alt" style="margin-right:.25rem;"></i>My Voice <span style="font-weight:400; color:#8a8a8a;">— tune the voice to sound like you</span></h4>
+                        <span id="myvoice-badge" style="display:none; font-size:.72rem; background:#eaf6e6; color:#2e7d32; padding:.18rem .55rem; border-radius:20px;">💾 Saved</span>
+                    </div>
+                    <div style="display:flex; gap:.6rem; flex-wrap:wrap; align-items:center;">
+                        <button type="button" id="myvoice-record" style="border:none; border-radius:8px; padding:.55rem .9rem; font-weight:600; background:#fdf2e3; color:#935116; cursor:pointer;"><i class="fas fa-microphone-alt"></i> <span id="myvoice-record-label">Record</span></button>
+                        <button type="button" id="myvoice-upload" style="border:none; border-radius:8px; padding:.55rem .9rem; font-weight:600; background:#fdf2e3; color:#935116; cursor:pointer;"><i class="fas fa-upload"></i> Upload audio</button>
+                        <span id="myvoice-rec" style="display:none; color:#c0392b; font-weight:600; font-size:.9rem;"><i class="fas fa-circle" style="font-size:.5rem; color:#c0392b;"></i> Recording <span id="myvoice-timer" style="display:inline-block; min-width:2.2em;">0s</span></span>
+                        <button type="button" id="myvoice-stop" style="display:none; border:none; border-radius:8px; padding:.55rem .9rem; font-weight:600; background:#fbebeb; color:#c0392b; cursor:pointer;"><i class="fas fa-stop"></i> Stop</button>
+                        <span id="myvoice-msg" style="font-size:.82rem; color:#8a6d3b;"></span>
+                    </div>
+                    <input type="file" id="myvoice-file" accept="audio/*,.wav,.mp3,.m4a,.webm,.ogg,.flac,.aac,.opus" style="display:none;">
+                    <div id="myvoice-result" style="display:none; margin-top:.7rem; padding:.8rem; background:#f4effa; border:1px solid #e2d6f1; border-radius:10px;">
+                        <div id="myvoice-result-text" style="font-size:.9rem; color:#4a235a; line-height:1.5;"></div>
+                        <div style="display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.7rem;">
+                            <button type="button" id="myvoice-apply" style="border:none; border-radius:8px; padding:.5rem .85rem; font-weight:600; background:#eef3ff; color:#3b5bdb; cursor:pointer;"><i class="fas fa-check-circle"></i> Use this voice</button>
+                            <button type="button" id="myvoice-save" style="border:none; border-radius:8px; padding:.5rem .85rem; font-weight:600; background:#eaf6e6; color:#2e7d32; cursor:pointer;"><i class="fas fa-save"></i> Save as My Voice</button>
+                            <button type="button" id="myvoice-use" style="border:none; border-radius:8px; padding:.5rem .85rem; font-weight:600; background:#fdf2e3; color:#935116; cursor:pointer;"><i class="fas fa-cat"></i> Use saved</button>
+                            <button type="button" id="myvoice-clear" style="border:none; border-radius:8px; padding:.5rem .85rem; font-weight:600; background:#f1f2f6; color:#777; cursor:pointer;"><i class="fas fa-times"></i> Clear</button>
+                        </div>
+                    </div>
+                    <p style="font-size:.75rem; color:#b09a4a; margin:.55rem 0 0;"><i class="fas fa-shield-alt"></i> Private: your recording is analyzed and then immediately discarded — nothing is stored. Speak clearly for 10–30 seconds for the best match.</p>
+                </div>
+
                 <div class="tts-status" id="t2a-status" style="color:#6c3483; min-height:1.6em; margin-top:.9rem;"></div>
                 <div id="t2a-check" style="display:none; margin-top:.5rem;">
                     <a href="/downloads" style="text-decoration:none; font-weight:600; color:#6c3483;"><i class="fas fa-tasks"></i> Check progress in My Downloads →</a>
@@ -1271,12 +1296,18 @@
                     voiceSel.appendChild(o);
                     return;
                 }
+                var cOpt = document.createElement('option');
+                cOpt.value = '__custom__';
+                cOpt.textContent = '🎤 Custom Voice (My Voice)';
+                voiceSel.appendChild(cOpt);
                 list.forEach(function (v) {
                     var opt = document.createElement('option');
                     opt.value = v[0];
                     opt.textContent = v[1];
                     voiceSel.appendChild(opt);
                 });
+                voiceSel.value = list[0][0];
+                if (mvCard) show(mvCard, false);
             }
 
             function updateCount() {
@@ -1306,11 +1337,24 @@
                 var text = (textEl.value || '').trim();
                 if (!text) { statusEl.textContent = 'Please enter some text to convert.'; return; }
                 var filename = (t2aFilename || '').replace(/\.txt$/i, '') || 'audio';
+                var voice = voiceSel.value || '';
+                var rate = parseInt(rateRange ? rateRange.value : 100, 10) || 100;
+                var pitch = parseInt(pitchRange ? pitchRange.value : 0, 10) || 0;
+                if (voice === '__custom__') {
+                    var c = mvResolveCustom();
+                    if (!c) { statusEl.textContent = 'Record / upload your voice below first — then we pick the matching voice for you.'; return; }
+                    voice = c.voice;
+                    rate = c.rate;
+                    pitch = c.pitch;
+                    if (pitchRange) pitchRange.value = pitch;
+                    if (rateRange) rateRange.value = rate;
+                    mvSyncLabels();
+                }
                 var body = {
                     text: text,
-                    voice: voiceSel.value || '',
-                    rate: parseInt(rateRange ? rateRange.value : 100, 10) || 100,
-                    pitch: parseInt(pitchRange ? pitchRange.value : 0, 10) || 0,
+                    voice: voice,
+                    rate: rate,
+                    pitch: pitch,
                     filename: filename
                 };
                 goBtn.disabled = true;
@@ -1380,9 +1424,22 @@
 
             if (testBtn) testBtn.addEventListener('click', function () {
                 if (!voiceSel.value) { testMsg.textContent = 'Pick a voice first.'; return; }
-                var url = '/api/text2audio/preview?voice=' + encodeURIComponent(voiceSel.value)
-                    + '&rate=' + (rateRange ? rateRange.value : 100)
-                    + '&pitch=' + (pitchRange ? pitchRange.value : 0);
+                var tv = voiceSel.value;
+                var tRate = rateRange ? rateRange.value : 100;
+                var tPitch = pitchRange ? pitchRange.value : 0;
+                if (tv === '__custom__') {
+                    var c = mvResolveCustom();
+                    if (!c) { testMsg.textContent = 'Record / upload your voice below first — then we pick the matching voice for you.'; return; }
+                    tv = c.voice;
+                    tRate = c.rate;
+                    tPitch = c.pitch;
+                    if (pitchRange) pitchRange.value = tPitch;
+                    if (rateRange) rateRange.value = tRate;
+                    mvSyncLabels();
+                }
+                var url = '/api/text2audio/preview?voice=' + encodeURIComponent(tv)
+                    + '&rate=' + tRate
+                    + '&pitch=' + tPitch;
                 testMsg.textContent = 'Generating preview...';
                 testBtn.disabled = true;
                 fetch(url)
@@ -1474,6 +1531,255 @@
                     readyPlayer.load();
                 });
             }
+
+            /* ---------- My Voice: match pitch & speed to your own ---------- */
+            var myVoice = {
+                rec: null,
+                stream: null,
+                chunks: [],
+                timer: null,
+                secs: 0,
+                match: null,
+                suggestedRate: 100,
+                gender: 'male',
+                hz: null,
+                storageKey: 'meow_myvoice_v1',
+                lastApplied: null
+            };
+            var mvRecordBtn = document.getElementById('myvoice-record');
+            var mvRecordLabel = document.getElementById('myvoice-record-label');
+            var mvUploadBtn = document.getElementById('myvoice-upload');
+            var mvFile = document.getElementById('myvoice-file');
+            var mvStopBtn = document.getElementById('myvoice-stop');
+            var mvMsg = document.getElementById('myvoice-msg');
+            var mvRec = document.getElementById('myvoice-rec');
+            var mvTimer = document.getElementById('myvoice-timer');
+            var mvResult = document.getElementById('myvoice-result');
+            var mvResultText = document.getElementById('myvoice-result-text');
+            var mvBadge = document.getElementById('myvoice-badge');
+            var mvApplyBtn = document.getElementById('myvoice-apply');
+            var mvSaveBtn = document.getElementById('myvoice-save');
+            var mvUseBtn = document.getElementById('myvoice-use');
+            var mvClearBtn = document.getElementById('myvoice-clear');
+            var mvCard = document.getElementById('myvoice-card');
+
+            function setMvMsg(t) { if (mvMsg) mvMsg.textContent = t || ''; }
+            function mvSyncLabels() {
+                if (pitchVal) pitchVal.textContent = parseInt(pitchRange ? pitchRange.value : 0, 10) + 'Hz';
+                if (rateVal) rateVal.textContent = (parseInt(rateRange ? rateRange.value : 100, 10) / 100).toFixed(2) + 'x';
+            }
+            function mvResolveCustom() {
+                if (!voiceSel || voiceSel.value !== '__custom__') return null;
+                var p = mvLoadLocal();
+                if (p && p.voice) return { voice: p.voice, rate: parseInt(p.rate, 10) || 100, pitch: parseInt(p.pitch, 10) || 0 };
+                if (myVoice.match && myVoice.match.voice) return { voice: myVoice.match.voice, rate: myVoice.suggestedRate || 100, pitch: myVoice.match.pitch || 0 };
+                return null;
+            }
+            if (voiceSel) voiceSel.addEventListener('change', function () {
+                if (voiceSel.value === '__custom__') {
+                    show(mvCard, true);
+                    setMvMsg('Record or upload your voice below — we pick the matching voice for you.');
+                } else {
+                    show(mvCard, false);
+                }
+            });
+            function signedIn() {
+                try { var u = window.ScanAuth && window.ScanAuth.getUser(); return !!(u && u.uid); } catch (e) { return false; }
+            }
+            function mvFindVoiceLang(voiceId) {
+                var codes = Object.keys(voices || {});
+                for (var i = 0; i < codes.length; i++) {
+                    var list = voices[codes[i]] || [];
+                    for (var j = 0; j < list.length; j++) {
+                        if (list[j][0] === voiceId) return codes[i];
+                    }
+                }
+                return null;
+            }
+            function mvSetControls(voiceId, rate, pitch) {
+                if (voiceId) {
+                    var code = mvFindVoiceLang(voiceId);
+                    if (code && langSel && langSel.value !== code) {
+                        langSel.value = code;
+                        populateVoices();
+                    }
+                    if (voiceSel) {
+                        var found = false;
+                        for (var i = 0; i < (voiceSel.options || []).length; i++) {
+                            if (voiceSel.options[i].value === voiceId) { found = true; break; }
+                        }
+                        if (found) voiceSel.value = voiceId;
+                    }
+                }
+                if (pitchRange && typeof pitch === 'number' && !isNaN(pitch)) pitchRange.value = pitch;
+                if (rateRange && typeof rate === 'number' && !isNaN(rate)) rateRange.value = rate;
+                mvSyncLabels();
+            }
+            function mvShowResult(data) {
+                myVoice.match = data.match;
+                myVoice.suggestedRate = data.suggested_rate || 100;
+                myVoice.gender = data.gender;
+                myVoice.hz = data.median_hz;
+                if (!mvResult || !mvResultText) return;
+                var html = 'Detected <b>' + Math.round(data.median_hz) + ' Hz</b> (' + (data.gender || 'voice') + ', ~' + (data.wpm || '?') + ' wpm) → ';
+                var m = data.match;
+                if (m && m.voice) {
+                    html += 'matched <b>' + (m.label || m.voice) + '</b> · Pitch <b>' + m.pitch + 'Hz</b> · Speed <b>' + (parseInt(data.suggested_rate, 10) / 100).toFixed(2) + 'x</b>';
+                } else {
+                    html += 'no matching built-in voice in this language — use the sliders to match your pitch manually.';
+                }
+                mvResultText.innerHTML = html;
+                show(mvResult, true);
+                mvSetControls(m && m.voice ? m.voice : null, data.suggested_rate, m ? m.pitch : 0);
+                setMvMsg('Applied. Tap "Test voice" to hear it — tweak if you like.');
+            }
+            function mvAnalyze(blob, filename) {
+                var fd = new FormData();
+                fd.append('audio', blob, filename || 'voice.webm');
+                fd.append('lang', langSel ? langSel.value : 'en');
+                setMvMsg('Analyzing your voice...');
+                fetch('/api/voice/analyze', { method: 'POST', body: fd })
+                    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { setMvMsg(res.d.error || 'Could not analyze that audio.'); return; }
+                        mvShowResult(res.d);
+                    })
+                    .catch(function () { setMvMsg('Network error analyzing audio. Please try again.'); });
+            }
+            function mvStopStream() {
+                if (myVoice.stream) { myVoice.stream.getTracks().forEach(function (t) { t.stop(); }); myVoice.stream = null; }
+            }
+            function mvStartTimer() {
+                myVoice.secs = 0;
+                if (mvTimer) mvTimer.textContent = '0s';
+                myVoice.timer = setInterval(function () {
+                    myVoice.secs++;
+                    if (mvTimer) mvTimer.textContent = myVoice.secs + 's';
+                    if (myVoice.secs >= 60) { if (mvStopBtn) mvStopBtn.click(); }
+                }, 1000);
+            }
+            function mvStopTimer() { if (myVoice.timer) { clearInterval(myVoice.timer); myVoice.timer = null; } }
+            function mvUpdateRecUI(on) {
+                if (mvRec) mvRec.style.display = on ? '' : 'none';
+                if (mvStopBtn) mvStopBtn.style.display = on ? '' : 'none';
+                if (mvRecordBtn) mvRecordBtn.disabled = on;
+                if (mvRecordLabel) mvRecordLabel.textContent = on ? 'Recording…' : 'Record';
+            }
+            if (mvRecordBtn && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                mvRecordBtn.addEventListener('click', function () {
+                    if (myVoice.rec) return;
+                    navigator.mediaDevices.getUserMedia({ audio: true })
+                        .then(function (stream) {
+                            myVoice.stream = stream;
+                            myVoice.chunks = [];
+                            var rec;
+                            try { rec = new MediaRecorder(stream, { mimeType: 'audio/webm' }); }
+                            catch (e) { rec = new MediaRecorder(stream); }
+                            myVoice.rec = rec;
+                            rec.ondataavailable = function (e) { if (e.data && e.data.size) myVoice.chunks.push(e.data); };
+                            rec.onstop = function () {
+                                var blob = new Blob(myVoice.chunks, { type: rec.mimeType || 'audio/webm' });
+                                mvStopStream();
+                                myVoice.rec = null;
+                                mvStopTimer();
+                                mvUpdateRecUI(false);
+                                mvAnalyze(blob, 'recorded.webm');
+                            };
+                            rec.start();
+                            mvStartTimer();
+                            mvUpdateRecUI(true);
+                            setMvMsg('Speak clearly for 10–30 seconds, then tap Stop.');
+                        })
+                        .catch(function () { setMvMsg('Microphone permission denied, or mic not available on this browser.'); });
+                });
+            } else if (mvRecordBtn) {
+                mvRecordBtn.addEventListener('click', function () { setMvMsg('Recording needs HTTPS + microphone access — try uploading an audio file instead.'); });
+            }
+            if (mvStopBtn) mvStopBtn.addEventListener('click', function () {
+                if (myVoice.rec && myVoice.rec.state !== 'inactive') { try { myVoice.rec.stop(); } catch (e) {} }
+            });
+            if (mvUploadBtn && mvFile) {
+                mvUploadBtn.addEventListener('click', function () { mvFile.click(); });
+                mvFile.addEventListener('change', function () {
+                    var f = mvFile.files[0];
+                    if (!f) return;
+                    mvAnalyze(f, f.name || 'voice_sample');
+                    mvFile.value = '';
+                });
+            }
+            if (mvApplyBtn) mvApplyBtn.addEventListener('click', function () {
+                var m = myVoice.match;
+                if (!m) { setMvMsg('Analyze a sample first to get a voice match.'); return; }
+                mvSetControls(m.voice, myVoice.suggestedRate, m.pitch);
+                setMvMsg('Applied. Tap "Test voice" to hear it.');
+            });
+            function mvSaveLocal(label) {
+                var m = myVoice.match;
+                if (!m) { setMvMsg('Analyze a sample first, then save.'); return; }
+                var preset = {
+                    voice: m.voice,
+                    rate: myVoice.suggestedRate,
+                    pitch: m.pitch,
+                    hz: myVoice.hz,
+                    label: label || 'My Voice',
+                    saved_at: Date.now()
+                };
+                try { localStorage.setItem(myVoice.storageKey, JSON.stringify(preset)); } catch (e) {}
+                if (mvBadge) { mvBadge.textContent = '💾 Saved · ' + preset.label; mvBadge.style.display = ''; }
+                if (signedIn()) {
+                    fetch('/api/voice/preset', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(preset)
+                    }).catch(function () {});
+                }
+                setMvMsg('Saved as "' + preset.label + '" — available below any time.');
+            }
+            if (mvSaveBtn) mvSaveBtn.addEventListener('click', function () {
+                var label = 'My Voice';
+                var nm = prompt('Name this voice (e.g. your name):', label);
+                if (nm === null) return;
+                label = (nm || '').trim() || label;
+                mvSaveLocal(label);
+            });
+            function mvLoadLocal() {
+                try {
+                    var raw = localStorage.getItem(myVoice.storageKey);
+                    return raw ? JSON.parse(raw) : null;
+                } catch (e) { return null; }
+            }
+            function mvApplyPreset(p) {
+                if (!p || !p.voice) return;
+                mvSetControls(p.voice, p.rate, p.pitch);
+                setMvMsg('Applied saved voice "' + (p.label || 'My Voice') + '". Tap "Test voice" to hear it.');
+            }
+            if (mvUseBtn) mvUseBtn.addEventListener('click', function () {
+                var p = mvLoadLocal();
+                if (!p) { setMvMsg('No saved voice yet — record or upload a sample and save it.'); return; }
+                mvApplyPreset(p);
+            });
+            if (mvClearBtn) mvClearBtn.addEventListener('click', function () {
+                try { localStorage.removeItem(myVoice.storageKey); } catch (e) {}
+                if (mvBadge) mvBadge.style.display = 'none';
+                if (mvResult) mvResult.style.display = 'none';
+                myVoice.match = null;
+                setMvMsg('Cleared. Your existing voice selections are unchanged.');
+            });
+            (function mvInit() {
+                var p = mvLoadLocal();
+                if (p && mvBadge) { mvBadge.textContent = '💾 Saved · ' + (p.label || 'My Voice'); mvBadge.style.display = ''; }
+                if (signedIn()) {
+                    fetch('/api/voice/preset')
+                        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                        .then(function (res) {
+                            if (res.ok && res.d && res.d.voice && !localStorage.getItem(myVoice.storageKey)) {
+                                try { localStorage.setItem(myVoice.storageKey, JSON.stringify(res.d)); } catch (e) {}
+                                if (mvBadge) { mvBadge.textContent = '💾 Saved · ' + (res.d.label || 'My Voice'); mvBadge.style.display = ''; }
+                            }
+                        })
+                        .catch(function () {});
+                }
+            })();
 
             loadVoices();
         })();
