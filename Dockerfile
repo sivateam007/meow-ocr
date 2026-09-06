@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-jpn \
     tesseract-ocr-kor \
     poppler-utils \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory

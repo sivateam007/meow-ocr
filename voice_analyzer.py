@@ -19,16 +19,34 @@ def find_ffmpeg():
 
 
 def decode_to_pcm(audio_path, sr=SAMPLE_RATE):
-    """Decode any audio file to mono float32 PCM at ``sr`` via ffmpeg."""
+    """Decode any audio file to mono float32 PCM at ``sr`` via ffmpeg.
+    Falls back to a pure-Python WAV decoder (PCM) when ffmpeg is absent."""
     ff = find_ffmpeg()
-    if not ff:
-        raise RuntimeError("ffmpeg not found on this server")
-    cmd = [ff, "-v", "error", "-i", audio_path, "-f", "s16le", "-ac", "1", "-ar", str(sr), "-"]
-    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if proc.returncode != 0 or not proc.stdout:
-        err = (proc.stderr or b"").decode("utf-8", "replace")[:300]
-        raise ValueError(err or "Could not decode audio")
-    arr = np.frombuffer(proc.stdout, dtype=np.int16).astype(np.float32) / 32768.0
+    if ff:
+        cmd = [ff, "-v", "error", "-i", audio_path, "-f", "s16le", "-ac", "1", "-ar", str(sr), "-"]
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if proc.returncode != 0 or not proc.stdout:
+            err = (proc.stderr or b"").decode("utf-8", "replace")[:300]
+            raise ValueError(err or "Could not decode audio")
+        arr = np.frombuffer(proc.stdout, dtype=np.int16).astype(np.float32) / 32768.0
+        if arr.size < sr:
+            raise ValueError("Audio is too short (need at least 1 second)")
+        return arr
+    import wave
+    with wave.open(audio_path, "rb") as w:
+        nch, sw, fr, nframes = w.getnchannels(), w.getsampwidth(), w.getframerate(), w.getnframes()
+        frames = w.readframes(nframes)
+    if sw == 2:
+        arr = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
+    elif sw == 1:
+        arr = (np.frombuffer(frames, dtype=np.uint8).astype(np.float32) - 128.0) / 128.0
+    else:
+        raise ValueError("Unsupported WAV sample width in fallback decoder (need ffmpeg)")
+    if nch > 1:
+        arr = arr.reshape(-1, nch).mean(axis=1)
+    if fr != sr:
+        arr = np.interp(np.linspace(0, arr.size - 1, int(arr.size * sr / fr)),
+                        np.arange(arr.size), arr)
     if arr.size < sr:
         raise ValueError("Audio is too short (need at least 1 second)")
     return arr
