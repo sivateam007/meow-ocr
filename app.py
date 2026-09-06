@@ -4610,28 +4610,20 @@ def _text2audio_worker(token, text, voice, rate, pitch, base_name="audio"):
         _save_progress(force=True)
 
 
-@app.route('/api/text2audio', methods=['POST'])
-def text2audio_create():
-    """Accept pasted/uploaded text, start MP3 conversion, return a token for polling."""
-    data = request.get_json(silent=True) or {}
-    text = (data.get("text") or "").strip()
-    if not text:
-        return jsonify({"error": "Please enter some text to convert."}), 400
-    voice = (data.get("voice") or "").strip()
-    if voice and not _looks_like_cat_voice(voice):
-        voice = ""
-    rate = int(data.get("rate", 100))
-    rate = max(TTS_RATE_MIN, min(TTS_RATE_MAX, rate))
-    pitch = int(data.get("pitch", 0))
-    pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, pitch))
-    # Use the uploaded file's base name for the MP3 (fall back to 'audio').
-    base_name = (data.get("filename") or "").strip()
-    if not base_name:
-        base_name = "audio"
-    base_name = os.path.basename(base_name)
-    base_name = (base_name or "audio").split(".")[0].strip() or "audio"
-    base_name = re.sub(r'[^\w\-\s]', '', base_name).strip()[:80] or "audio"
+def _sanitize_audio_base(name):
+    name = (name or "").strip()
+    if not name:
+        name = "audio"
+    name = os.path.basename(name)
+    name = (name or "audio").split(".")[0].strip() or "audio"
+    name = re.sub(r'[^\w\-\s]', '', name).strip()[:80] or "audio"
+    return name
 
+
+def _start_text2audio_task(text, voice, rate, pitch, base_name="audio"):
+    """Register a text-to-audio task (shows in My Downloads) and start its worker.
+    Returns the polling token."""
+    base_name = _sanitize_audio_base(base_name)
     token = uuid.uuid4().hex[:16]
     p_id = f"t2a_{token}"
     with text2audio_lock:
@@ -4640,13 +4632,12 @@ def text2audio_create():
             "link": "", "mega_link": "", "path": None, "filename": None,
             "created_at": time.time(),
         }
-    # Register immediately so the task shows in My Downloads as "In progress..." (background).
     with progress_lock:
         progress_tracker[p_id] = {
             "status": "processing",
             "file_type": "text_to_audio",
             "audio": True,
-            "filename": "Audio conversion",
+            "filename": f"Audio conversion · {base_name}",
             "output_filename": None,
             "output_path": None,
             "download_link": "",
@@ -4665,7 +4656,77 @@ def text2audio_create():
         }
     _save_progress(force=True)
     threading.Thread(target=_text2audio_worker, args=(token, text, voice, rate, pitch, base_name), daemon=True).start()
+    return token
+
+
+@app.route('/api/text2audio', methods=['POST'])
+def text2audio_create():
+    """Accept pasted/uploaded text, start MP3 conversion, return a token for polling."""
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "Please enter some text to convert."}), 400
+    voice = (data.get("voice") or "").strip()
+    if voice and not _looks_like_cat_voice(voice):
+        voice = ""
+    rate = int(data.get("rate", 100))
+    rate = max(TTS_RATE_MIN, min(TTS_RATE_MAX, rate))
+    pitch = int(data.get("pitch", 0))
+    pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, pitch))
+    base_name = _sanitize_audio_base(data.get("filename") or "audio")
+    token = _start_text2audio_task(text, voice, rate, pitch, base_name)
     return jsonify({"ok": True, "token": token}), 202
+
+
+@app.route('/api/text2audio/batch', methods=['POST'])
+def text2audio_batch():
+    """Upload multiple .txt files and convert each into its own MP3 (max 5)."""
+    files = request.files.getlist("files")
+    files = [f for f in files if f and f.filename]
+    if not files:
+        return jsonify({"error": "Choose at least one .txt file."}), 400
+    if len(files) > 5:
+        files = files[:5]
+    voice = (request.form.get("voice") or "").strip()
+    if voice and not _looks_like_cat_voice(voice):
+        voice = ""
+    try:
+        rate = int(request.form.get("rate") or 100)
+        rate = max(TTS_RATE_MIN, min(TTS_RATE_MAX, rate))
+    except (TypeError, ValueError):
+        rate = 100
+    try:
+        pitch = int(request.form.get("pitch") or 0)
+        pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, pitch))
+    except (TypeError, ValueError):
+        pitch = 0
+    results, errors = [], []
+    for f in files:
+        name = os.path.basename(f.filename or "")
+        if not name:
+            continue
+        ext = os.path.splitext(name)[1].lower()
+        if ext != ".txt":
+            errors.append({"filename": name, "error": "Only .txt files are supported."})
+            continue
+        raw = f.read()[:200000]
+        text = raw.decode("utf-8", errors="replace").strip()
+        if not text:
+            errors.append({"filename": name, "error": "The file is empty."})
+            continue
+        base_name = os.path.splitext(name)[0]
+        token = _start_text2audio_task(text, voice, rate, pitch, base_name or "audio")
+        results.append({
+            "token": token,
+            "filename": name,
+            "base_name": base_name or "audio",
+            "words": len(text.split()),
+            "status": "queued",
+        })
+    if not results:
+        msg = errors[0]["error"] if errors else "No files could be converted."
+        return jsonify({"error": msg}), 400
+    return jsonify({"ok": True, "files": results, "errors": errors}), 202
 
 
 @app.route('/api/text2audio/<token>')

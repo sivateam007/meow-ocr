@@ -418,6 +418,24 @@
                     <p style="font-size:.75rem; color:#b09a4a; margin:.55rem 0 0;"><i class="fas fa-shield-alt"></i> Private: your recording is analyzed and then immediately discarded — nothing is stored. Speak clearly for 10–30 seconds for the best match.</p>
                 </div>
 
+                <div class="tts-batch" id="tts-batch" style="margin-top:.9rem; padding:1rem 1.1rem; background:#f4f9ff; border:1px dashed #7fb3e8; border-radius:12px;">
+                    <div style="display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-bottom:.5rem;">
+                        <h4 style="margin:0; color:#1f5f96; font-size:.98rem;"><i class="fas fa-folder-open" style="margin-right:.25rem;"></i>Batch files <span style="font-weight:400; color:#8a8a8a;">— convert multiple .txt files into MP3s at once</span></h4>
+                        <span id="t2a-batch-badge" style="display:none; font-size:.72rem; background:#e8f2fc; color:#1f5f96; padding:.18rem .55rem; border-radius:20px;"></span>
+                    </div>
+                    <input type="file" id="t2a-files" accept=".txt" multiple style="display:none;">
+                    <label for="t2a-files" class="upload-box" style="padding:1.1rem; background:#f8fbff; border-color:#cfe3f7; cursor:pointer;">
+                        <i class="fas fa-file-upload" style="font-size:1.4rem; color:#2f7bc4; margin-bottom:.3rem;"></i>
+                        <div class="upload-text" style="margin:0;">Choose one or more .txt files (up to 5)</div>
+                    </label>
+                    <div id="t2a-files-list" style="margin-top:.5rem;"></div>
+                    <div style="display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-top:.55rem;">
+                        <button type="button" id="t2a-batch-go" disabled style="border:none; border-radius:8px; padding:.6rem 1rem; font-weight:600; background:linear-gradient(135deg,#2f7bc4 0%,#1f5f96 100%); color:#fff; cursor:pointer;"><i class="fas fa-cogs"></i> <span id="t2a-batch-go-label">Convert All</span></button>
+                        <span id="t2a-batch-msg" style="font-size:.82rem; color:#1f5f96;"></span>
+                    </div>
+                    <p style="font-size:.75rem; color:#8aa6c2; margin:.5rem 0 0;">Each file becomes its own MP3 using the voice, speed &amp; pitch chosen above — then lands in My Downloads.</p>
+                </div>
+
                 <div class="tts-status" id="t2a-status" style="color:#6c3483; min-height:1.6em; margin-top:.9rem;"></div>
                 <div id="t2a-check" style="display:none; margin-top:.5rem;">
                     <a href="/downloads" style="text-decoration:none; font-weight:600; color:#6c3483;"><i class="fas fa-tasks"></i> Check progress in My Downloads →</a>
@@ -1518,6 +1536,112 @@
                         });
                 });
             }
+
+            /* ---------- Batch conversion: multiple .txt files → MP3s ---------- */
+            var batchFiles = document.getElementById('t2a-files');
+            var batchList = document.getElementById('t2a-files-list');
+            var batchGo = document.getElementById('t2a-batch-go');
+            var batchGoLabel = document.getElementById('t2a-batch-go-label');
+            var batchMsg = document.getElementById('t2a-batch-msg');
+            var batchBadge = document.getElementById('t2a-batch-badge');
+            function setBMsg(t) { if (batchMsg) batchMsg.textContent = t || ''; }
+            function bFmtSize(n) {
+                if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+                return Math.max(1, Math.round(n / 1024)) + ' KB';
+            }
+            function batchRender() {
+                var fs = batchFiles && batchFiles.files ? Array.prototype.slice.call(batchFiles.files) : [];
+                if (batchBadge) {
+                    batchBadge.style.display = fs.length ? '' : 'none';
+                    batchBadge.textContent = fs.length + ' selected';
+                }
+                if (!batchList) return;
+                batchList.innerHTML = '';
+                fs.forEach(function (f) {
+                    var row = document.createElement('div');
+                    row.style.cssText = 'display:flex;align-items:center;gap:.5rem;padding:.35rem .55rem;background:#fff;border:1px solid #dde8f5;border-radius:8px;margin-bottom:.3rem;font-size:.85rem;';
+                    row.innerHTML = '<i class="fas fa-file-alt" style="color:#2f7bc4;"></i> <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left;">' + f.name + '</span> <span style="color:#8a8a8a;font-size:.78rem;">' + bFmtSize(f.size) + '</span>';
+                    batchList.appendChild(row);
+                });
+            }
+            if (batchFiles) batchFiles.addEventListener('change', function () {
+                batchRender();
+                var n = batchFiles.files ? batchFiles.files.length : 0;
+                if (batchGo) batchGo.disabled = n === 0;
+                if (batchGoLabel) batchGoLabel.textContent = n ? 'Convert All (' + n + ')' : 'Convert All';
+                setBMsg(n ? 'Files ready — pick voice, speed & pitch above, then convert.' : '');
+            });
+            function pollBatch(items) {
+                var pending = items.slice();
+                var tick = function () {
+                    var item = pending[0];
+                    if (!item) { return; }
+                    fetch('/api/text2audio/' + item.token)
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) {
+                            if (d.status === 'done' || d.status === 'error') {
+                                pending.shift();
+                                var left = pending.length;
+                                if (left) {
+                                    setBMsg('Converting… ' + (items.length - left) + ' of ' + items.length + ' done.');
+                                } else {
+                                    setBMsg('All done! Your MP3s are waiting in My Downloads.');
+                                    if (batchGo) batchGo.disabled = false;
+                                    if (batchGoLabel) batchGoLabel.textContent = 'Convert All';
+                                    if (batchFiles) batchFiles.value = '';
+                                    batchRender();
+                                }
+                            }
+                            if (pending.length) setTimeout(tick, 2000);
+                        })
+                        .catch(function () { if (pending.length) setTimeout(tick, 2500); });
+                };
+                tick();
+            }
+            if (batchGo) batchGo.addEventListener('click', function () {
+                if (!batchFiles || !batchFiles.files || !batchFiles.files.length) return;
+                var fs = Array.prototype.slice.call(batchFiles.files).slice(0, 5);
+                var bv = voiceSel.value || '';
+                var bRate = rateRange ? rateRange.value : 100;
+                var bPitch = pitchRange ? pitchRange.value : 0;
+                if (bv === '__custom__') {
+                    var c = mvResolveCustom();
+                    if (!c) { setBMsg('Record / upload your voice below first — then we pick the matching voice for you.'); return; }
+                    bv = c.voice;
+                    bRate = c.rate;
+                    bPitch = c.pitch;
+                    if (pitchRange) pitchRange.value = bPitch;
+                    if (rateRange) rateRange.value = bRate;
+                    mvSyncLabels();
+                }
+                var fd = new FormData();
+                fs.forEach(function (f) { fd.append('files', f, f.name); });
+                fd.append('voice', bv);
+                fd.append('rate', bRate);
+                fd.append('pitch', bPitch);
+                batchGo.disabled = true;
+                batchGoLabel.textContent = 'Converting…';
+                setBMsg('Uploading ' + fs.length + ' file(s)...');
+                fetch('/api/text2audio/batch', { method: 'POST', body: fd })
+                    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                    .then(function (res) {
+                        if (!res.ok) {
+                            batchGo.disabled = false;
+                            batchGoLabel.textContent = 'Convert All';
+                            setBMsg(res.d.error || 'Could not start batch conversion.');
+                            return;
+                        }
+                        var items = res.d.files || [];
+                        if (!items.length) { batchGo.disabled = false; batchGoLabel.textContent = 'Convert All'; setBMsg(res.d.errors && res.d.errors[0] ? res.d.errors[0].error : 'No files could be converted.'); return; }
+                        setBMsg(items.length + ' conversion(s) started — ' + items.map(function (i) { return i.filename; }).join(', ') + '.');
+                        pollBatch(items);
+                    })
+                    .catch(function () {
+                        batchGo.disabled = false;
+                        batchGoLabel.textContent = 'Convert All';
+                        setBMsg('Network error. Please try again.');
+                    });
+            });
 
             if (listenBtn && readyPlayer) {
                 listenBtn.addEventListener('click', function () {
