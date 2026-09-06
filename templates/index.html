@@ -1473,14 +1473,28 @@
                 listenTextBtn.addEventListener('click', function () {
                     var txt = (textEl.value || '').trim();
                     if (!txt) { listenTextMsg.textContent = 'Type some text first to listen.'; return; }
-                    if (!voiceSel.value) { listenTextMsg.textContent = 'Pick a voice first.'; return; }
+                    var lv = voiceSel.value || '';
+                    if (!lv) { listenTextMsg.textContent = 'Pick a voice first.'; return; }
+                    var lRate = rateRange ? rateRange.value : 100;
+                    var lPitch = pitchRange ? pitchRange.value : 0;
+                    if (lv === '__custom__') {
+                        var c = mvResolveCustom();
+                        if (!c) { listenTextMsg.textContent = 'Record / upload your voice below first — then we pick the matching voice for you.'; return; }
+                        lv = c.voice;
+                        lRate = c.rate;
+                        lPitch = c.pitch;
+                        if (pitchRange) pitchRange.value = lPitch;
+                        if (rateRange) rateRange.value = lRate;
+                        mvSyncLabels();
+                    }
                     listenTextMsg.textContent = 'Generating preview of your text...';
                     listenTextBtn.disabled = true;
-                    var url = '/api/text2audio/preview?voice=' + encodeURIComponent(voiceSel.value)
-                        + '&rate=' + (rateRange ? rateRange.value : 100)
-                        + '&pitch=' + (pitchRange ? pitchRange.value : 0)
-                        + '&text=' + encodeURIComponent(txt);
-                    fetch(url)
+                    var fd = new FormData();
+                    fd.append('voice', lv);
+                    fd.append('rate', lRate);
+                    fd.append('pitch', lPitch);
+                    fd.append('text', txt);
+                    fetch('/api/text2audio/preview', { method: 'POST', body: fd })
                         .then(function (r) { if (!r.ok) throw new Error('bad status'); return r.blob(); })
                         .then(function (blob) {
                             if (listenTextPlayer.__url) URL.revokeObjectURL(listenTextPlayer.__url);

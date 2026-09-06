@@ -4318,21 +4318,23 @@ def text2audio_voices():
     return jsonify(TTS_CAT_VOICES)
 
 
-@app.route('/api/text2audio/preview')
+@app.route('/api/text2audio/preview', methods=['GET', 'POST'])
 def text2audio_preview():
     """Synthesize a short sample with the chosen voice/rate/pitch and stream it for live playback.
-    If a 'text' param is given, preview that text (truncated) instead of the default phrase."""
-    voice = (request.args.get("voice") or "").strip()
+    'text' may come as a GET query or POST form field; it is truncated to a short sample so the
+    preview stays fast (and long text never bloats a URL, which some proxies reject)."""
+    voice = (request.args.get("voice") or request.form.get("voice") or "").strip()
     if not _looks_like_cat_voice(voice):
         voice = ""
-    rate = request.args.get("rate", 100)
-    pitch = request.args.get("pitch", 0)
     try:
-        rate = max(TTS_RATE_MIN, min(TTS_RATE_MAX, int(rate)))
-        pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, int(pitch)))
+        rate = max(TTS_RATE_MIN, min(TTS_RATE_MAX, int(request.args.get("rate") or request.form.get("rate") or 100)))
     except (TypeError, ValueError):
-        rate, pitch = 100, 0
-    text = (request.args.get("text") or "").strip()
+        rate = 100
+    try:
+        pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, int(request.args.get("pitch") or request.form.get("pitch") or 0)))
+    except (TypeError, ValueError):
+        pitch = 0
+    text = (request.args.get("text") or request.form.get("text") or "").strip()
     if text:
         words = text.split()
         if len(words) > 120:
