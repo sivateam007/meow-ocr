@@ -363,12 +363,19 @@
                 </div>
                 <p class="page-subtitle" style="margin-top:.25rem;">Paste or type text, pick a cat voice, then convert it into a downloadable MP3 that's saved to cloud.</p>
 
-                <div class="file-input-wrapper" style="margin-bottom:.75rem;">
-                    <input type="file" id="t2a-file" accept=".txt" style="display:none;">
+                <div class="file-input-wrapper" style="margin-bottom:.5rem;">
+                    <input type="file" id="t2a-file" accept=".txt" multiple style="display:none;">
                     <label for="t2a-file" class="upload-box" style="padding:1.5rem; background:#faf8ff; border-color:#ddd; cursor:pointer;">
                         <i class="fas fa-file-upload" style="font-size:1.5rem; color:#8e44ad; margin-bottom:.4rem;"></i>
-                        <div class="upload-text" style="margin:0;">Click to load a .txt file, or paste below</div>
+                        <div class="upload-text" style="margin:0;">Click to load one or more .txt files — each becomes its own MP3</div>
                     </label>
+                    <div id="t2a-files-list" style="margin-top:.55rem;"></div>
+                    <div style="display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-top:.55rem;">
+                        <button type="button" id="t2a-batch-go" disabled style="border:none; border-radius:8px; padding:.55rem 1rem; font-weight:600; background:linear-gradient(135deg,#2f7bc4 0%,#1f5f96 100%); color:#fff; cursor:pointer;"><i class="fas fa-cogs"></i> <span id="t2a-batch-go-label">Convert All</span></button>
+                        <button type="button" id="t2a-batch-clear" style="display:none; border:none; background:none; color:#8a8a8a; cursor:pointer; font-size:.82rem; padding:.3rem;"><i class="fas fa-times"></i> Clear files</button>
+                        <span id="t2a-batch-msg" style="font-size:.82rem; color:#1f5f96;"></span>
+                    </div>
+                    <p style="font-size:.75rem; color:#9b9baa; margin:.5rem 0 0;"><i class="fas fa-info-circle"></i> Pick more files any time to add them to the queue (up to 5). Selecting a single file also loads it below for quick preview. Each file lands in My Downloads as its own MP3.</p>
                 </div>
 
                 <textarea id="t2a-text" rows="7" spellcheck="false" style="width:100%; border:1px solid #ddd; border-radius:10px; padding:.8rem .9rem; font-size:.95rem; resize:vertical;" placeholder="Type or paste the text you want to listen to..."></textarea>
@@ -416,24 +423,6 @@
                         </div>
                     </div>
                     <p style="font-size:.75rem; color:#b09a4a; margin:.55rem 0 0;"><i class="fas fa-shield-alt"></i> Private: your recording is analyzed and then immediately discarded — nothing is stored. Speak clearly for 10–30 seconds for the best match.</p>
-                </div>
-
-                <div class="tts-batch" id="tts-batch" style="margin-top:.9rem; padding:1rem 1.1rem; background:#f4f9ff; border:1px dashed #7fb3e8; border-radius:12px;">
-                    <div style="display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-bottom:.5rem;">
-                        <h4 style="margin:0; color:#1f5f96; font-size:.98rem;"><i class="fas fa-folder-open" style="margin-right:.25rem;"></i>Batch files <span style="font-weight:400; color:#8a8a8a;">— convert multiple .txt files into MP3s at once</span></h4>
-                        <span id="t2a-batch-badge" style="display:none; font-size:.72rem; background:#e8f2fc; color:#1f5f96; padding:.18rem .55rem; border-radius:20px;"></span>
-                    </div>
-                    <input type="file" id="t2a-files" accept=".txt" multiple style="display:none;">
-                    <label for="t2a-files" class="upload-box" style="padding:1.1rem; background:#f8fbff; border-color:#cfe3f7; cursor:pointer;">
-                        <i class="fas fa-file-upload" style="font-size:1.4rem; color:#2f7bc4; margin-bottom:.3rem;"></i>
-                        <div class="upload-text" style="margin:0;">Choose one or more .txt files (up to 5)</div>
-                    </label>
-                    <div id="t2a-files-list" style="margin-top:.5rem;"></div>
-                    <div style="display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-top:.55rem;">
-                        <button type="button" id="t2a-batch-go" disabled style="border:none; border-radius:8px; padding:.6rem 1rem; font-weight:600; background:linear-gradient(135deg,#2f7bc4 0%,#1f5f96 100%); color:#fff; cursor:pointer;"><i class="fas fa-cogs"></i> <span id="t2a-batch-go-label">Convert All</span></button>
-                        <span id="t2a-batch-msg" style="font-size:.82rem; color:#1f5f96;"></span>
-                    </div>
-                    <p style="font-size:.75rem; color:#8aa6c2; margin:.5rem 0 0;">Each file becomes its own MP3 using the voice, speed &amp; pitch chosen above — then lands in My Downloads.</p>
                 </div>
 
                 <div class="tts-status" id="t2a-status" style="color:#6c3483; min-height:1.6em; margin-top:.9rem;"></div>
@@ -1343,12 +1332,26 @@
             if (langSel) langSel.addEventListener('change', populateVoices);
             if (textEl) textEl.addEventListener('input', updateCount);
             if (fileInput) fileInput.addEventListener('change', function () {
-                var f = fileInput.files[0];
-                if (!f) return;
-                t2aFilename = f.name || '';
-                var reader = new FileReader();
-                reader.onload = function () { textEl.value = (reader.result || '').slice(0, 200000); updateCount(); };
-                reader.readAsText(f);
+                var fs = Array.prototype.slice.call(fileInput.files || []).slice(0, 5);
+                fileInput.value = '';
+                if (!fs.length) return;
+                if (fs.length === 1 || !(textEl.value || '').trim()) {
+                    var preloadFile = fs[0];
+                    if (fs.length === 1) t2aFilename = preloadFile.name || '';
+                    var reader = new FileReader();
+                    reader.onload = function () { textEl.value = (reader.result || '').slice(0, 200000); updateCount(); };
+                    reader.readAsText(preloadFile);
+                }
+                fs.forEach(function (f) {
+                    var dup = t2aQueuedFiles.some(function (q) { return q.name === f.name && q.size === f.size && q.lastModified === f.lastModified; });
+                    if (!dup && t2aQueuedFiles.length < 5) t2aQueuedFiles.push(f);
+                });
+                batchRender();
+                var n = t2aQueuedFiles.length;
+                if (batchGo) batchGo.disabled = n === 0;
+                if (batchGoLabel) batchGoLabel.textContent = n ? 'Convert All (' + n + ')' : 'Convert All';
+                if (batchClear) batchClear.style.display = n ? '' : 'none';
+                setBMsg(n ? 'Pick voice, speed & pitch below, then hit Convert All.' : '');
             });
 
             goBtn.addEventListener('click', function () {
@@ -1538,38 +1541,58 @@
             }
 
             /* ---------- Batch conversion: multiple .txt files → MP3s ---------- */
-            var batchFiles = document.getElementById('t2a-files');
+            var t2aQueuedFiles = [];
             var batchList = document.getElementById('t2a-files-list');
             var batchGo = document.getElementById('t2a-batch-go');
             var batchGoLabel = document.getElementById('t2a-batch-go-label');
             var batchMsg = document.getElementById('t2a-batch-msg');
-            var batchBadge = document.getElementById('t2a-batch-badge');
+            var batchClear = document.getElementById('t2a-batch-clear');
             function setBMsg(t) { if (batchMsg) batchMsg.textContent = t || ''; }
             function bFmtSize(n) {
                 if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
                 return Math.max(1, Math.round(n / 1024)) + ' KB';
             }
-            function batchRender() {
-                var fs = batchFiles && batchFiles.files ? Array.prototype.slice.call(batchFiles.files) : [];
-                if (batchBadge) {
-                    batchBadge.style.display = fs.length ? '' : 'none';
-                    batchBadge.textContent = fs.length + ' selected';
-                }
-                if (!batchList) return;
-                batchList.innerHTML = '';
-                fs.forEach(function (f) {
-                    var row = document.createElement('div');
-                    row.style.cssText = 'display:flex;align-items:center;gap:.5rem;padding:.35rem .55rem;background:#fff;border:1px solid #dde8f5;border-radius:8px;margin-bottom:.3rem;font-size:.85rem;';
-                    row.innerHTML = '<i class="fas fa-file-alt" style="color:#2f7bc4;"></i> <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left;">' + f.name + '</span> <span style="color:#8a8a8a;font-size:.78rem;">' + bFmtSize(f.size) + '</span>';
-                    batchList.appendChild(row);
-                });
-            }
-            if (batchFiles) batchFiles.addEventListener('change', function () {
-                batchRender();
-                var n = batchFiles.files ? batchFiles.files.length : 0;
+            function batchRefresh() {
+                var n = t2aQueuedFiles.length;
                 if (batchGo) batchGo.disabled = n === 0;
                 if (batchGoLabel) batchGoLabel.textContent = n ? 'Convert All (' + n + ')' : 'Convert All';
-                setBMsg(n ? 'Files ready — pick voice, speed & pitch above, then convert.' : '');
+                if (batchClear) batchClear.style.display = n ? '' : 'none';
+            }
+            function batchRender() {
+                if (!batchList) return;
+                batchList.innerHTML = '';
+                t2aQueuedFiles.forEach(function (f, idx) {
+                    var row = document.createElement('div');
+                    row.style.cssText = 'display:flex;align-items:center;gap:.5rem;padding:.35rem .55rem;background:#fff;border:1px solid #dde8f5;border-radius:8px;margin-bottom:.3rem;font-size:.85rem;';
+                    var rm = document.createElement('button');
+                    rm.type = 'button';
+                    rm.title = 'Remove';
+                    rm.style.cssText = 'border:none;background:none;color:#c0392b;cursor:pointer;font-size:.95rem;line-height:1;padding:.1rem;';
+                    rm.innerHTML = '<i class="fas fa-times"></i>';
+                    rm.addEventListener('click', function () {
+                        t2aQueuedFiles.splice(idx, 1);
+                        batchRender();
+                        batchRefresh();
+                        if (!t2aQueuedFiles.length) setBMsg('');
+                    });
+                    var sp = document.createElement('span');
+                    sp.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left;';
+                    sp.textContent = f.name;
+                    var sz = document.createElement('span');
+                    sz.style.cssText = 'color:#8a8a8a;font-size:.78rem;';
+                    sz.textContent = bFmtSize(f.size);
+                    row.appendChild(rm);
+                    row.appendChild(sp);
+                    row.appendChild(sz);
+                    batchList.appendChild(row);
+                });
+                batchRefresh();
+            }
+            if (batchClear) batchClear.addEventListener('click', function () {
+                t2aQueuedFiles = [];
+                batchRender();
+                batchRefresh();
+                setBMsg('');
             });
             function pollBatch(items) {
                 var pending = items.slice();
@@ -1586,9 +1609,7 @@
                                     setBMsg('Converting… ' + (items.length - left) + ' of ' + items.length + ' done.');
                                 } else {
                                     setBMsg('All done! Your MP3s are waiting in My Downloads.');
-                                    if (batchGo) batchGo.disabled = false;
-                                    if (batchGoLabel) batchGoLabel.textContent = 'Convert All';
-                                    if (batchFiles) batchFiles.value = '';
+                                    t2aQueuedFiles = [];
                                     batchRender();
                                 }
                             }
@@ -1599,8 +1620,8 @@
                 tick();
             }
             if (batchGo) batchGo.addEventListener('click', function () {
-                if (!batchFiles || !batchFiles.files || !batchFiles.files.length) return;
-                var fs = Array.prototype.slice.call(batchFiles.files).slice(0, 5);
+                if (!t2aQueuedFiles.length) return;
+                var fs = t2aQueuedFiles.slice(0, 5);
                 var bv = voiceSel.value || '';
                 var bRate = rateRange ? rateRange.value : 100;
                 var bPitch = pitchRange ? pitchRange.value : 0;
