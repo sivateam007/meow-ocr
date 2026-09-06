@@ -1,6 +1,6 @@
-/* Meow Assistant chat widget — talks to /api/chat. The Groq API key is used
-   only by the server; this file never sees it. All user/Groq text is added
-   with textContent, never innerHTML, so it is XSS-safe. */
+/* Meow Assistant chat widget — talks to the server AI endpoint. No keys or
+   provider details are exposed to the browser; all AI text is added with
+   textContent, never innerHTML, so it is XSS-safe. */
 (function () {
     'use strict';
 
