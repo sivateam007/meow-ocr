@@ -2457,6 +2457,11 @@ def handle_translate_post():
         flash('Please select a target language')
         return redirect(url_for('index'))
 
+    speak = (request.form.get("speak") or "").lower() in ("1", "true", "on", "yes")
+    voice = (request.form.get("voice") or "").strip()
+    if voice and not _looks_like_cat_voice(voice):
+        voice = ""
+
     filename = secure_filename(file.filename)
     temp_dir = tempfile.mkdtemp()
     file_path = os.path.join(temp_dir, filename)
@@ -2476,6 +2481,8 @@ def handle_translate_post():
             "total_chars": None,
             "source_lang": source_lang,
             "target_lang": target_lang,
+            "speak": speak,
+            "voice": voice,
             "file_type": "translation",
             "created_at": time.time(),
             "cancelled": False,
@@ -2485,7 +2492,7 @@ def handle_translate_post():
 
     thread = threading.Thread(
         target=translate_file_background,
-        args=(task_id, file_path, filename, temp_dir, source_lang, target_lang)
+        args=(task_id, file_path, filename, temp_dir, source_lang, target_lang, speak, voice)
     )
     thread.daemon = True
     thread.start()
@@ -2573,7 +2580,41 @@ def translate_text(text, target_lang, source_lang='auto', chunk_size=2000):
     return ''.join(result_parts)
 
 
-def translate_file_background(task_id, file_path, filename, temp_dir, source_lang, target_lang):
+# Reverse mapping: translate target-language code -> TTS voice list key.
+_TTS_VOICE_KEY_BY_TARGET = {
+    "en": "en", "ta": "tam", "hi": "hin", "te": "tel", "bn": "ben",
+    "kn": "kan", "ml": "mal", "gu": "guj", "pa": "pan", "mr": "mar",
+    "ar": "ara", "es": "spa", "fr": "fra", "de": "deu", "it": "ita",
+    "ru": "rus", "zh-cn": "chi_sim", "ja": "jpn", "ko": "kor",
+    "pt": "por", "tr": "tur", "vi": "vie", "id": "ind", "ms": "msa",
+    "nl": "nld", "pl": "pol", "sv": "swe", "da": "dan", "fi": "fin",
+    "cs": "ces", "ro": "ron", "uk": "ukr", "hu": "hun",
+    "el": "ell", "he": "heb", "th": "tha",
+}
+
+
+def _default_tts_voice_for_target(target_lang):
+    """First voice entry for the translated language, or None if no TTS voice."""
+    key = _TTS_VOICE_KEY_BY_TARGET.get((target_lang or "").lower())
+    if not key:
+        key = (target_lang or "").lower()
+    if not isinstance(key, str):
+        return None
+    voices = TTS_VOICES.get(key)
+    if voices:
+        return voices[0][0]
+    return None
+
+
+def _pick_audio_voice(voice, target_lang):
+    """Resolve an explicit voice, or fall back to the target language's default."""
+    voice = (voice or "").strip()
+    if voice and _looks_like_cat_voice(voice):
+        return voice
+    return _default_tts_voice_for_target(target_lang)
+
+
+def translate_file_background(task_id, file_path, filename, temp_dir, source_lang, target_lang, speak=False, voice=None):
     """Background thread to translate a text file and update progress."""
     try:
         with progress_lock:
@@ -2682,6 +2723,18 @@ def translate_file_background(task_id, file_path, filename, temp_dir, source_lan
             progress_tracker[task_id]["target_lang"] = target_lang
         _save_progress(True)
         logger.info(f"Task {task_id}: Translation completed ({total_chunks} chunks, {total_chars} chars)")
+
+        if speak and result_text:
+            try:
+                eff_voice = _pick_audio_voice(voice, target_lang)
+                if eff_voice:
+                    audio_base = os.path.splitext(output_filename)[0]
+                    _start_text2audio_task(result_text[:200000], eff_voice, 100, 0, base_name=audio_base)
+                    logger.info(f"Task {task_id}: started 'speak the translation' MP3 with {eff_voice}")
+                else:
+                    logger.info(f"Task {task_id}: no TTS voice for target '{target_lang}', skipping audio")
+            except Exception as speak_err:
+                logger.warning(f"Task {task_id}: speak-audio start failed: {speak_err}")
 
     except Exception as e:
         logger.error(f"Task {task_id}: Translation error - {str(e)}")
