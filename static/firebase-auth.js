@@ -5,6 +5,9 @@
     var cfg = window.FIREBASE_CONFIG || {};
     var enabled = !!(cfg.apiKey && cfg.projectId && cfg.authDomain && cfg.appId);
     window.SCAN_AUTH_ENABLED = enabled;
+    if (enabled && firebase && firebase.app && !firebase.apps.length) {
+        firebase.initializeApp(cfg);
+    }
 
     function currentUser() {
         try { return JSON.parse(localStorage.getItem('scantext_user') || 'null'); } catch (e) { return null; }
