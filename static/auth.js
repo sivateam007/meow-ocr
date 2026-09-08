@@ -1,9 +1,9 @@
-/* ScanText — Google (Firebase) sign-in helper.
-   Activates only when window.FIREBASE_CONFIG has valid values.
-   Verifies on the server via /api/auth (Firebase REST lookup). */
+/* Meow OCR — Google sign-in helper (Supabase auth).
+   Activates only when window.SUPABASE_CONFIG has a url + anonKey.
+   Server session is created via /api/auth (Supabase access token). */
 (function () {
-    var cfg = window.FIREBASE_CONFIG || {};
-    var enabled = !!(cfg.apiKey && cfg.projectId && cfg.authDomain && cfg.appId);
+    var cfg = window.SUPABASE_CONFIG || {};
+    var enabled = !!(cfg.url && cfg.anonKey);
     window.SCAN_AUTH_ENABLED = enabled;
 
     function currentUser() {
@@ -42,50 +42,62 @@
         saveUser(window.SCANNER_USER);
     }
 
+    function supabaseClient() {
+        if (!enabled) return null;
+        if (!window.__supaClient) {
+            if (!(window.supabase && window.supabase.createClient)) return null;
+            window.__supaClient = window.supabase.createClient(cfg.url, cfg.anonKey);
+        }
+        return window.__supaClient;
+    }
+
     function doLogin() {
         var btn = document.getElementById('google-login-btn');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...'; }
-        firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
-            .then(function (res) {
-                var u = res.user;
-                var idToken = _getIdToken(u);
-                return idToken.then(function (token) {
-                    return fetch('/api/auth', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ idToken: token })
-                    });
-                }).then(function (r) { return r.json(); });
-            })
-            .then(function (data) {
+        var client = supabaseClient();
+        if (!client) {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-google"></i> Sign in with Google'; }
+            alert('Sign-in is being set up.\n\nUntil then you can keep using Meow OCR free — one document per anonymous session.');
+            return;
+        }
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting...'; }
+        var redirectTo = window.location.origin + window.location.pathname;
+        client.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: redirectTo }
+        }).catch(function (err) {
+            console.error('Sign-in redirect error:', err);
+            alert('Could not start sign-in: ' + (err.message || 'unknown error'));
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-google"></i> Sign in with Google'; }
+        });
+    }
+
+    // Completes a fresh OAuth redirect round-trip (or refreshes an existing session)
+    function finishLogin() {
+        var client = supabaseClient();
+        if (!client) return;
+        client.auth.getSession().then(function (res) {
+            var session = res && res.data && res.data.session;
+            if (!session || !session.access_token) return;
+            return fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ access_token: session.access_token })
+            }).then(function (r) { return r.json(); })
+              .then(function (data) {
                 if (data && data.ok) {
                     saveUser(data.user);
                     refreshUi();
                     if (typeof window.onScanLogin === 'function') window.onScanLogin(data.user);
-                } else {
-                    alert('Could not complete sign-in. Please try again.');
                 }
-            })
-            .catch(function (err) {
-                console.error('ScanText login error:', err);
-                alert('Sign-in failed: ' + (err.message || 'unknown error'));
-            })
-            .finally(function () {
-                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-google"></i> Sign in with Google'; }
-            });
-    }
-
-    function _getIdToken(u) {
-        if (u.getIdToken) {
-            return u.getIdToken(true).catch(function () { return u.getIdToken(); });
-        }
-        return Promise.resolve(null);
+              });
+        }).catch(function (err) {
+            console.error('Sign-in verification error:', err);
+        });
     }
 
     function doLogout() {
-        if (firebase && firebase.auth) {
-            firebase.auth().signOut().catch(function () {});
-        }
+        var client = supabaseClient();
+        if (client && client.auth.signOut) client.auth.signOut().catch(function () {});
         saveUser(null);
         refreshUi();
         fetch('/api/logout', { method: 'POST' }).catch(function () {});
@@ -101,9 +113,10 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         refreshUi();
+        finishLogin();
         var loginBtn = document.getElementById('google-login-btn');
         var logoutBtn = document.getElementById('logout-btn');
-        if (loginBtn) loginBtn.addEventListener('click', function (e) { e.preventDefault(); if (!enabled) { alert('Sign-in is being set up.\n\nUntil then you can keep using ScanText free — one document per anonymous session.'); return; } doLogin(); });
+        if (loginBtn) loginBtn.addEventListener('click', function (e) { e.preventDefault(); doLogin(); });
         if (logoutBtn) logoutBtn.addEventListener('click', function (e) { e.preventDefault(); doLogout(); });
     });
 })();

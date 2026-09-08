@@ -13,20 +13,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script>
-        window.FIREBASE_CONFIG = {
-            apiKey: "{{ firebase_api_key }}",
-            authDomain: "{{ firebase_auth_domain }}",
-            projectId: "{{ firebase_project_id }}",
-            storageBucket: "{{ firebase_storage_bucket }}",
-            messagingSenderId: "",
-            appId: "{{ firebase_app_id }}",
-            measurementId: "{{ firebase_measurement_id }}"
+        window.SUPABASE_CONFIG = {
+            url: "{{ supabase_url }}",
+            anonKey: "{{ supabase_anon_key }}"
         };
         window.SCANNER_USER = {{ current_user_json|safe }};
     </script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="{{ url_for('static', filename='auth.js') }}"></script>
     {% include 'analytics.html' %}
 </head>
 <body>
