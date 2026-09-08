@@ -55,20 +55,38 @@
         var btn = document.getElementById('google-login-btn');
         var client = supabaseClient();
         if (!client) {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-google"></i> Sign in with Google'; }
+            resetBtn();
             alert('Sign-in is being set up.\n\nUntil then you can keep using Meow OCR free — one document per anonymous session.');
             return;
         }
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting...'; }
-        var redirectTo = window.location.origin + window.location.pathname;
-        client.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: redirectTo }
-        }).catch(function (err) {
-            console.error('Sign-in redirect error:', err);
-            alert('Could not start sign-in: ' + (err.message || 'unknown error'));
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-google"></i> Sign in with Google'; }
-        });
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...'; }
+        // Preflight: confirm Google auth is actually enabled before redirecting
+        fetch(cfg.url + '/auth/v1/settings', { headers: { apikey: cfg.anonKey } })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                var ok = d && d.external && d.external.google === true;
+                if (!ok) {
+                    resetBtn();
+                    alert('Google sign-in is being set up on this site.\n\nUntil then you can keep using Meow OCR free — one document per anonymous session.');
+                    return;
+                }
+                if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting...';
+                var redirectTo = window.location.origin + window.location.pathname;
+                return client.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: redirectTo }
+                });
+            })
+            .catch(function (err) {
+                console.error('Sign-in start error:', err);
+                resetBtn();
+                alert('Could not start sign-in: ' + (err.message || 'unknown error'));
+            });
+    }
+
+    function resetBtn() {
+        var btn = document.getElementById('google-login-btn');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-google"></i> Sign in with Google'; }
     }
 
     // Completes a fresh OAuth redirect round-trip (or refreshes an existing session)
