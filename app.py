@@ -137,13 +137,13 @@ def inject_globals():
         "monetag_inpage": MONETAG.get("inpage", ""),
         "monetag_popunder": MONETAG.get("popunder", ""),
         "monetag_push": MONETAG.get("push", ""),
-        "firebase_api_key": FIREBASE_API_KEY,
-        "firebase_auth_domain": FIREBASE_AUTH_DOMAIN,
-        "firebase_project_id": FIREBASE_PROJECT_ID,
-        "firebase_storage_bucket": FIREBASE_STORAGE_BUCKET,
-        "firebase_app_id": FIREBASE_APP_ID,
-        "firebase_measurement_id": FIREBASE_MEASUREMENT_ID,
-        "firebase_enabled": FIREBASE_ENABLED,
+        "firebase_api_key": FIREBASE_API_KEY if SHOW_GOOGLE_SIGN_IN else "",
+        "firebase_auth_domain": FIREBASE_AUTH_DOMAIN if SHOW_GOOGLE_SIGN_IN else "",
+        "firebase_project_id": FIREBASE_PROJECT_ID if SHOW_GOOGLE_SIGN_IN else "",
+        "firebase_storage_bucket": FIREBASE_STORAGE_BUCKET if SHOW_GOOGLE_SIGN_IN else "",
+        "firebase_app_id": FIREBASE_APP_ID if SHOW_GOOGLE_SIGN_IN else "",
+        "firebase_measurement_id": FIREBASE_MEASUREMENT_ID if SHOW_GOOGLE_SIGN_IN else "",
+        "firebase_enabled": FIREBASE_ENABLED if SHOW_GOOGLE_SIGN_IN else False,
         "current_user_json": _json.dumps(user or {}, ensure_ascii=False),
         "current_user": user,
         "free_docs_without_login": FREE_DOCS_WITHOUT_LOGIN,
@@ -457,6 +457,8 @@ FIREBASE_APP_ID = os.environ.get("FIREBASE_APP_ID", "")
 FIREBASE_MEASUREMENT_ID = os.environ.get("FIREBASE_MEASUREMENT_ID", "")
 FIREBASE_STORAGE_BUCKET = os.environ.get("FIREBASE_STORAGE_BUCKET", "")
 FIREBASE_ENABLED = bool(FIREBASE_API_KEY and FIREBASE_PROJECT_ID)
+# Master switch for Google sign-in. Set to True to re-enable the sign-in button.
+SHOW_GOOGLE_SIGN_IN = False
 
 # Progress tracking
 progress_lock = threading.Lock()
@@ -3623,7 +3625,7 @@ def api_me():
     return jsonify({
         "logged_in": bool(user),
         "user": user,
-        "firebase_enabled": FIREBASE_ENABLED,
+        "firebase_enabled": FIREBASE_ENABLED if SHOW_GOOGLE_SIGN_IN else False,
     })
 
 
