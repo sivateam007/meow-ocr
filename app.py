@@ -114,7 +114,7 @@ def datetimeformat(timestamp):
 
 @app.context_processor
 def inject_globals():
-    """Make Supabase config + current user available to every template."""
+    """Make Firebase config + current user available to every template."""
     import json as _json
     from flask import request as _request
     from ad_config import ads_slots
@@ -137,9 +137,13 @@ def inject_globals():
         "monetag_inpage": MONETAG.get("inpage", ""),
         "monetag_popunder": MONETAG.get("popunder", ""),
         "monetag_push": MONETAG.get("push", ""),
-        "supabase_url": SUPABASE_URL,
-        "supabase_anon_key": SUPABASE_ANON_KEY,
-        "supabase_enabled": SUPABASE_ENABLED,
+        "firebase_api_key": FIREBASE_API_KEY,
+        "firebase_auth_domain": FIREBASE_AUTH_DOMAIN,
+        "firebase_project_id": FIREBASE_PROJECT_ID,
+        "firebase_storage_bucket": FIREBASE_STORAGE_BUCKET,
+        "firebase_app_id": FIREBASE_APP_ID,
+        "firebase_measurement_id": FIREBASE_MEASUREMENT_ID,
+        "firebase_enabled": FIREBASE_ENABLED,
         "current_user_json": _json.dumps(user or {}, ensure_ascii=False),
         "current_user": user,
         "free_docs_without_login": FREE_DOCS_WITHOUT_LOGIN,
@@ -445,11 +449,14 @@ TTS_PREVIEW_SAMPLES = {
 FREE_DOCS_WITHOUT_LOGIN = int(os.environ.get("FREE_DOCS_WITHOUT_LOGIN", "1"))
 _COOKIE_COUNTER = "scan_docs_done"  # cookie name counting anonymous conversions
 
-# Supabase (Google Sign-in) config — set these env vars to enable sign-in.
-# The publishable key (new naming) is the same value as the legacy anon key.
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
-SUPABASE_ANON_KEY = (os.environ.get("SUPABASE_PUBLISHABLE_KEY") or os.environ.get("SUPABASE_ANON_KEY") or "").strip()
-SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_ANON_KEY)
+# Firebase (Google Sign-in) config — set these env vars to enable sign-in.
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "")
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "")
+FIREBASE_AUTH_DOMAIN = os.environ.get("FIREBASE_AUTH_DOMAIN", "")
+FIREBASE_APP_ID = os.environ.get("FIREBASE_APP_ID", "")
+FIREBASE_MEASUREMENT_ID = os.environ.get("FIREBASE_MEASUREMENT_ID", "")
+FIREBASE_STORAGE_BUCKET = os.environ.get("FIREBASE_STORAGE_BUCKET", "")
+FIREBASE_ENABLED = bool(FIREBASE_API_KEY and FIREBASE_PROJECT_ID)
 
 # Progress tracking
 progress_lock = threading.Lock()
@@ -2781,7 +2788,7 @@ def index():
                 used = int(request.cookies.get(_COOKIE_COUNTER, "0") or "0")
             except (TypeError, ValueError):
                 used = 0
-            if used >= FREE_DOCS_WITHOUT_LOGIN and SUPABASE_ENABLED:
+            if used >= FREE_DOCS_WITHOUT_LOGIN and FIREBASE_ENABLED:
                 flash(f"You have used your {FREE_DOCS_WITHOUT_LOGIN} free anonymous scan. Sign in with Google to convert unlimited documents - free!")
                 return redirect(request.url)
         
@@ -3556,49 +3563,43 @@ def get_user():
     }
 
 
-def verify_supabase_token(access_token):
-    """Verify a Supabase access token by asking Supabase Auth itself (no SDK needed).
-    Returns user dict on success, or None."""
-    if not SUPABASE_ENABLED:
+def verify_firebase_token(id_token):
+    """Verify a Firebase ID token via the Firebase REST API (no SDK needed).
+    Returns user dict on success, or None. Uses requests with caching handled
+    by Google's servers; for production you can switch to firebase-admin."""
+    if not FIREBASE_API_KEY:
         return None
-    url = f"{SUPABASE_URL}/auth/v1/user"
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={FIREBASE_API_KEY}"
     try:
-        resp = requests.get(
-            url,
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "apikey": SUPABASE_ANON_KEY,
-            },
-            timeout=15,
-        )
+        resp = requests.post(url, json={"idToken": id_token}, timeout=15)
         if resp.status_code != 200:
-            logger.warning(f"Supabase user lookup failed: {resp.status_code} {resp.text[:200]}")
+            logger.warning(f"Firebase lookup failed: {resp.status_code} {resp.text[:200]}")
             return None
-        u = resp.json()
-        uid = u.get("id", "")
-        if not uid:
+        data = resp.json()
+        users = data.get("users") or []
+        if not users:
             return None
-        meta = u.get("user_metadata") or {}
+        u = users[0]
         return {
-            "uid": uid,
-            "email": u.get("email", "") or meta.get("email", ""),
-            "name": meta.get("full_name") or meta.get("name") or u.get("email", "").split("@")[0] or "",
-            "photo": meta.get("avatar_url") or u.get("avatar_url", "") or "",
+            "uid": u.get("localId", ""),
+            "email": u.get("email", ""),
+            "name": u.get("displayName", ""),
+            "photo": u.get("photoUrl", ""),
         }
     except Exception as e:
-        logger.error(f"Supabase token verification error: {e}")
+        logger.error(f"Firebase token verification error: {e}")
         return None
 
 
 @app.route('/api/auth', methods=['POST'])
 @_rate_limit(20, 60)
 def api_auth():
-    """Verify Google (Supabase) access token and start a server session."""
+    """Verify Google (Firebase) ID token and start a server session."""
     data = request.get_json(silent=True) or {}
-    token = data.get("access_token") or data.get("idToken")
-    if not token:
+    id_token = data.get("idToken")
+    if not id_token:
         return jsonify({"error": "Missing token"}), 400
-    user = verify_supabase_token(token)
+    user = verify_firebase_token(id_token)
     if not user or not user.get("uid"):
         return jsonify({"error": "Authentication failed"}), 401
     session["uid"] = user["uid"]
@@ -3622,7 +3623,7 @@ def api_me():
     return jsonify({
         "logged_in": bool(user),
         "user": user,
-        "supabase_enabled": SUPABASE_ENABLED,
+        "firebase_enabled": FIREBASE_ENABLED,
     })
 
 
