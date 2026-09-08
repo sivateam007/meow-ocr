@@ -71,7 +71,8 @@
                     return;
                 }
                 if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting...';
-                var redirectTo = window.location.origin + window.location.pathname;
+                // Bare origin only (no path/trailing slash) — matches Supabase redirect allowlist exactly
+                var redirectTo = window.location.origin;
                 return client.auth.signInWithOAuth({
                     provider: 'google',
                     options: { redirectTo: redirectTo }
