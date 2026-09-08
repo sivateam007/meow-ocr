@@ -446,8 +446,9 @@ FREE_DOCS_WITHOUT_LOGIN = int(os.environ.get("FREE_DOCS_WITHOUT_LOGIN", "1"))
 _COOKIE_COUNTER = "scan_docs_done"  # cookie name counting anonymous conversions
 
 # Supabase (Google Sign-in) config — set these env vars to enable sign-in.
+# The publishable key (new naming) is the same value as the legacy anon key.
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
-SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "").strip()
+SUPABASE_ANON_KEY = (os.environ.get("SUPABASE_PUBLISHABLE_KEY") or os.environ.get("SUPABASE_ANON_KEY") or "").strip()
 SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_ANON_KEY)
 
 # Progress tracking
