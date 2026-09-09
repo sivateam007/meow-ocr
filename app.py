@@ -2790,7 +2790,7 @@ def index():
                 used = int(request.cookies.get(_COOKIE_COUNTER, "0") or "0")
             except (TypeError, ValueError):
                 used = 0
-            if used >= FREE_DOCS_WITHOUT_LOGIN and FIREBASE_ENABLED:
+            if used >= FREE_DOCS_WITHOUT_LOGIN and FIREBASE_ENABLED and SHOW_GOOGLE_SIGN_IN:
                 flash(f"You have used your {FREE_DOCS_WITHOUT_LOGIN} free anonymous scan. Sign in with Google to convert unlimited documents - free!")
                 return redirect(request.url)
         
