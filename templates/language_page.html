@@ -9,6 +9,9 @@
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
     <link rel="canonical" href="{{ canonical_url }}">
     <meta name="description" content="{{ data.description }}">
+    <meta property="og:title" content="{{ data.title }}">
+    <meta property="og:description" content="{{ data.description }}">
+    <meta property="og:type" content="website">
     <meta name="robots" content="index, follow">
     <meta property="og:title" content="{{ data.title }}">
     <meta property="og:description" content="{{ data.description }}">
@@ -148,6 +151,7 @@
                 <h4>Legal</h4>
                 <a href="/privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
                 <a href="/terms"><i class="fas fa-file-contract"></i> Terms of Service</a>
+                <a href="/link-to-us"><i class="fas fa-link"></i> Link to Us</a>
             </div>
         </div>
     </footer>

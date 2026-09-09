@@ -3359,8 +3359,8 @@ SITE_URL = os.environ.get("SITE_URL", "https://www.meowocr.work.gd").rstrip("/")
 @app.route('/sitemap.xml')
 def sitemap():
     """XML sitemap so Google can discover and index every static page."""
-    pages = ["", "/how-to-use", "/privacy", "/terms", "/downloads", "/about", "/tamil-ocr", "/hindi-ocr", "/english-ocr"]
-    today = "2026-08-30"
+    pages = ["", "/how-to-use", "/privacy", "/terms", "/downloads", "/about", "/tamil-ocr", "/hindi-ocr", "/english-ocr", "/link-to-us"]
+    today = "2026-09-09"
     urls = "".join(
         f"  <url>\n"
         f"    <loc>{SITE_URL}{p}</loc>\n"
@@ -3492,6 +3492,12 @@ def privacy_page():
 def terms_page():
     """Terms of Service page."""
     return render_template('terms.html')
+
+
+@app.route('/link-to-us')
+def link_to_us():
+    """Share/backlink page: badge embed snippets, share links and directory tips."""
+    return render_template('link_to_us.html')
 
 
 LANGUAGE_PAGES = {

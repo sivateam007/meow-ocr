@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link to Us & Share Meow OCR - Free Online OCR Badge</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="canonical" href="{{ canonical_url }}">
+    {% include 'analytics.html' %}
+    {% include 'monetag.html' %}
+    <meta name="description" content="Add a Meow OCR badge to your site, share Meow OCR on social media, or discover free directories to submit your tool - earn a backlink to Meow OCR.">
+    <meta property="og:title" content="Link to Us & Share Meow OCR - Free Online OCR">
+    <meta property="og:description" content="Grab a Meow OCR badge, share the free OCR tool with friends, or submit it to directories. It's free, fast and supports 19+ languages.">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .link-card{ background:#fff; border:1px solid #e5e0f0; border-radius:14px; padding:1.3rem 1.5rem; margin:1rem 0; box-shadow:0 2px 10px rgba(0,0,0,.04); }
+        .link-card h2{ margin:0 0 .4rem; font-size:1.25rem; color:var(--dark); display:flex; align-items:center; gap:.6rem; }
+        .link-card p{ margin:.2rem 0 .6rem; color:#555; line-height:1.6; }
+        .code-box{ background:#f4f1fb; border:1px dashed #c9b8e6; border-radius:10px; padding:.8rem .9rem; font-family:Consolas,Monaco,monospace; font-size:.82rem; color:#4a3a63; word-break:break-word; margin:.5rem 0; }
+        .copy-btn{ border:none; border-radius:8px; padding:.5rem 1rem; font-weight:600; cursor:pointer; background:linear-gradient(135deg,#8e44ad,#6c3483); color:#fff; margin-top:.3rem; }
+        .copy-ok{ background:#27ae60 !important; }
+        .badge-preview{ display:inline-block; }
+        .share-row{ display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.6rem; }
+        .share-btn{ display:inline-flex; align-items:center; gap:.45rem; border:none; border-radius:9px; padding:.6rem 1rem; font-weight:600; color:#fff; cursor:pointer; text-decoration:none; font-size:.9rem; }
+        .share-x{ background:#111; } .share-fb{ background:#1877f2; } .share-li{ background:#0a66c2; } .share-wa{ background:#25d366; }
+        .dir-list{ margin:.4rem 0 0; padding-left:1.2rem; color:#444; line-height:1.8; }
+        .dir-list b{ color:var(--dark); }
+        .tip-list{ padding-left:1.2rem; color:#444; line-height:1.7; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="content-section info-page">
+            <h1 class="page-main-title"><i class="fas fa-link"></i> Link to Us &amp; Share Meow OCR</h1>
+            <p class="page-subtitle">A backlink is simply another website linking to ours - it helps people find Meow OCR and boosts our search ranking. Here is everything you can copy, paste or share in under a minute.</p>
+
+            <div class="link-card">
+                <h2><i class="fas fa-image"></i> 1. Add the badge to your website</h2>
+                <p>Paste this snippet anywhere on your site (blog sidebar, tools page, footer). The badge links back to Meow OCR.</p>
+                <div class="badge-preview"><a href="https://meowocr.onrender.com/" target="_blank" rel="noopener"><img src="{{ url_for('static', filename='images/meow-ocr-badge.svg') }}" alt="Free online OCR - Meow OCR" width="300" height="62"></a></div>
+                <div class="code-box" id="badge-code">&lt;a href="https://meowocr.onrender.com/" target="_blank" rel="noopener"&gt;&lt;img src="https://meowocr.onrender.com/static/images/meow-ocr-badge.svg" alt="Free online OCR - Meow OCR" width="300" height="62"&gt;&lt;/a&gt;</div>
+                <button type="button" class="copy-btn" id="copy-badge" data-target="badge-code"><i class="fas fa-copy"></i> Copy badge code</button>
+            </div>
+
+            <div class="link-card">
+                <h2><i class="fas fa-comments"></i> 2. Share on social media</h2>
+                <p>One click opens a pre-filled post. Every share is a link back to the tool.</p>
+                <div class="share-row">
+                    <a class="share-btn share-x" href="https://twitter.com/intent/tweet?text=Free+online+OCR:+extract+text+from+PDF+%26+images+in+seconds,+no+signup.%20Try%20Meow%20OCR%20%E2%86%92&url=https%3A%2F%2Fmeowocr.onrender.com%2F" target="_blank" rel="noopener"><i class="fab fa-x-twitter"></i> Post on X</a>
+                    <a class="share-btn share-fb" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fmeowocr.onrender.com%2F" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i> Share on Facebook</a>
+                    <a class="share-btn share-li" href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fmeowocr.onrender.com%2F" target="_blank" rel="noopener"><i class="fab fa-linkedin-in"></i> Share on LinkedIn</a>
+                    <a class="share-btn share-wa" href="https://wa.me/?text=Free+online+OCR+tool+-+extract+text+from+PDF+and+images,+no+signup:%20https%3A%2F%2Fmeowocr.onrender.com%2F" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+                </div>
+            </div>
+
+            <div class="link-card">
+                <h2><i class="fas fa-link"></i> 3. Recommended anchor text</h2>
+                <p>Use descriptive anchor text when you link - it helps search engines understand the page. Copy one of these examples:</p>
+                <ul class="tip-list">
+                    <li>Free OCR - <b>extract text from PDF and images online</b></li>
+                    <li><b>Tamil OCR</b> without signup, in seconds</li>
+                    <li>A free tool to <b>convert PDF to editable text</b></li>
+                    <li><b>Meow OCR</b> - simple, private, browser-based OCR</li>
+                </ul>
+            </div>
+
+            <div class="link-card">
+                <h2><i class="fas fa-folder-open"></i> 4. Free directories &amp; places to submit</h2>
+                <p>Listing in a directory gives you a real backlink. Stick to legitimate, free list-based sites (search "<b>[name] submit tool</b>" and use the official form):</p>
+                <ul class="dir-list">
+                    <li><b>Tool / app listing</b> sites such as Product Hunt (launch post), AlternativeTo, and SaaSHub</li>
+                    <li><b>Free web directory</b> categories for "Productivity Tools" or "Text &amp; OCR"</li>
+                    <li><b>Startup &amp; maker hubs</b> like Indie Hackers and Hacker News "Show HN"</li>
+                    <li><b>Quora/Reddit/forums</b> - answer "how do I extract text from a scanned PDF?" and link naturally (no spam)</li>
+                    <li><b>Your own profiles</b>: GitHub README, Twitter/X bio, LinkedIn, or a WordPress.com blog</li>
+                </ul>
+            </div>
+
+            <div class="link-card">
+                <h2><i class="fas fa-check-circle"></i> 5. Quick rules for safe backlinks</h2>
+                <ul class="tip-list">
+                    <li>Only submit to sites you can post on manually - relevance matters more than volume.</li>
+                    <li>Never buy links or use spam networks; Google can penalise that.</li>
+                    <li>Add <code>rel="noopener"</code> and (for paid links only) <code>rel="nofollow"</code>.</li>
+                    <li>Slow, steady growth beats a sudden spike. A few quality links a month is ideal.</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.querySelectorAll('.copy-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-target');
+                var el = document.getElementById(id);
+                var text = el ? el.textContent.trim() : id;
+                function done() {
+                    btn.classList.add('copy-ok');
+                    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    setTimeout(function () { btn.classList.remove('copy-ok'); btn.innerHTML = '<i class="fas fa-copy"></i> Copy badge code'; }, 1800);
+                }
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(done, function () { fallback(); });
+                } else { fallback(); }
+                function fallback() {
+                    var ta = document.createElement('textarea');
+                    ta.value = text; document.body.appendChild(ta); ta.select();
+                    try { document.execCommand('copy'); done(); } catch (e) { alert('Select and copy manually: ' + text); }
+                    document.body.removeChild(ta);
+                }
+            });
+        });
+    </script>
+
+    {% include 'chatbot.html' %}
+</body>
+</html>
