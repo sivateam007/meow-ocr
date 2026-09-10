@@ -119,6 +119,7 @@ def inject_globals():
     from flask import request as _request
     from ad_config import ads_slots
     from monetag_config import MONETAG, MONETAG_ENABLED
+    from adsense_config import ADSENSE_CLIENT, ADSENSE_ENABLED
     user = get_user()
     _ads = ads_slots()
     _path = _request.path if _request else "/"
@@ -137,6 +138,8 @@ def inject_globals():
         "monetag_inpage": MONETAG.get("inpage", ""),
         "monetag_popunder": MONETAG.get("popunder", ""),
         "monetag_push": MONETAG.get("push", ""),
+        "adsense_client": ADSENSE_CLIENT if ADSENSE_ENABLED else "",
+        "adsense_enabled": ADSENSE_ENABLED,
         "firebase_api_key": FIREBASE_API_KEY if SHOW_GOOGLE_SIGN_IN else "",
         "firebase_auth_domain": FIREBASE_AUTH_DOMAIN if SHOW_GOOGLE_SIGN_IN else "",
         "firebase_project_id": FIREBASE_PROJECT_ID if SHOW_GOOGLE_SIGN_IN else "",
@@ -3344,11 +3347,11 @@ def retry_task(task_id):
 
 @app.route('/ads.txt')
 def ads_txt():
-    """Advertisement authority file required by ad networks.
-    Replace the example line below with the ads.txt content from your ad network."""
+    """Advertisement authority file required by ad networks (Google AdSense)."""
+    from adsense_config import ADSENSE_CLIENT
     content = (
-        "# Replace this with the ads.txt content provided by your ad network\n"
-        "# Example: google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0\n"
+        "# Google AdSense\n"
+        f"google.com, {ADSENSE_CLIENT}, DIRECT, f08c47fec0942fa0\n"
     )
     return app.response_class(content, mimetype='text/plain')
 

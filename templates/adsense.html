@@ -1,0 +1,6 @@
+{# Google AdSense page-level loader.
+   Rendered only when adsense_enabled is true (publisher ID set, ADSENSE_OFF not set). #}
+
+{% if adsense_enabled %}
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_client }}" crossorigin="anonymous"></script>
+{% endif %}
