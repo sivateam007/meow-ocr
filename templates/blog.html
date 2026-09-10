@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog - Meow OCR | OCR Tips, Guides &amp; Comparisons</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="canonical" href="{{ canonical_url }}">
+    {% include 'analytics.html' %}
+    {% include 'monetag.html' %}
+    <meta name="description" content="Read the Meow OCR blog: free guides on OCR, text extraction, PDF conversion and language-specific tips. Learn how to get the most from online OCR tools.">
+    <meta property="og:title" content="Blog - Meow OCR | OCR Tips, Guides &amp; Comparisons">
+    <meta property="og:description" content="Free guides on OCR, text extraction, PDF conversion and language-specific tips.">
+    <meta property="og:type" content="website">
+    <meta name="robots" content="index, follow">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .blog-grid{ display:grid; grid-template-columns:1fr; gap:1.6rem; margin:1.5rem 0; }
+        @media(min-width:700px){ .blog-grid{ grid-template-columns:1fr 1fr; } }
+        .blog-card{ background:#fff; border:1px solid #e8e3f3; border-radius:16px; padding:1.6rem 1.8rem; transition:transform .2s, box-shadow .2s; display:flex; flex-direction:column; }
+        .blog-card:hover{ transform:translateY(-4px); box-shadow:0 8px 28px rgba(100,60,180,.12); }
+        .blog-card .badge{ display:inline-block; background:linear-gradient(135deg,#8e44ad,#6c3483); color:#fff; font-size:.72rem; font-weight:700; padding:.25rem .7rem; border-radius:20px; text-transform:uppercase; letter-spacing:.5px; width:fit-content; margin-bottom:.7rem; }
+        .blog-card h2{ font-size:1.2rem; color:var(--dark); margin:0 0 .5rem; line-height:1.4; }
+        .blog-card h2 a{ color:inherit; text-decoration:none; }
+        .blog-card h2 a:hover{ color:#8e44ad; }
+        .blog-card .meta{ font-size:.82rem; color:#888; margin-bottom:.6rem; display:flex; gap:1rem; }
+        .blog-card p{ color:#555; line-height:1.7; font-size:.95rem; flex:1; }
+        .blog-card .read-more{ display:inline-flex; align-items:center; gap:.4rem; margin-top:.9rem; color:#8e44ad; font-weight:600; font-size:.9rem; text-decoration:none; }
+        .blog-card .read-more:hover{ text-decoration:underline; }
+        .blog-empty{ text-align:center; padding:3rem 1rem; color:#888; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="content-section info-page">
+            <h1 class="page-main-title"><i class="fas fa-rss"></i> Meow OCR Blog</h1>
+            <p class="page-subtitle">Guides, comparisons and tips for getting the most out of online OCR tools.</p>
+
+            {% if posts %}
+            <div class="blog-grid">
+                {% for post in posts %}
+                <article class="blog-card animate__animated animate__fadeInUp">
+                    <span class="badge">{{ post.category }}</span>
+                    <h2><a href="/blog/{{ post.slug }}">{{ post.title }}</a></h2>
+                    <div class="meta">
+                        <span><i class="fas fa-calendar-alt"></i> {{ post.date }}</span>
+                        <span><i class="fas fa-clock"></i> {{ post.read_time }} read</span>
+                    </div>
+                    <p>{{ post.description }}</p>
+                    <a href="/blog/{{ post.slug }}" class="read-more">Read more <i class="fas fa-arrow-right"></i></a>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="blog-empty">
+                <i class="fas fa-pen-nib" style="font-size:2.5rem;color:#c9b8e6;margin-bottom:1rem;display:block;"></i>
+                <p>Blog posts coming soon. Stay tuned!</p>
+            </div>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    <img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo">
+                    <h3>Meow OCR</h3>
+                </div>
+                <p>Free online OCR — extract text from PDF, images &amp; documents. 19+ languages. Built by Siva.</p>
+                <p class="meow-tagline"><i class="fas fa-cat"></i> Powered by curious cats <i class="fas fa-paw"></i></p>
+            </div>
+            <div class="footer-links">
+                <h4>OCR Tools</h4>
+                <a href="/tamil-ocr"><i class="fas fa-language"></i> Tamil OCR</a>
+                <a href="/hindi-ocr"><i class="fas fa-language"></i> Hindi OCR</a>
+                <a href="/english-ocr"><i class="fas fa-language"></i> English PDF to Text</a>
+                <a href="/"><i class="fas fa-home"></i> Full OCR Tool</a>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <a href="/"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="/about"><i class="fas fa-info-circle"></i> About</a>
+                <a href="/blog"><i class="fas fa-rss"></i> Blog</a>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <a href="/privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                <a href="/terms"><i class="fas fa-file-contract"></i> Terms of Service</a>
+                <a href="/link-to-us"><i class="fas fa-link"></i> Link to Us</a>
+            </div>
+            <div class="footer-note">
+                <h4>Your Result</h4>
+                <p>Results are stored securely in the cloud and auto-deleted after 2 days by default.</p>
+                <p class="copyright">&copy; 2026 Meow OCR. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            var driftEm = ['🐱', '🐾', '🐱', '🐾'];
+            function spawnDrift() {
+                var p = document.createElement('span');
+                p.className = 'paw-drift';
+                p.textContent = driftEm[Math.floor(Math.random() * driftEm.length)];
+                p.style.left = (Math.random() * 90 + 4) + '%';
+                p.style.animationDuration = (Math.random() * 5 + 7) + 's';
+                document.body.appendChild(p);
+                setTimeout(function () { p.remove(); }, 13000);
+            }
+            spawnDrift(); spawnDrift();
+            setInterval(spawnDrift, 2800);
+        });
+    </script>
+
+    {% include 'chatbot.html' %}
+</body>
+</html>

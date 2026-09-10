@@ -150,7 +150,19 @@
             </div>
         </section>
 
-        <!-- ads removed -->
+        <style>
+            .trust-strip{ display:flex; flex-wrap:wrap; justify-content:center; gap:.7rem 1.6rem; margin:-1.2rem auto 2.2rem; padding:.9rem 1.4rem; max-width:920px; background:rgba(255,255,255,.75); border:1px solid #ede8f5; border-radius:14px; backdrop-filter:blur(6px); }
+            .trust-item{ display:inline-flex; align-items:center; gap:.45rem; font-size:.88rem; font-weight:600; color:#5b4870; }
+            .trust-item i{ color:#8e44ad; }
+            .trust-item.count i{ color:#27ae60; }
+        </style>
+        <div class="trust-strip">
+            <span class="trust-item"><i class="fas fa-sign-in-alt"></i> No Signup</span>
+            <span class="trust-item"><i class="fas fa-water"></i> No Watermark</span>
+            <span class="trust-item"><i class="fas fa-shield-alt"></i> Auto-Delete 2 Days</span>
+            <span class="trust-item"><i class="fas fa-globe"></i> 19+ Languages</span>
+            {% if doc_count %}<span class="trust-item count"><i class="fas fa-file-alt"></i> {{ doc_count }} documents extracted recently</span>{% endif %}
+        </div>
 
         <!-- ===== UPLOAD ===== -->
         <section class="content-section" id="upload">
@@ -679,6 +691,43 @@
             </details>
         </section>
 
+        <!-- ===== BLOG TEASER ===== -->
+        {% if recent_posts %}
+        <section class="content-section info-page" id="blog-teaser">
+            <h2 class="section-title"><i class="fas fa-rss"></i> From the Meow OCR Blog</h2>
+            <p class="section-subtitle">Guides, comparisons and tips to get the most out of OCR.</p>
+            <div class="blog-teaser-grid">
+                {% for post in recent_posts %}
+                <article class="blog-teaser-card">
+                    <span class="blog-teaser-badge">{{ post.category }}</span>
+                    <h3><a href="/blog/{{ post.slug }}">{{ post.title }}</a></h3>
+                    <p>{{ post.description[:110] }}...</p>
+                    <a href="/blog/{{ post.slug }}" class="blog-teaser-more">Read more <i class="fas fa-arrow-right"></i></a>
+                </article>
+                {% endfor %}
+            </div>
+            <p style="text-align:center; margin-top:1.2rem;"><a href="/blog" class="blog-teaser-all"><i class="fas fa-book-open"></i> View All Articles</a></p>
+        </section>
+        {% endif %}
+
+        <style>
+            .section-title{ font-size:1.9rem; color:var(--dark); text-align:center; margin:0 0 .3rem; }
+            .section-subtitle{ text-align:center; color:#777; margin:0 0 1.6rem; font-size:1rem; }
+            .blog-teaser-grid{ display:grid; grid-template-columns:1fr; gap:1.4rem; max-width:1000px; margin:0 auto; }
+            @media(min-width:700px){ .blog-teaser-grid{ grid-template-columns:repeat(3,1fr); } }
+            .blog-teaser-card{ background:#fff; border:1px solid #e8e3f3; border-radius:14px; padding:1.4rem 1.5rem; transition:transform .2s, box-shadow .2s; display:flex; flex-direction:column; }
+            .blog-teaser-card:hover{ transform:translateY(-4px); box-shadow:0 8px 24px rgba(100,60,180,.1); }
+            .blog-teaser-badge{ display:inline-block; background:linear-gradient(135deg,#8e44ad,#6c3483); color:#fff; font-size:.68rem; font-weight:700; padding:.2rem .6rem; border-radius:20px; text-transform:uppercase; letter-spacing:.4px; width:fit-content; margin-bottom:.6rem; }
+            .blog-teaser-card h3{ font-size:1.02rem; color:var(--dark); margin:0 0 .5rem; line-height:1.4; }
+            .blog-teaser-card h3 a{ color:inherit; text-decoration:none; }
+            .blog-teaser-card h3 a:hover{ color:#8e44ad; }
+            .blog-teaser-card p{ color:#555; line-height:1.6; font-size:.9rem; flex:1; margin:0 0 .7rem; }
+            .blog-teaser-more{ color:#8e44ad; font-weight:600; font-size:.88rem; text-decoration:none; }
+            .blog-teaser-more:hover{ text-decoration:underline; }
+            .blog-teaser-all{ color:#8e44ad; font-weight:600; font-size:.95rem; text-decoration:none; }
+            .blog-teaser-all:hover{ text-decoration:underline; }
+        </style>
+
         <!-- ads removed -->
 
         <!-- ===== CTA BANNER ===== -->
@@ -713,6 +762,7 @@
                 <a href="/how-to-use"><i class="fas fa-question-circle"></i> How to Use</a>
                 <a href="/downloads"><i class="fas fa-download"></i> My Downloads</a>
                 <a href="/about"><i class="fas fa-info-circle"></i> About</a>
+                <a href="/blog"><i class="fas fa-rss"></i> Blog</a>
             </div>
             <div class="footer-links">
                 <h4>Legal</h4>

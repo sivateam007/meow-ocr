@@ -2885,7 +2885,8 @@ def index():
             resp.set_cookie(_COOKIE_COUNTER, str(used + 1), max_age=365 * 86400, httponly=True)
         return resp
     
-    return render_template('index.html')
+    from blog_data import get_recent_posts
+    return render_template('index.html', recent_posts=get_recent_posts(3))
 
 @app.route('/progress/<task_id>')
 def get_progress(task_id):
@@ -3359,7 +3360,8 @@ SITE_URL = os.environ.get("SITE_URL", "https://www.meowocr.work.gd").rstrip("/")
 @app.route('/sitemap.xml')
 def sitemap():
     """XML sitemap so Google can discover and index every static page."""
-    pages = ["", "/how-to-use", "/privacy", "/terms", "/downloads", "/about", "/tamil-ocr", "/hindi-ocr", "/english-ocr", "/link-to-us"]
+    from blog_data import get_all_posts
+    pages = ["", "/how-to-use", "/privacy", "/terms", "/downloads", "/about", "/tamil-ocr", "/hindi-ocr", "/english-ocr", "/link-to-us", "/blog"]
     today = "2026-09-09"
     urls = "".join(
         f"  <url>\n"
@@ -3370,10 +3372,20 @@ def sitemap():
         f"  </url>\n"
         for p in pages
     )
+    blog_urls = "".join(
+        f"  <url>\n"
+        f"    <loc>{SITE_URL}/blog/{post['slug']}</loc>\n"
+        f"    <lastmod>{post.get('updated', post['date'])}</lastmod>\n"
+        f"    <changefreq>monthly</changefreq>\n"
+        f"    <priority>0.8</priority>\n"
+        f"  </url>\n"
+        for post in get_all_posts()
+    )
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         f"{urls}"
+        f"{blog_urls}"
         '</urlset>\n'
     )
     return app.response_class(xml, mimetype='application/xml')
@@ -3498,6 +3510,24 @@ def terms_page():
 def link_to_us():
     """Share/backlink page: badge embed snippets, share links and directory tips."""
     return render_template('link_to_us.html')
+
+
+@app.route('/blog')
+def blog_listing():
+    """Blog listing page."""
+    from blog_data import get_all_posts
+    return render_template('blog.html', posts=get_all_posts())
+
+
+@app.route('/blog/<slug>')
+def blog_post(slug):
+    """Individual blog post page."""
+    from blog_data import get_post, get_recent_posts
+    post = get_post(slug)
+    if not post:
+        return "Post not found", 404
+    recent = [p for p in get_recent_posts(5) if p["slug"] != slug][:4]
+    return render_template('blog_post.html', post=post, recent_posts=recent)
 
 
 LANGUAGE_PAGES = {
