@@ -53,7 +53,7 @@
     <header>
         <div class="header-container">
             <div class="logo">
-                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
             </div>
             <nav class="nav-links">
                 <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
@@ -86,7 +86,7 @@
                     <div class="file-input-wrapper">
                         <input type="file" name="file" id="pdf-upload" accept=".pdf,.jpg,.jpeg,.png,.bmp,.tiff,.tif,.docx,.pptx,.xlsx,.csv,.txt,.rtf,.odt" required>
                         <label for="pdf-upload" class="upload-box" id="drop-zone">
-                            <img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo" class="upload-logo" style="width:90px; height:auto;">
+                            <img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="Meow OCR logo" class="upload-logo" style="width:90px; height:auto;">
                             <div class="upload-text">Click to upload or drag &amp; drop 🐱</div>
                             <div class="upload-hint">Supports: PDF, Images, Documents</div>
                             <div class="file-name" id="file-name"></div>

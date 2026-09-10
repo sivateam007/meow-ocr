@@ -89,7 +89,7 @@
     <header>
         <div class="header-container">
             <div class="logo">
-                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
             </div>
             <nav class="nav-links">
                 <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
@@ -204,7 +204,7 @@
                 <div class="file-input-wrapper">
                     <input type="file" name="file" id="pdf-upload" accept=".pdf" multiple required>
                     <label for="pdf-upload" class="upload-box" id="drop-zone">
-                        <img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo" class="upload-logo">
+                        <img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="Meow OCR logo" class="upload-logo">
                         <div class="upload-text">Click to upload or drag & drop 🐱</div>
                         <div class="upload-hint">Supports: PDF</div>
                         <div class="file-name" id="file-name"></div>
@@ -375,15 +375,15 @@
             <!-- ===== TEXT TO AUDIO ===== -->
             <div class="tts-card" id="tts-section" style="display: none; background:#fff; border:1px solid #e5e0f0; border-radius:14px; padding:1.5rem; max-width:820px; margin:1.5rem auto;">
                 <div class="tts-head" style="display:flex; align-items:center; gap:.6rem; margin-bottom:.4rem;">
+                    <img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="Cat" style="width:42px; height:42px; border-radius:50%; object-fit:cover; border:2px solid #fff; box-shadow:0 4px 14px rgba(0,0,0,.2); flex-shrink:0;">
                     <h3 style="margin:0; color:#6c3483; font-size:1.15rem;"><i class="fas fa-file-audio" style="margin-right:.4rem;"></i>Text to Audio</h3>
-                    <span class="heading-cat">🐱🎧</span>
                 </div>
                 <p class="page-subtitle" style="margin-top:.25rem;">Paste or type text, pick a cat voice, then convert it into a downloadable MP3 that's saved to cloud.</p>
 
                 <div class="file-input-wrapper" style="margin-bottom:.5rem;">
                     <input type="file" id="t2a-file" accept=".txt" multiple style="display:none;">
                     <label for="t2a-file" class="upload-box" style="padding:1.5rem; background:#faf8ff; border-color:#ddd; cursor:pointer;">
-                        <i class="fas fa-file-upload" style="font-size:1.5rem; color:#8e44ad; margin-bottom:.4rem;"></i>
+                        <img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="Cat" class="upload-logo" style="width:72px; height:72px; margin:0 0 .5rem; animation:none;">
                         <div class="upload-text" style="margin:0;">Click to load a .txt file and convert it to MP3</div>
                     </label>
                     <div id="t2a-files-list" style="margin-top:.55rem;"></div>
