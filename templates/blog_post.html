@@ -55,8 +55,10 @@
         .article-body p{ color:#444; line-height:1.8; margin:.7rem 0; }
         .article-body ul,.article-body ol{ color:#444; line-height:1.8; margin:.7rem 0; padding-left:1.5rem; }
         .article-body li{ margin:.3rem 0; }
-        .article-body table{ margin:1rem 0; }
-        .article-body table td,.article-body table th{ padding:.5rem .8rem; }
+        .article-body .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; margin:1rem 0; border-radius:10px; box-shadow:0 1px 6px rgba(100,60,180,.08); }
+        .article-body .table-wrap table{ margin:0; width:100%; }
+        .article-body table td,.article-body table th{ padding:.5rem .8rem; white-space:normal; }
+        .article-body table th{ background:#f4f1fb; color:#4a3a63; font-weight:700; text-align:left; }
         .article-body a{ color:#8e44ad; text-decoration:underline; }
         .article-body code{ background:#f4f1fb; padding:.15rem .4rem; border-radius:4px; font-size:.88rem; }
         .article-cta{ text-align:center; margin:2.5rem 0 1.5rem; }
@@ -164,6 +166,13 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.article-body table').forEach(function (t) {
+                if (t.closest('.table-wrap')) return;
+                var w = document.createElement('div');
+                w.className = 'table-wrap';
+                t.parentNode.insertBefore(w, t);
+                w.appendChild(t);
+            });
             if (!window.anime) return;
             var driftEm = ['🐱', '🐾', '🐱', '🐾'];
             function spawnDrift() {

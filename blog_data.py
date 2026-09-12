@@ -97,6 +97,7 @@ BLOG_POSTS = [
 </ul>
 
 <h2>Comparison Table</h2>
+<div class="table-wrap">
 <table border="1" cellpadding="8" cellspacing="0" style="width:100%;border-collapse:collapse;">
 <thead><tr><th>Feature</th><th>Meow OCR</th><th>Google Drive</th><th>OnlineOCR</th><th>Tesseract</th></tr></thead>
 <tbody>
@@ -107,6 +108,7 @@ BLOG_POSTS = [
 <tr><td>Watermark</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
 </tbody>
 </table>
+</div>
 
 <h2>Our Recommendation</h2>
 <p>For quick, private text extraction with no strings attached, <strong>Meow OCR</strong> is the simplest choice. For large-scale or offline work, Tesseract is powerful but requires setup.</p>
@@ -246,6 +248,7 @@ BLOG_POSTS = [
 <p>For most people, <strong>online OCR</strong> (like <a href="/">Meow OCR</a>) is faster and simpler. Desktop OCR is better for offline work, bulk processing or extreme privacy requirements.</p>
 
 <h2>Online OCR — Pros and Cons</h2>
+<div class="table-wrap">
 <table border="1" cellpadding="8" cellspacing="0" style="width:100%;border-collapse:collapse;">
 <thead><tr><th>Pros</th><th>Cons</th></tr></thead>
 <tbody>
@@ -255,8 +258,10 @@ BLOG_POSTS = [
 <tr><td>Always up-to-date engine</td><td>Less control over processing</td></tr>
 </tbody>
 </table>
+</div>
 
 <h2>Desktop OCR — Pros and Cons</h2>
+<div class="table-wrap">
 <table border="1" cellpadding="8" cellspacing="0" style="width:100%;border-collapse:collapse;">
 <thead><tr><th>Pros</th><th>Cons</th></tr></thead>
 <tbody>
@@ -266,6 +271,7 @@ BLOG_POSTS = [
 <tr><td>Full control over settings</td><td>Only works on your computer</td></tr>
 </tbody>
 </table>
+</div>
 
 <h2>When to Choose Online OCR</h2>
 <ul>
