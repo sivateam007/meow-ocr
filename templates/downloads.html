@@ -244,16 +244,20 @@
                                 <a href="/check/{{ d.task_id }}" class="act-link act-trans">
                                     <i class="fas fa-spinner fa-pulse"></i> Translating...
                                 </a>
+                                {% if d.can_cancel %}
                                 <button onclick="cancelTask('{{ d.task_id }}')" class="act-btn act-danger">
                                     <i class="fas fa-times"></i> Cancel
                                 </button>
+                                {% endif %}
                                 {% else %}
                                 <a href="/check/{{ d.task_id }}" class="act-link act-progclass">
                                     <i class="fas fa-spinner fa-pulse"></i> Check Progress
                                 </a>
+                                {% if d.can_cancel %}
                                 <button onclick="cancelTask('{{ d.task_id }}')" class="act-btn act-danger">
                                     <i class="fas fa-times"></i> Cancel
                                 </button>
+                                {% endif %}
                                 {% endif %}
                             </td>
                         </tr>

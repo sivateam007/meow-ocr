@@ -135,9 +135,11 @@
                 <a href="/" class="submit-btn" id="back-btn" style="display: none; text-decoration: none; background: linear-gradient(135deg, #64748b 0%, #475569 100%);">
                     Process Another File
                 </a>
+                {% if can_cancel %}
                 <button class="submit-btn" id="cancel-btn" onclick="cancelProcessing()" style="display: none; text-decoration: none; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border: none; cursor: pointer;">
                     <i class="fas fa-times-circle"></i> Cancel
                 </button>
+                {% endif %}
             </div>
 
             <div class="task-id-box">
@@ -172,7 +174,7 @@
         const downloadBtn = document.getElementById('download-btn');
         const viewBtn = document.getElementById('view-btn');
         const backBtn = document.getElementById('back-btn');
-        const cancelBtn = document.getElementById('cancel-btn');
+        const cancelBtn = document.getElementById('cancel-btn') || { style: {} };
         const filenameEl = document.getElementById('filename');
         const detectedLang = document.getElementById('detected-lang');
         const etaText = document.getElementById('eta-text');

@@ -9,6 +9,8 @@ import html
 import tempfile
 import threading
 import uuid
+import hmac
+import secrets
 from functools import wraps
 import re
 import logging
@@ -451,6 +453,27 @@ TTS_PREVIEW_SAMPLES = {
 # Anonymous free usage limit (docs convertible without signing in)
 FREE_DOCS_WITHOUT_LOGIN = int(os.environ.get("FREE_DOCS_WITHOUT_LOGIN", "1"))
 _COOKIE_COUNTER = "scan_docs_done"  # cookie name counting anonymous conversions
+
+# Secret per-browser owner token: only the browser that uploaded a task may
+# cancel it. The token is stored in the task record at creation and mirrored
+# to the visitor's HttpOnly cookie, so anyone with just a link can watch
+# progress but cannot cancel someone else's upload.
+_OWNER_COOKIE = "meow_owner_token"
+
+def _get_device_token():
+    """Return this visitor's owner token, generating one if they are new."""
+    tok = request.cookies.get(_OWNER_COOKIE) or ""
+    if not tok:
+        tok = secrets.token_urlsafe(32)
+    return tok
+
+def _owns_task(task):
+    """True if the current visitor holds the secret owner token for this task."""
+    expected = task.get("owner_token") if isinstance(task, dict) else None
+    if not expected:
+        return False
+    provided = request.cookies.get(_OWNER_COOKIE) or ""
+    return bool(provided) and hmac.compare_digest(str(expected), provided)
 
 # Firebase (Google Sign-in) config — set these env vars to enable sign-in.
 FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "")
@@ -2473,6 +2496,7 @@ def handle_translate_post():
     file.save(file_path)
 
     task_id = str(uuid.uuid4())
+    owner_token = _get_device_token()
     with progress_lock:
         progress_tracker[task_id] = {
             "current_chunk": 0,
@@ -2491,7 +2515,8 @@ def handle_translate_post():
             "file_type": "translation",
             "created_at": time.time(),
             "cancelled": False,
-            "translating": True
+            "translating": True,
+            "owner_token": owner_token
         }
     _save_progress(True)
 
@@ -2503,7 +2528,9 @@ def handle_translate_post():
     thread.start()
     _ensure_keepalive()
 
-    return render_template('processing.html', task_id=task_id)
+    resp = make_response(render_template('processing.html', task_id=task_id, can_cancel=True))
+    resp.set_cookie(_OWNER_COOKIE, owner_token, max_age=30 * 86400, httponly=True, samesite="Lax", secure=_IS_PRODUCTION)
+    return resp
 
 
 def translate_text(text, target_lang, source_lang='auto', chunk_size=2000):
@@ -2843,6 +2870,7 @@ def index():
         logger.info(f"Created task {task_id} for file {filename}")
         
         # Initialize progress tracker
+        owner_token = _get_device_token()
         with progress_lock:
             progress_tracker[task_id] = {
                 "current_page": 0,
@@ -2861,7 +2889,8 @@ def index():
                 "created_at": time.time(),
                 "file_type": file_type,
                 "cancelled": False,
-                "auto_delete_days": auto_delete_days
+                "auto_delete_days": auto_delete_days,
+                "owner_token": owner_token
             }
         _save_progress(True)
         
@@ -2877,7 +2906,9 @@ def index():
         _ensure_keepalive()
         
         # Render the processing page with task ID
-        resp = make_response(render_template('processing.html', task_id=task_id))
+        resp = make_response(render_template('processing.html', task_id=task_id, can_cancel=True))
+        # Bind this task to the uploading browser so only it can cancel later.
+        resp.set_cookie(_OWNER_COOKIE, owner_token, max_age=30 * 86400, httponly=True, samesite="Lax", secure=_IS_PRODUCTION)
         # Track anonymous conversions with a cookie (no limit for logged-in users)
         if not session.get("logged_in") and not session.get("uid"):
             used = 0
@@ -2978,7 +3009,10 @@ def get_progress(task_id):
 @app.route('/check/<task_id>')
 def check_progress_page(task_id):
     """Styled HTML progress page for checking task status."""
-    return render_template('progress_check.html', task_id=task_id)
+    with progress_lock:
+        task = progress_tracker.get(task_id)
+    can_cancel = bool(task) and _owns_task(task)
+    return render_template('progress_check.html', task_id=task_id, can_cancel=can_cancel)
 
 
 @app.route('/download/<task_id>')
@@ -3240,18 +3274,22 @@ def share_link(task_id):
 
 
 @app.route('/cancel/<task_id>', methods=['POST'])
+@_rate_limit(10, 60)
 def cancel_task(task_id):
-    """Cancel a running OCR task"""
+    """Cancel a running OCR task (owner-only)."""
     with progress_lock:
         task = progress_tracker.get(task_id)
         if not task:
             return jsonify({"error": "Task not found"}), 404
+        if not _owns_task(task):
+            logger.warning(f"Task {task_id}: Cancel blocked - not the owner")
+            return jsonify({"error": "You are not the owner of this task"}), 403
         if task["status"] not in ("processing", "resuming", "starting", "detecting_language", "getting_page_count", "translating"):
             return jsonify({"error": "Task is not running"}), 400
         task["cancelled"] = True
         task["status"] = "cancelling"
     _save_progress(True)
-    logger.info(f"Task {task_id}: Cancel requested")
+    logger.info(f"Task {task_id}: Cancel requested by owner")
     return jsonify({"status": "cancelling"}), 200
 
 
@@ -3330,7 +3368,8 @@ def retry_task(task_id):
             "created_at": time.time(),
             "file_type": file_type,
             "cancelled": False,
-            "retry_of": task_id
+            "retry_of": task_id,
+            "owner_token": old.get("owner_token") or _get_device_token()
         }
     _save_progress(True)
 
@@ -3342,7 +3381,9 @@ def retry_task(task_id):
     thread.start()
     _ensure_keepalive()
 
-    return jsonify({"task_id": new_id}), 200
+    resp = jsonify({"task_id": new_id})
+    resp.set_cookie(_OWNER_COOKIE, progress_tracker[new_id]["owner_token"], max_age=30 * 86400, httponly=True, samesite="Lax", secure=_IS_PRODUCTION)
+    return resp, 200
 
 
 @app.route('/ads.txt')
@@ -3714,6 +3755,7 @@ def downloads_page():
                 "total_chunks": task.get("total_chunks"),
                 "audio": task.get("audio", False),
                 "audio_url": (f"/download/tts/{task_id}" if task.get("audio") else ""),
+                "can_cancel": _owns_task(task),
             }
             all_tasks.append(info)
 
