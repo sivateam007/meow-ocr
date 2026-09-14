@@ -20,7 +20,7 @@ import json
 import glob
 import base64
 import io
-from flask import Flask, request, render_template, send_file, flash, redirect, url_for, jsonify, session, make_response, Response
+from flask import Flask, request, render_template, send_file, flash, redirect, url_for, jsonify, session, make_response, Response, has_request_context
 from werkzeug.utils import secure_filename
 from pdf2image import convert_from_path, pdfinfo_from_path
 import pytesseract
@@ -461,7 +461,10 @@ _COOKIE_COUNTER = "scan_docs_done"  # cookie name counting anonymous conversions
 _OWNER_COOKIE = "meow_owner_token"
 
 def _get_device_token():
-    """Return this visitor's owner token, generating one if they are new."""
+    """Return this visitor's owner token, generating one if they are new.
+    Safe to call outside a request context (background threads)."""
+    if not has_request_context():
+        return secrets.token_urlsafe(32)
     tok = request.cookies.get(_OWNER_COOKIE) or ""
     if not tok:
         tok = secrets.token_urlsafe(32)
@@ -2761,7 +2764,9 @@ def translate_file_background(task_id, file_path, filename, temp_dir, source_lan
                 eff_voice = _pick_audio_voice(voice, target_lang)
                 if eff_voice:
                     audio_base = os.path.splitext(output_filename)[0]
-                    _start_text2audio_task(result_text[:200000], eff_voice, 100, 0, base_name=audio_base)
+                    with progress_lock:
+                        parent_owner = progress_tracker.get(task_id, {}).get("owner_token")
+                    _start_text2audio_task(result_text[:200000], eff_voice, 100, 0, base_name=audio_base, owner_token=parent_owner)
                     logger.info(f"Task {task_id}: started 'speak the translation' MP3 with {eff_voice}")
                 else:
                     logger.info(f"Task {task_id}: no TTS voice for target '{target_lang}', skipping audio")
@@ -4645,6 +4650,11 @@ def voice_preset_set():
     return jsonify({"ok": True})
 
 
+class _T2ACancelled(Exception):
+    """Raised inside the text-to-audio worker when the owner cancels the job."""
+    pass
+
+
 def _text2audio_worker(token, text, voice, rate, pitch, base_name="audio"):
     """Background: synthesize MP3 (chunked), persist, upload to cloud, update My Downloads."""
     p_id = f"t2a_{token}"
@@ -4664,6 +4674,9 @@ def _text2audio_worker(token, text, voice, rate, pitch, base_name="audio"):
                 progress_tracker[p_id]["words_done"] = 0
 
         def _on_segment(words_done, total_words):
+            with progress_lock:
+                if progress_tracker.get(p_id, {}).get("cancelled"):
+                    raise _T2ACancelled()
             pct = max(1, int(80 * words_done / total_words))
             now = time.time()
             start = text2audio_tasks[token].get("synth_start") or now
@@ -4734,6 +4747,15 @@ def _text2audio_worker(token, text, voice, rate, pitch, base_name="audio"):
                 progress_tracker[p_id]["tts_path"] = mp3_path
                 progress_tracker[p_id]["tts_download_link"] = dl_link
         _save_progress(force=True)
+    except _T2ACancelled:
+        logger.info(f"text2audio {token}: cancelled by owner")
+        with text2audio_lock:
+            text2audio_tasks[token]["status"] = "cancelled"
+        with progress_lock:
+            if p_id in progress_tracker:
+                progress_tracker[p_id]["status"] = "cancelled"
+                progress_tracker[p_id]["cancelled"] = True
+        _save_progress(force=True)
     except Exception as e:
         logger.error(f"text2audio {token}: error: {e}", exc_info=True)
         with text2audio_lock:
@@ -4756,12 +4778,14 @@ def _sanitize_audio_base(name):
     return name
 
 
-def _start_text2audio_task(text, voice, rate, pitch, base_name="audio"):
+def _start_text2audio_task(text, voice, rate, pitch, base_name="audio", owner_token=None):
     """Register a text-to-audio task (shows in My Downloads) and start its worker.
     Returns the polling token."""
     base_name = _sanitize_audio_base(base_name)
     token = uuid.uuid4().hex[:16]
     p_id = f"t2a_{token}"
+    if owner_token is None:
+        owner_token = _get_device_token()
     with text2audio_lock:
         text2audio_tasks[token] = {
             "status": "queued", "progress": 0, "error": "",
@@ -4789,10 +4813,12 @@ def _start_text2audio_task(text, voice, rate, pitch, base_name="audio"):
             "synth_start": None,
             "created_at": time.time(),
             "completed_at": None,
+            "cancelled": False,
+            "owner_token": owner_token,
         }
     _save_progress(force=True)
     threading.Thread(target=_text2audio_worker, args=(token, text, voice, rate, pitch, base_name), daemon=True).start()
-    return token
+    return token, owner_token
 
 
 @app.route('/api/text2audio', methods=['POST'])
@@ -4810,8 +4836,10 @@ def text2audio_create():
     pitch = int(data.get("pitch", 0))
     pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, pitch))
     base_name = _sanitize_audio_base(data.get("filename") or "audio")
-    token = _start_text2audio_task(text, voice, rate, pitch, base_name)
-    return jsonify({"ok": True, "token": token}), 202
+    token, owner_token = _start_text2audio_task(text, voice, rate, pitch, base_name)
+    resp = jsonify({"ok": True, "token": token})
+    resp.set_cookie(_OWNER_COOKIE, owner_token, max_age=30 * 86400, httponly=True, samesite="Lax", secure=_IS_PRODUCTION)
+    return resp, 202
 
 
 @app.route('/api/text2audio/batch', methods=['POST'])
@@ -4837,6 +4865,7 @@ def text2audio_batch():
     except (TypeError, ValueError):
         pitch = 0
     results, errors = [], []
+    batch_owner = _get_device_token()
     for f in files:
         name = os.path.basename(f.filename or "")
         if not name:
@@ -4851,7 +4880,7 @@ def text2audio_batch():
             errors.append({"filename": name, "error": "The file is empty."})
             continue
         base_name = os.path.splitext(name)[0]
-        token = _start_text2audio_task(text, voice, rate, pitch, base_name or "audio")
+        token, _ = _start_text2audio_task(text, voice, rate, pitch, base_name or "audio", owner_token=batch_owner)
         results.append({
             "token": token,
             "filename": name,
@@ -4862,7 +4891,9 @@ def text2audio_batch():
     if not results:
         msg = errors[0]["error"] if errors else "No files could be converted."
         return jsonify({"error": msg}), 400
-    return jsonify({"ok": True, "files": results, "errors": errors}), 202
+    resp = jsonify({"ok": True, "files": results, "errors": errors})
+    resp.set_cookie(_OWNER_COOKIE, batch_owner, max_age=30 * 86400, httponly=True, samesite="Lax", secure=_IS_PRODUCTION)
+    return resp, 202
 
 
 @app.route('/api/text2audio/<token>')
