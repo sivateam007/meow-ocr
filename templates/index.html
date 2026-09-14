@@ -268,6 +268,60 @@
                     </div>
                 </div>
 
+                <div class="options-grid audiobook-options" id="audiobook-options" style="grid-template-columns: 1fr; gap: .6rem;">
+                    <div style="display:flex; align-items:center; gap:.6rem; flex-wrap:wrap;">
+                        <input type="checkbox" id="make-audio" name="make_audio" value="1" style="width:18px; height:18px; cursor:pointer;">
+                        <label for="make-audio" style="cursor:pointer; font-size:.95rem; color:var(--dark);"><i class="fas fa-headphones" style="margin-right:.4rem; color:#6c3483;"></i> Also create audiobook (MP3) — auto-saved to My Downloads</label>
+                    </div>
+                    <div class="options-grid" id="audiobook-controls" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; display: none;">
+                        <div class="option-group">
+                            <label class="option-label"><i class="fas fa-cat"></i> Voice</label>
+                            <select name="audio_voice" id="audio-voice-select" class="select-input">
+                                <option value="">Auto-pick (match language)</option>
+                            </select>
+                        </div>
+                        <div class="option-group">
+                            <label class="option-label"><i class="fas fa-globe"></i> Translate to (optional)</label>
+                            <select name="chain_translate" id="chain-translate-select" class="select-input">
+                                <option value="">No translation</option>
+                                <option value="en">English</option>
+                                <option value="ta">Tamil</option>
+                                <option value="hi">Hindi</option>
+                                <option value="te">Telugu</option>
+                                <option value="bn">Bengali</option>
+                                <option value="kn">Kannada</option>
+                                <option value="ml">Malayalam</option>
+                                <option value="gu">Gujarati</option>
+                                <option value="pa">Punjabi</option>
+                                <option value="mr">Marathi</option>
+                                <option value="ar">Arabic</option>
+                                <option value="es">Spanish</option>
+                                <option value="fr">French</option>
+                                <option value="de">German</option>
+                                <option value="it">Italian</option>
+                                <option value="ru">Russian</option>
+                                <option value="zh-cn">Chinese (Simplified)</option>
+                                <option value="ja">Japanese</option>
+                                <option value="ko">Korean</option>
+                                <option value="pt">Portuguese</option>
+                                <option value="tr">Turkish</option>
+                                <option value="vi">Vietnamese</option>
+                                <option value="id">Indonesian</option>
+                                <option value="ms">Malay</option>
+                                <option value="nl">Dutch</option>
+                                <option value="pl">Polish</option>
+                                <option value="sv">Swedish</option>
+                                <option value="da">Danish</option>
+                                <option value="fi">Finnish</option>
+                                <option value="cs">Czech</option>
+                                <option value="ro">Romanian</option>
+                                <option value="uk">Ukrainian</option>
+                                <option value="hu">Hungarian</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="options-grid" id="translate-options" style="display: none;">
                     <input type="hidden" name="mode" value="translate" id="mode-input" disabled>
                     <div class="option-group">
@@ -798,6 +852,7 @@
         const endPageGroup = document.getElementById('end-page-group');
         const ocrOptions = document.getElementById('ocr-options');
         const translateOptions = document.getElementById('translate-options');
+        const audiobookOptions = document.getElementById('audiobook-options');
         const ocrInfoBox = document.getElementById('ocr-info-box');
         const translateInfoBox = document.getElementById('translate-info-box');
         const ocrNote = document.getElementById('ocr-note');
@@ -822,6 +877,7 @@
                 t.classList.remove('active');
             });
             ttsSection.style.display = 'none';
+            if (audiobookOptions) audiobookOptions.style.display = (tab === 'translate' || tab === 'tts') ? 'none' : 'grid';
 
             const uploadHint = document.querySelector('.upload-hint');
             let accept = '';
@@ -2002,7 +2058,56 @@
         })();
     </script>
 
-    <!-- ads removed -->
+    <script>
+        (function () {
+            var cb = document.getElementById('make-audio');
+            var ctrl = document.getElementById('audiobook-controls');
+            var voiceSel = document.getElementById('audio-voice-select');
+            var chainSel = document.getElementById('chain-translate-select');
+            if (!cb) return;
+
+            var LANG_LABELS = {
+                en:'English', tam:'Tamil', hin:'Hindi', tel:'Telugu', ben:'Bengali',
+                kan:'Kannada', mal:'Malayalam', guj:'Gujarati', mar:'Marathi', urd:'Urdu',
+                ara:'Arabic', rus:'Russian', ell:'Greek', heb:'Hebrew', tha:'Thai',
+                tur:'Turkish', por:'Portuguese', ind:'Indonesian', msa:'Malay', vie:'Vietnamese',
+                chi_sim:'Chinese', jpn:'Japanese', kor:'Korean', spa:'Spanish', fra:'French',
+                deu:'German', ita:'Italian', pol:'Polish', swe:'Swedish', dan:'Danish',
+                fin:'Finnish', ces:'Czech', ron:'Romanian', ukr:'Ukrainian', hun:'Hungarian',
+                nob:'Norwegian', hrv:'Croatian', bul:'Bulgarian', slk:'Slovak',
+                nld:'Dutch', fil:'Filipino', pan:'Punjabi'
+            };
+
+            cb.addEventListener('change', function () {
+                ctrl.style.display = cb.checked ? 'grid' : 'none';
+                if (cb.checked && voiceSel.options.length <= 1) loadVoices();
+            });
+
+            function loadVoices() {
+                fetch('/api/text2audio/voices')
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (!data) return;
+                        voiceSel.innerHTML = '';
+                        var dflt = document.createElement('option');
+                        dflt.value = '';
+                        dflt.textContent = 'Auto-pick (match language)';
+                        voiceSel.appendChild(dflt);
+                        Object.keys(data).forEach(function (code) {
+                            var langName = LANG_LABELS[code] || code;
+                            (data[code] || []).forEach(function (v) {
+                                var opt = document.createElement('option');
+                                opt.value = v[0];
+                                opt.textContent = langName + ' - ' + v[1];
+                                voiceSel.appendChild(opt);
+                            });
+                        });
+                    })
+                    .catch(function () {});
+            }
+        })();
+    </script>
+
     {% include 'chatbot.html' %}
     <script>
         if ('serviceWorker' in navigator) {

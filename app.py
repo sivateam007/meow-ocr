@@ -1518,20 +1518,20 @@ def process_file_background(task_id, file_path, filename, temp_dir, selected_lan
                 progress_tracker[task_id]["percentage"] = 100
                 progress_tracker[task_id]["pages_processed"] = 1
                 
-        elif file_type == 'txt':
+        elif file_type in ('txt', 'text'):
             # Read directly
             with progress_lock:
                 progress_tracker[task_id]["current_page"] = 1
                 progress_tracker[task_id]["percentage"] = 50
-            
             text = process_txt_file(file_path)
-            
+
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(text)
-            
+
             with progress_lock:
                 progress_tracker[task_id]["percentage"] = 100
                 progress_tracker[task_id]["pages_processed"] = 1
+                progress_tracker[task_id]["detected_language"] = progress_tracker[task_id].get("detected_language") or "eng"
                 
         elif file_type == 'spreadsheet':
             # Extract text from spreadsheets
@@ -1651,7 +1651,66 @@ def process_file_background(task_id, file_path, filename, temp_dir, selected_lan
             progress_tracker[task_id]["completed_at"] = time.time()
             progress_tracker[task_id]["download_count"] = progress_tracker[task_id].get("download_count", 0)
         _save_progress(True)
-            
+
+        # ---- Audiobook pipeline (optional chain: OCR -> translate -> TTS MP3) ----
+        # Runs after the OCR task is marked complete. Creates a separate t2a_* MP3
+        # task that appears in My Downloads, exactly like the "speak the translation"
+        # feature. Failures here must NOT flip the OCR task back to error.
+        try:
+            with progress_lock:
+                _ab_pipe = {
+                    "make_audio": progress_tracker[task_id].get("make_audio", False),
+                    "audio_voice": progress_tracker[task_id].get("audio_voice", ""),
+                    "chain_translate": progress_tracker[task_id].get("chain_translate", ""),
+                    "detected_language": progress_tracker[task_id].get("detected_language", "eng"),
+                    "owner_token": progress_tracker[task_id].get("owner_token"),
+                    "output_filename": progress_tracker[task_id].get("output_filename") or output_filename,
+                }
+            if not _ab_pipe["make_audio"]:
+                pass  # No audiobook requested.
+            else:
+                try:
+                    with open(output_path, 'r', encoding='utf-8') as f:
+                        text = f.read()
+                except Exception as read_err:
+                    logger.warning(f"Task {task_id}: audiobook could not read OCR output: {read_err}")
+                    text = ""
+                text = (text or "").strip()
+                if text:
+                    target_lang = _ab_pipe["chain_translate"] or ""
+                    if target_lang:
+                        eff_lang = target_lang
+                        logger.info(f"Task {task_id}: translating {len(text)} chars to '{target_lang}' for audiobook")
+                        text = translate_text(text, target_lang, source_lang="auto")
+                        voice = _pick_audio_voice(_ab_pipe["audio_voice"], target_lang)
+                    else:
+                        eff_lang = _ab_pipe["detected_language"]
+                        voice = _pick_audio_voice_for_ocr(_ab_pipe["audio_voice"], eff_lang)
+                    if not voice:
+                        voice = _default_tts_voice_for_target("en")
+                    if voice:
+                        words = text.split()
+                        if len(words) > TTS_MAX_WORDS:
+                            text = " ".join(words[:TTS_MAX_WORDS])
+                            logger.info(f"Task {task_id}: audiobook truncated to {TTS_MAX_WORDS} words")
+                        audio_base = os.path.splitext(_ab_pipe["output_filename"])[0]
+                        child_token, _owner = _start_text2audio_task(
+                            text, voice, 100, 0, base_name=audio_base,
+                            owner_token=_ab_pipe["owner_token"],
+                        )
+                        with progress_lock:
+                            progress_tracker[task_id]["child_audio_token"] = child_token
+                        _save_progress(force=True)
+                        logger.info(f"Task {task_id}: audiobook MP3 started ({voice}, lang={eff_lang}, token={child_token})")
+                    else:
+                        logger.warning(f"Task {task_id}: audiobook skipped - no matching TTS voice for '{eff_lang}'")
+                else:
+                    logger.warning(f"Task {task_id}: audiobook skipped - OCR text empty")
+        except Exception as ab_err:
+            logger.error(f"Task {task_id}: audiobook pipeline error: {ab_err}")
+            import traceback
+            logger.error(f"Task {task_id}: audiobook traceback: {traceback.format_exc()}")
+
     except Exception as e:
         logger.error(f"Task {task_id}: Error - {str(e)}")
         import traceback
@@ -2649,6 +2708,31 @@ def _pick_audio_voice(voice, target_lang):
     return _default_tts_voice_for_target(target_lang)
 
 
+_OCR_LANG_TO_TTS_KEY = {
+    "eng": "en", "tam": "tam", "hin": "hin", "tel": "tel", "ben": "ben",
+    "kan": "kan", "mal": "mal", "guj": "guj", "pan": "", "mar": "mar",
+    "ara": "ara", "spa": "spa", "fra": "fra", "deu": "deu", "ita": "ita",
+    "rus": "rus", "chi_sim": "chi_sim", "jpn": "jpn", "kor": "kor",
+}
+
+
+def _tts_voice_for_ocr_lang(lang):
+    """Pick a default TTS voice for an OCR-detected language code."""
+    key = _OCR_LANG_TO_TTS_KEY.get((lang or "").lower(), "")
+    if not key:
+        return None
+    voices = TTS_VOICES.get(key)
+    return voices[0][0] if voices else None
+
+
+def _pick_audio_voice_for_ocr(voice, lang):
+    """Resolve voice: explicit > OCR lang default."""
+    voice = (voice or "").strip()
+    if voice and _looks_like_cat_voice(voice):
+        return voice
+    return _tts_voice_for_ocr_lang(lang)
+
+
 def translate_file_background(task_id, file_path, filename, temp_dir, source_lang, target_lang, speak=False, voice=None):
     """Background thread to translate a text file and update progress."""
     try:
@@ -2856,6 +2940,11 @@ def index():
         except (TypeError, ValueError):
             auto_delete_days = AUTO_DELETE_DAYS
 
+        # Audiobook pipeline options (optional chain: OCR -> translate -> TTS MP3)
+        make_audio = request.form.get('make_audio') == '1'
+        audio_voice = (request.form.get('audio_voice') or '').strip()
+        chain_translate = (request.form.get('chain_translate') or '').strip()
+
         # Save uploaded file to temp location
         filename = secure_filename(file.filename)
         temp_dir = tempfile.mkdtemp()
@@ -2895,7 +2984,10 @@ def index():
                 "file_type": file_type,
                 "cancelled": False,
                 "auto_delete_days": auto_delete_days,
-                "owner_token": owner_token
+                "owner_token": owner_token,
+                "make_audio": make_audio,
+                "audio_voice": audio_voice,
+                "chain_translate": chain_translate,
             }
         _save_progress(True)
         
@@ -2988,7 +3080,18 @@ def get_progress(task_id):
             # Resolve the cat name for the stored voice (so the UI shows a friendly name).
             _voice = task.get("voice_name", "")
             _cat = TTS_CAT_NAMES.get(_voice)
-            
+
+            # Audiobook child status (linked t2a_* task created by the OCR pipeline).
+            _child_token = task.get("child_audio_token", "") or ""
+            _child_status = ""
+            _child_percentage = 0
+            _child_error = ""
+            if _child_token and ("t2a_" + _child_token) in progress_tracker:
+                _child = progress_tracker["t2a_" + _child_token]
+                _child_status = _child.get("status", "")
+                _child_percentage = _child.get("percentage", 0) or 0
+                _child_error = _child.get("error", "") or ""
+
             return jsonify({
                 "status": task["status"],
                 "current_page": task.get("current_page", 0),
@@ -3005,6 +3108,12 @@ def get_progress(task_id):
                 "words_done": task.get("words_done", 0),
                 "total_words": task.get("total_words", 0),
                 "voice_name": (_cat[0] if _cat else _voice),
+                "make_audio": bool(task.get("make_audio")),
+                "chain_translate": task.get("chain_translate", ""),
+                "child_audio_token": _child_token,
+                "child_audio_status": _child_status,
+                "child_audio_percentage": _child_percentage,
+                "child_audio_error": _child_error,
             })
     except Exception as e:
         logger.error(f"Progress endpoint error for {task_id}: {e}")
@@ -3761,7 +3870,16 @@ def downloads_page():
                 "audio": task.get("audio", False),
                 "audio_url": (f"/download/tts/{task_id}" if task.get("audio") else ""),
                 "can_cancel": _owns_task(task),
+                "make_audio": bool(task.get("make_audio")),
+                "child_audio_token": task.get("child_audio_token", ""),
             }
+            # Resolve child audio status for the parent audiobook row indicator.
+            _cat = task.get("child_audio_token") or ""
+            if _cat:
+                _child = progress_tracker.get("t2a_" + _cat, {})
+                info["child_audio_status"] = _child.get("status", "")
+            else:
+                info["child_audio_status"] = ""
             all_tasks.append(info)
 
     # Deduplicate: the same completed file can be resurrected by both the local

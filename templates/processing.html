@@ -116,6 +116,23 @@
                         <p id="eta-text">--</p>
                     </div>
                 </div>
+
+                <div class="audiobook-card" id="audiobook-card" style="display: none; margin-top: 1.25rem; padding: 1rem 1.25rem; background: linear-gradient(135deg, #f9f0ff 0%, #fff5f0 100%); border: 1px solid #e5d9f0; border-radius: 12px; text-align: left;">
+                    <p style="margin: 0 0 .5rem; font-size: 1rem; color: #6c3483;"><i class="fas fa-headphones"></i> <span id="audiobook-status-text">Creating audiobook (MP3)...</span></p>
+                    <div class="progress-container" style="margin-top: .4rem;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="audiobook-progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <p style="font-size: .85rem; color: #8a6d3b; margin: .6rem 0 0;" id="audiobook-meta-text"><i class="fas fa-info-circle"></i> Your document is being turned into a narrated MP3. It will be saved to My Downloads automatically.</p>
+                </div>
+
+                <div class="audiobook-done" id="audiobook-done" style="display: none; margin-top: 1.25rem; padding: 1rem 1.25rem; background: linear-gradient(135deg, #eafaf1 0%, #f0fdf4 100%); border: 1px solid #bbe8c8; border-radius: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap;">
+                        <span style="font-size: 1rem; color: #166534;"><i class="fas fa-check-circle"></i> Audiobook ready!</span>
+                        <a href="#" class="submit-btn" id="audiobook-download-btn" style="text-decoration: none; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);"><i class="fas fa-download"></i> Download MP3</a>
+                    </div>
+                </div>
             </div>
 
             <div class="flash" id="error-box" style="display: none;">
@@ -179,6 +196,12 @@
         const detectedLang = document.getElementById('detected-lang');
         const etaText = document.getElementById('eta-text');
         const etaSection = document.getElementById('eta-section');
+        const audiobookCard = document.getElementById('audiobook-card');
+        const audiobookStatus = document.getElementById('audiobook-status-text');
+        const audiobookMeta = document.getElementById('audiobook-meta-text');
+        const audiobookFill = document.getElementById('audiobook-progress-fill');
+        const audiobookDone = document.getElementById('audiobook-done');
+        const audiobookDownload = document.getElementById('audiobook-download-btn');
 
         let pollInterval;
         let simulatedProgress = 0;
@@ -451,7 +474,10 @@
                         viewBtn.style.display = 'inline-block';
                         viewBtn.href = `/result/${taskId}`;
                         backBtn.style.display = 'inline-block';
-                        clearInterval(pollInterval);
+                        const childDone = data.child_audio_status === 'completed' || data.child_audio_status === 'error' || data.child_audio_status === 'cancelled';
+                        if (!(data.make_audio && !childDone)) {
+                            clearInterval(pollInterval);
+                        }
                     } else if (data.status === 'interrupted') {
                         statusText.textContent = 'Processing interrupted (server restarted)';
                         spinner.style.display = 'none';
@@ -487,6 +513,28 @@
                         stopETACountdown();
                         etaSection.style.display = 'none';
                         clearInterval(pollInterval);
+                    }
+
+                    if (data.make_audio && (data.status === 'completed' || data.child_audio_status)) {
+                        const childToken = data.child_audio_token || '';
+                        const childStatus = data.child_audio_status || '';
+                        const childPercent = data.child_audio_percentage || 0;
+                        if (childStatus === 'completed') {
+                            audiobookCard.style.display = 'none';
+                            audiobookDone.style.display = 'block';
+                            audiobookDownload.href = '/download/tts/t2a_' + childToken;
+                            clearInterval(pollInterval);
+                        } else if (childStatus === 'error' || childStatus === 'cancelled') {
+                            audiobookCard.style.display = 'block';
+                            audiobookDone.style.display = 'none';
+                            audiobookStatus.textContent = childStatus === 'cancelled' ? 'Audiobook cancelled' : 'Audiobook failed';
+                            audiobookMeta.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.child_audio_error || 'Could not create the audiobook. Your text result is still ready.');
+                            clearInterval(pollInterval);
+                        } else {
+                            audiobookCard.style.display = 'block';
+                            audiobookDone.style.display = 'none';
+                            audiobookFill.style.width = Math.min(100, childPercent || 5) + '%';
+                        }
                     }
                 })
                 .catch(error => {

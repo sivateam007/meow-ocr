@@ -142,6 +142,12 @@
                             <td class="col-type">
                                 {%- if d.translating -%}
                                 <span class="st-translate"><i class="fas fa-language"></i> Translation</span>
+                                {%- elif d.make_audio and d.child_audio_status == 'completed' -%}
+                                {{ d.file_type.upper() }}<br><span class="st-good"><i class="fas fa-headphones"></i> Audiobook</span>
+                                {%- elif d.make_audio and d.child_audio_status -%}
+                                {{ d.file_type.upper() }}<br><span style="color:#6c3483; font-size:.82rem;"><i class="fas fa-headphones"></i> Audio {{ d.child_audio_status }}</span>
+                                {%- elif d.make_audio -%}
+                                {{ d.file_type.upper() }}<br><span style="color:#6c3483; font-size:.82rem;"><i class="fas fa-headphones"></i> Audiobook</span>
                                 {%- else -%}
                                 {{ d.file_type.upper() }}
                                 {%- endif -%}
