@@ -65,56 +65,91 @@
         .ab-hero {
             position: relative;
             overflow: hidden;
-            border-radius: 18px;
-            padding: 3rem 2rem;
+            border-radius: 20px;
+            padding: 2.6rem 2.6rem 2.6rem 3rem;
             margin: 1.2rem 0 2rem;
-            background: linear-gradient(135deg, #2b144d 0%, #5b2a86 45%, #0f766e 100%);
-            color: #fff;
-            box-shadow: 0 18px 40px rgba(60, 20, 90, 0.35);
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 2.4rem;
+            align-items: center;
+            background: linear-gradient(135deg, #ffffff 0%, #f4edfc 55%, #e9fcf6 100%);
+            border: 1px solid #e6dcf3;
+            color: #2d2142;
+            box-shadow: 0 16px 42px rgba(84, 42, 136, 0.12);
         }
         .ab-hero::before {
             content: "";
             position: absolute; inset: 0;
             background:
-                radial-gradient(circle at 12% 18%, rgba(255, 234, 167, 0.18), transparent 40%),
-                radial-gradient(circle at 88% 24%, rgba(56, 239, 125, 0.22), transparent 42%),
-                radial-gradient(circle at 60% 96%, rgba(142, 68, 173, 0.4), transparent 50%);
+                radial-gradient(circle at 8% 12%, rgba(142, 68, 173, 0.10), transparent 42%),
+                radial-gradient(circle at 96% 18%, rgba(17, 153, 142, 0.12), transparent 44%),
+                radial-gradient(circle at 60% 105%, rgba(79, 124, 255, 0.08), transparent 46%);
+            pointer-events: none;
         }
-        .ab-hero > * { position: relative; z-index: 1; }
+        .ab-hero-copy, .ab-hero-art { position: relative; z-index: 1; }
         .ab-hero-eyebrow {
             display: inline-flex; align-items: center; gap: .5rem;
-            background: rgba(255, 255, 255, 0.14);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(142, 68, 173, 0.08);
+            border: 1px solid rgba(142, 68, 173, 0.25);
+            color: #6c3483;
             border-radius: 30px; padding: .35rem 1rem;
-            font-size: .82rem; font-weight: 700; letter-spacing: .04em;
-            backdrop-filter: blur(4px);
+            font-size: .8rem; font-weight: 700; letter-spacing: .04em;
         }
-        .ab-hero-title { font-size: 2.2rem; line-height: 1.2; margin: .9rem 0 .8rem; color: #fff; }
+        .ab-hero-eyebrow i { color: #8e44ad; }
+        .ab-hero-title { font-size: 2.35rem; line-height: 1.22; margin: .95rem 0 .85rem; color: #251737; letter-spacing: -.4px; }
         .ab-grad {
-            background: linear-gradient(120deg, #ffeaa7 0%, #38ef7d 55%, #81ecec 100%);
+            background: linear-gradient(120deg, #8e44ad 0%, #6c3483 40%, #11998e 100%);
             -webkit-background-clip: text; background-clip: text; color: transparent;
         }
-        .ab-hero-sub { max-width: 720px; font-size: 1.02rem; line-height: 1.65; color: #e9e2f5; margin-bottom: 1.2rem; }
+        .ab-hero-sub { max-width: 640px; font-size: 1rem; line-height: 1.7; color: #5c5c70; margin-bottom: 1.2rem; }
         .ab-badges { display: flex; flex-wrap: wrap; gap: .55rem; margin-bottom: 1.4rem; }
         .ab-badge {
             display: inline-flex; align-items: center; gap: .4rem;
-            background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
-            border-radius: 24px; padding: .32rem .8rem; font-size: .8rem; font-weight: 600;
+            background: #fff; border: 1px solid #e6dcf3;
+            border-radius: 24px; padding: .34rem .85rem; font-size: .8rem; font-weight: 700; color: #5b3f85;
+            box-shadow: 0 2px 8px rgba(84, 42, 136, .06);
         }
-        .ab-badge i { color: #ffeaa7; }
+        .ab-badge i { color: #11998e; }
         .ab-actions { display: flex; flex-wrap: wrap; gap: .7rem; }
         .ab-btn {
             display: inline-flex; align-items: center; gap: .5rem;
-            padding: .72rem 1.25rem; border-radius: 12px; font-weight: 700; font-size: .93rem;
-            text-decoration: none; border: 1px solid rgba(255,255,255,.3); color: #fff;
-            background: rgba(255,255,255,.12); transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
-            cursor: pointer;
+            padding: .78rem 1.3rem; border-radius: 12px; font-weight: 700; font-size: .93rem;
+            text-decoration: none; border: 1px solid transparent; color: #6c3483;
+            background: #fff; transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+            cursor: pointer; box-shadow: 0 4px 12px rgba(84, 42, 136, .08);
         }
-        .ab-btn:hover { transform: translateY(-2px); background: rgba(255,255,255,.2); }
+        .ab-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(84, 42, 136, .14); }
         .ab-btn.primary {
-            background: linear-gradient(135deg, #ffeaa7 0%, #ffa345 100%);
-            color: #3b2a05; border: none;
-            box-shadow: 0 10px 24px rgba(255, 170, 60, .35);
+            background: linear-gradient(135deg, #8e44ad 0%, #6c3483 100%);
+            color: #fff; border: none;
+            box-shadow: 0 10px 24px rgba(108, 52, 131, .35);
+        }
+        .ab-btn.ghost-teal {
+            background: #fff; color: #0f766e; border: 1px solid rgba(17, 153, 142, .35);
+        }
+        .ab-hero-art { position: relative; min-height: 270px; }
+        .ab-art-main {
+            width: 235px; height: 235px; border-radius: 50%; object-fit: cover;
+            border: 5px solid #fff; box-shadow: 0 18px 40px rgba(84, 42, 136, .25);
+            display: block; margin: 0 auto;
+        }
+        .ab-art-tiny {
+            position: absolute; width: 92px; height: 92px; border-radius: 22px; object-fit: cover;
+            border: 4px solid #fff; box-shadow: 0 12px 26px rgba(84, 42, 136, .22);
+        }
+        .ab-art-tiny.one { left: 2%; top: 2%; }
+        .ab-art-tiny.two { right: 0; bottom: 6%; }
+        .ab-art-chip {
+            position: absolute; right: 0; top: 10%;
+            background: #fff; border-radius: 12px; padding: .5rem .8rem; font-size: .78rem; font-weight: 700; color: #2d2142;
+            box-shadow: 0 10px 24px rgba(84, 42, 136, .18); border: 1px solid #ece6f5;
+        }
+        .ab-art-chip i { color: #11998e; margin-right: .3rem; }
+        .ab-art-bubble {
+            position: absolute; left: 0; bottom: 0;
+            background: linear-gradient(135deg, #8e44ad, #6c3483); color: #fff;
+            border-radius: 14px 14px 14px 4px; padding: .6rem .85rem; font-size: .82rem; line-height: 1.45; max-width: 220px;
+            box-shadow: 0 12px 26px rgba(108, 52, 131, .3);
         }
 
         .steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 0 0 2rem; }
@@ -154,13 +189,25 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             gap: .35rem; min-height: 130px; text-align: center; cursor: pointer;
             border: 2px dashed #d9cff0; border-radius: 14px; background: #faf8ff;
-            padding: 1.1rem 1rem; margin-bottom: 1rem; transition: border-color .15s ease, background .15s ease;
+            padding: 1.1rem 1rem; margin-bottom: 1rem; transition: border-color .15s ease, background .15s ease, transform .15s ease;
         }
-        .ab-dropzone:hover, .ab-dropzone.drag { border-color: #8e44ad; background: #f4effa; }
+        .ab-dropzone:hover, .ab-dropzone.drag { border-color: #8e44ad; background: #f4effa; transform: translateY(-3px); }
+        .ab-dropzone .dz-cat {
+            width: 62px; height: 62px; border-radius: 50%; object-fit: cover;
+            border: 2px solid #fff; box-shadow: 0 6px 14px rgba(84, 42, 136, .18);
+            margin-bottom: .25rem; transition: transform .18s ease;
+        }
+        .ab-dropzone:hover .dz-cat { transform: scale(1.07) rotate(-3deg); }
         .ab-dropzone .dz-icon { font-size: 1.6rem; color: #8e44ad; }
         .ab-dropzone .dz-title { font-weight: 700; color: #3c3c4d; font-size: .95rem; }
         .ab-dropzone .dz-hint { font-size: .8rem; color: #9a99ab; }
         .ab-dropzone .dz-file { font-size: .82rem; font-weight: 600; color: #6c3483; }
+        .dz-mic {
+            position: absolute; right: 8%; bottom: 10%;
+            width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #935116, #e67e22); color: #fff; font-size: .8rem;
+            box-shadow: 0 6px 12px rgba(230, 126, 34, .35);
+        }
 
         .ab-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .9rem; }
         .ab-range-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: .2rem 0 .6rem; }
@@ -225,8 +272,9 @@
         @media (max-width: 900px) {
             .tools-grid { grid-template-columns: 1fr; }
             .steps-row { grid-template-columns: 1fr; }
-            .ab-hero { padding: 2rem 1.2rem; }
-            .ab-hero-title { font-size: 1.55rem; }
+            .ab-hero { grid-template-columns: 1fr; padding: 2rem 1.3rem; }
+            .ab-hero-title { font-size: 1.7rem; }
+            .ab-hero-art { min-height: 230px; margin-top: .5rem; }
         }
     </style>
     <script>
@@ -268,19 +316,28 @@
 
     <main class="container">
         <section class="ab-hero">
-            <div class="ab-hero-eyebrow"><i class="fas fa-headphones"></i> Meow OCR · Audiobook Studio · 100% Free</div>
-            <h1 class="ab-hero-title">Turn Any PDF or Document into a <span class="ab-grad">Narrated Audiobook</span></h1>
-            <p class="ab-hero-sub">Listen to your documents on the go. Upload a PDF, image or document and get a natural, narrated MP3 — or paste text and read it aloud instantly. Pick 45+ voices, or tune one to sound like you using My Voice.</p>
-            <div class="ab-badges">
-                <span class="ab-badge"><i class="fas fa-headphones"></i> 45+ Cat Voices</span>
-                <span class="ab-badge"><i class="fas fa-language"></i> 19+ Languages</span>
-                <span class="ab-badge"><i class="fas fa-check-circle"></i> No Signup</span>
-                <span class="ab-badge"><i class="fas fa-shield-alt"></i> Auto-Delete 2 Days</span>
+            <div class="ab-hero-copy">
+                <div class="ab-hero-eyebrow"><i class="fas fa-headphones"></i> Meow OCR · Audiobook Studio · 100% Free</div>
+                <h1 class="ab-hero-title">Turn Any PDF or Document into a <span class="ab-grad">Narrated Audiobook</span></h1>
+                <p class="ab-hero-sub">Listen to your documents on the go. Upload a PDF, image or document and get a natural, narrated MP3 — or paste text and read it aloud instantly. Pick 45+ voices, or tune one to sound like you using My Voice.</p>
+                <div class="ab-badges">
+                    <span class="ab-badge"><i class="fas fa-headphones"></i> 45+ Cat Voices</span>
+                    <span class="ab-badge"><i class="fas fa-language"></i> 19+ Languages</span>
+                    <span class="ab-badge"><i class="fas fa-check-circle"></i> No Signup</span>
+                    <span class="ab-badge"><i class="fas fa-shield-alt"></i> Auto-Delete 2 Days</span>
+                </div>
+                <div class="ab-actions">
+                    <a href="#pdf2audio" class="ab-btn primary"><i class="fas fa-book-open"></i> PDF → Audiobook</a>
+                    <a href="#tts" class="ab-btn"><i class="fas fa-volume-up"></i> Text to Speech</a>
+                    <a href="#myvoice" class="ab-btn ghost-teal"><i class="fas fa-microphone-alt"></i> Your Voice</a>
+                </div>
             </div>
-            <div class="ab-actions">
-                <a href="#pdf2audio" class="ab-btn primary"><i class="fas fa-book-open"></i> PDF → Audiobook</a>
-                <a href="#tts" class="ab-btn"><i class="fas fa-volume-up"></i> Text to Speech</a>
-                <a href="#myvoice" class="ab-btn"><i class="fas fa-microphone-alt"></i> Your Voice</a>
+            <div class="ab-hero-art">
+                <img src="{{ url_for('static', filename='images/cat-working.jpg') }}" alt="Meow OCR cat narrator" class="ab-art-main" loading="eager">
+                <img src="{{ url_for('static', filename='images/meow-cute.jpg') }}" alt="Meow OCR happy cat" class="ab-art-tiny one" loading="lazy">
+                <img src="{{ url_for('static', filename='images/cat-reading.jpg') }}" alt="Meow OCR reading cat" class="ab-art-tiny two" loading="lazy">
+                <div class="ab-art-chip"><i class="fas fa-magic"></i> 45+ voices · 19+ languages</div>
+                <div class="ab-art-bubble">"Turned my PDF into an audiobook in minutes!"</div>
             </div>
         </section>
 
@@ -315,6 +372,7 @@
 
                 <form method="POST" enctype="multipart/form-data" action="/" class="audio-upload-form">
                     <label for="ab-file" class="ab-dropzone" id="ab-dropzone">
+                        <img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="" class="dz-cat">
                         <span class="dz-icon"><i class="fas fa-cloud-upload-alt"></i></span>
                         <span class="dz-title">Click to upload or drag &amp; drop</span>
                         <span class="dz-hint">PDF · JPG · PNG · DOCX · PPTX · XLSX · TXT and more</span>
@@ -476,12 +534,13 @@
                     </div>
                 </div>
 
-                <label for="mv-file" class="ab-dropzone" style="min-height:110px;">
-                    <span class="dz-icon"><i class="fas fa-microphone-alt"></i></span>
-                    <span class="dz-title">Click to upload a short voice clip</span>
-                    <span class="dz-hint">WAV · MP3 · M4A · WEBM · OGG · FLAC · AAC · OPUS</span>
-                    <span class="dz-file" id="mv-file-name"></span>
-                </label>
+<label for="mv-file" class="ab-dropzone" style="position:relative; min-height:110px;">
+                        <img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="" class="dz-cat">
+                        <span class="dz-mic"><i class="fas fa-microphone-alt"></i></span>
+                        <span class="dz-title">Click to upload a short voice clip</span>
+                        <span class="dz-hint">WAV · MP3 · M4A · WEBM · OGG · FLAC · AAC · OPUS</span>
+                        <span class="dz-file" id="mv-file-name"></span>
+                    </label>
                 <input type="file" id="mv-file" accept="audio/*,.wav,.mp3,.m4a,.webm,.ogg,.flac,.aac,.aiff,.opus" style="display:none;">
                 <div class="ab-status" id="mv-status"></div>
 
@@ -553,7 +612,6 @@
     </main>
 
     <footer class="site-footer">
-        {% include 'footer_ad.html' %}
         <div class="footer-inner">
             <div class="footer-brand">
                 <h4>Meow OCR</h4>
@@ -1038,6 +1096,15 @@
             anime({ targets: cards, translateY: [24, 0], opacity: [0, 1], delay: anime.stagger(90), duration: 650, easing: 'easeOutExpo' });
             var arrows = document.querySelectorAll('.ab-actions .ab-btn');
             anime({ targets: arrows, translateY: [14, 0], opacity: [0, 1], delay: anime.stagger(80), duration: 500, easing: 'easeOutQuad' });
+
+            var dzCats = document.querySelectorAll('.dz-cat');
+            if (dzCats.length) anime({ targets: dzCats, translateY: [22, 0], scale: [0.85, 1], opacity: [0, 1], delay: anime.stagger(90), duration: 600, easing: 'easeOutBack' });
+
+            var floats = document.querySelectorAll('.ab-art-tiny, .ab-art-chip, .ab-art-bubble');
+            if (floats.length) anime({ targets: floats, translateY: ['-6px', '6px'], direction: 'alternate', loop: true, duration: 2600, easing: 'easeInOutSine', delay: anime.stagger(400) });
+
+            var primary = document.querySelector('.ab-actions .primary');
+            if (primary) anime({ targets: primary, scale: [1, 1.03, 1], direction: 'alternate', loop: true, duration: 1800, easing: 'easeInOutSine' });
         });
     </script>
 

@@ -2258,6 +2258,13 @@ body {
     box-shadow: 0 6px 18px rgba(108, 52, 131, 0.35);
 }
 .hero-badge.audio-highlight i { color: #ffeaa7; }
+.hero-badge.audio-highlight-teal {
+    background: linear-gradient(135deg, #0f766e 0%, #11998e 100%);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 6px 18px rgba(17, 153, 142, 0.35);
+}
+.hero-badge.audio-highlight-teal i { color: #d1fae5; }
 .hero-sub .hero-audio-strong {
     color: #6c3483;
     font-weight: 800;
