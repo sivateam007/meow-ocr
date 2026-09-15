@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/animejs@3.2.2/lib/anime.min.js"></script>
     <style>
         .link-card{ background:#fff; border:1px solid #e5e0f0; border-radius:14px; padding:1.3rem 1.5rem; margin:1rem 0; box-shadow:0 2px 10px rgba(0,0,0,.04); }
         .link-card h2{ margin:0 0 .4rem; font-size:1.25rem; color:var(--dark); display:flex; align-items:center; gap:.6rem; }
@@ -132,6 +133,7 @@
     </script>
 
     <footer class="site-footer">
+        {% include 'footer_ad.html' %}
         <div class="footer-inner">
             <div class="footer-brand">
                 <h4>Meow OCR</h4>
@@ -144,6 +146,13 @@
                 <a href="/hindi-ocr"><i class="fas fa-language"></i> Hindi OCR</a>
                 <a href="/english-ocr"><i class="fas fa-language"></i> English PDF to Text</a>
                 <a href="/"><i class="fas fa-home"></i> Full OCR Tool</a>
+            </div>
+            <div class="footer-links">
+                <h4>Audiobook Tools</h4>
+                <a href="/"><i class="fas fa-headphones"></i> PDF to Audiobook</a>
+                <a href="/#tts-section"><i class="fas fa-volume-up"></i> Text to Speech</a>
+                <a href="/#myvoice-card"><i class="fas fa-microphone"></i> My Voice</a>
+                <a href="/downloads"><i class="fas fa-file-audio"></i> MP3 Downloads</a>
             </div>
             <div class="footer-links">
                 <h4>Quick Links</h4>
@@ -166,6 +175,8 @@
             </div>
         </div>
     </footer>
+
+    {% include 'paw_effects.html' %}
 
     {% include 'chatbot.html' %}
 </body>

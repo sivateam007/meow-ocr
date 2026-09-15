@@ -53,7 +53,7 @@ BLOG_POSTS = [
         "date": "2026-09-08",
         "updated": "2026-09-08",
         "category": "Comparison",
-        "read_time": "5 min",
+        "read_time": "4 min",
         "cover_alt": "Best free OCR tools comparison 2026",
         "content": """
 <h2>What Makes a Good Free OCR Tool?</h2>
@@ -87,31 +87,22 @@ BLOG_POSTS = [
 <li>Output as TXT, DOCX or PDF</li>
 </ul>
 
-<h2>4. Tesseract (Desktop)</h2>
-<p><strong>Best for:</strong> Developers and power users comfortable with the command line.</p>
-<ul>
-<li>100% free and open-source</li>
-<li>Works offline</li>
-<li>No web interface — requires installation</li>
-<li>Best accuracy with pre-processed images</li>
-</ul>
-
 <h2>Comparison Table</h2>
 <div class="table-wrap">
 <table border="1" cellpadding="8" cellspacing="0" style="width:100%;border-collapse:collapse;">
-<thead><tr><th>Feature</th><th>Meow OCR</th><th>Google Drive</th><th>OnlineOCR</th><th>Tesseract</th></tr></thead>
+<thead><tr><th>Feature</th><th>Meow OCR</th><th>Google Drive</th><th>OnlineOCR</th></tr></thead>
 <tbody>
-<tr><td>No signup</td><td>Yes</td><td>No</td><td>No</td><td>Yes</td></tr>
-<tr><td>PDF support</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
-<tr><td>Languages</td><td>19+</td><td>10+</td><td>25+</td><td>100+</td></tr>
-<tr><td>Auto-delete</td><td>2 days</td><td>Never</td><td>No</td><td>Local only</td></tr>
-<tr><td>Watermark</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
+<tr><td>No signup</td><td>Yes</td><td>No</td><td>No</td></tr>
+<tr><td>PDF support</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Languages</td><td>19+</td><td>10+</td><td>25+</td></tr>
+<tr><td>Auto-delete</td><td>2 days</td><td>Never</td><td>No</td></tr>
+<tr><td>Watermark</td><td>None</td><td>None</td><td>None</td></tr>
 </tbody>
 </table>
 </div>
 
 <h2>Our Recommendation</h2>
-<p>For quick, private text extraction with no strings attached, <strong>Meow OCR</strong> is the simplest choice. For large-scale or offline work, Tesseract is powerful but requires setup.</p>
+<p>For quick, private text extraction with no strings attached, <strong>Meow OCR</strong> is the simplest choice. For Google Workspace users who already store files in Drive, Drive's built-in OCR is a decent alternative.</p>
 """,
     },
     {

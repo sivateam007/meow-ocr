@@ -1388,6 +1388,16 @@ header {
     text-align: center;
 }
 
+/* Footer audiobook highlight strip */
+.footer-audiobook-strip{ background:linear-gradient(135deg,#6c3483 0%,#11998e 100%); border-bottom:1px solid rgba(255,255,255,.15); padding:.85rem 1rem; }
+.footer-audiobook-inner{ max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+.footer-audiobook-text{ display:flex; align-items:center; gap:.8rem; color:#fff; font-size:.93rem; line-height:1.4; }
+.footer-audiobook-text i{ font-size:1.35rem; }
+.footer-audiobook-text strong{ display:block; font-size:1rem; margin-bottom:.1rem; }
+.footer-audiobook-btn{ flex-shrink:0; background:#fff; color:#6c3483; font-weight:700; padding:.5rem 1.15rem; border-radius:999px; text-decoration:none; font-size:.88rem; transition:transform .2s, box-shadow .2s; }
+.footer-audiobook-btn:hover{ transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.2); }
+@media(max-width:560px){ .footer-audiobook-inner{ justify-content:center; text-align:center; } .footer-audiobook-text{ flex-direction:column; gap:.3rem; } }
+
 /* ===== CTA Banner ===== */
 .cta-banner {
     background: linear-gradient(135deg, #1e3a8a, #4f7cff, #8b5cf6);

@@ -14,6 +14,7 @@
     {% include 'monetag.html' %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/animejs@3.2.2/lib/anime.min.js"></script>
     <script>
         window.FIREBASE_CONFIG = {
             apiKey: "{{ firebase_api_key }}",
@@ -163,6 +164,7 @@
     </main>
 
     <footer class="site-footer">
+        {% include 'footer_ad.html' %}
         <div class="footer-inner">
             <div class="footer-brand">
                 <h4>Meow OCR</h4>
@@ -175,6 +177,13 @@
                 <a href="/hindi-ocr"><i class="fas fa-language"></i> Hindi OCR</a>
                 <a href="/english-ocr"><i class="fas fa-language"></i> English PDF to Text</a>
                 <a href="/"><i class="fas fa-home"></i> Full OCR Tool</a>
+            </div>
+            <div class="footer-links">
+                <h4>Audiobook Tools</h4>
+                <a href="/"><i class="fas fa-headphones"></i> PDF to Audiobook</a>
+                <a href="/#tts-section"><i class="fas fa-volume-up"></i> Text to Speech</a>
+                <a href="/#myvoice-card"><i class="fas fa-microphone"></i> My Voice</a>
+                <a href="/downloads"><i class="fas fa-file-audio"></i> MP3 Downloads</a>
             </div>
             <div class="footer-links">
                 <h4>Quick Links</h4>
@@ -981,6 +990,8 @@
             }
         })();
     </script>
+
+    {% include 'paw_effects.html' %}
 {% include 'chatbot.html' %}
 </body>
 </html>
