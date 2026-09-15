@@ -2376,3 +2376,59 @@ pre, code {
     white-space: pre-wrap;
     word-break: break-word;
 }
+
+/* =========================================================
+   PRO TIP callout — premium expert hint (shared across pages)
+   ========================================================= */
+.pro-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    margin-top: 1rem;
+    padding: 1rem 1.15rem;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #fffdf5 0%, #fff6e3 55%, #ffefd2 100%);
+    border: 1px solid #f1dcb0;
+    border-left: 4px solid #f59e0b;
+    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.10);
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: #6b5322;
+}
+.pro-tip-ico {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #fff;
+    font-size: 1.05rem;
+    box-shadow: 0 6px 14px rgba(217, 119, 6, 0.28);
+}
+.pro-tip-body { min-width: 0; flex: 1; }
+.pro-tip .pro-tip-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #92400e;
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid rgba(217, 119, 6, 0.3);
+    padding: 0.22rem 0.7rem;
+    border-radius: 999px;
+    margin-bottom: 0.3rem;
+}
+.pro-tip p { margin: 0; overflow-wrap: break-word; }
+.pro-tip strong { color: #7c4a03; }
+@media (max-width: 480px) {
+    .pro-tip { padding: 0.9rem 0.95rem; }
+}
