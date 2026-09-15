@@ -3710,7 +3710,24 @@ def clear_downloads():
 @app.route('/audiobook')
 def audiobook_page():
     """Dedicated audiobook tools hub: PDF→MP3, text-to-speech and My Voice."""
-    return render_template('audiobook.html')
+    recent_audio = []
+    try:
+        with progress_lock:
+            entries = list(progress_tracker.items())
+        aud = []
+        for task_id, task in entries:
+            if task.get("audio") and task.get("status") == "completed":
+                aud.append({
+                    "task_id": task_id,
+                    "filename": task.get("output_filename") or task.get("filename") or "Audiobook",
+                    "audio_url": "/download/tts/" + str(task_id),
+                    "completed_at": task.get("completed_at", 0),
+                })
+        aud.sort(key=lambda t: t.get("completed_at") or 0, reverse=True)
+        recent_audio = aud[:6]
+    except Exception:
+        recent_audio = []
+    return render_template('audiobook.html', recent_audio=recent_audio)
 
 
 @app.route('/how-to-use')

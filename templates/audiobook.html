@@ -252,6 +252,26 @@
         .dl-card li { font-size: .85rem; color: #5c5c6e; }
         .dl-card li i { color: #11998e; margin-right: .45rem; }
 
+        .listen-list { display: grid; gap: .6rem; }
+        .listen-item {
+            display: flex; flex-direction: column; gap: .45rem;
+            background: #faf8ff; border: 1px solid #e5d9f0; border-radius: 12px; padding: .6rem .8rem;
+        }
+        .listen-item audio { width: 100%; height: 40px; }
+        .listen-name {
+            font-size: .88rem; font-weight: 700; color: #3c3c4d;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .listen-name i { color: #8e44ad; margin-right: .4rem; }
+        .listen-info { display: flex; justify-content: space-between; align-items: center; gap: .6rem; }
+        .listen-meta {
+            flex-shrink: 0; font-size: .72rem; font-weight: 800; letter-spacing: .05em; color: #0f766e;
+            background: #e9fcf6; border: 1px solid rgba(17, 153, 142, .3); padding: .15rem .5rem; border-radius: 999px;
+        }
+        .listen-empty { text-align: center; padding: 1.6rem 1rem; color: #8a8a9c; }
+        .listen-empty-icon { font-size: 2.1rem; color: #b9a6d6; display: block; margin-bottom: .5rem; }
+        .listen-empty p { margin: 0 auto .9rem; font-size: .9rem; max-width: 360px; line-height: 1.6; }
+
         .ab-faq { margin-top: 2rem; }
         .ab-faq details {
             background: #fff; border: 1px solid #ece6f5; border-radius: 12px; margin-bottom: .6rem;
@@ -275,6 +295,18 @@
             .ab-hero { grid-template-columns: 1fr; padding: 2rem 1.3rem; }
             .ab-hero-title { font-size: 1.7rem; }
             .ab-hero-art { min-height: 230px; margin-top: .5rem; }
+            .ab-test-row audio { min-width: 0; width: 100%; }
+        }
+        @media (max-width: 600px) {
+            .tools-grid { grid-template-columns: 1fr; }
+            .ab-form-grid { grid-template-columns: 1fr 1fr; gap: .7rem; }
+            .ab-range-row { grid-template-columns: 1fr; gap: .6rem; }
+            .ab-card { padding: 1rem 1rem; }
+            .ab-hero { padding: 1.6rem 1rem; }
+            .ab-hero-art { min-height: 200px; }
+            .ab-art-main { width: 170px; height: 170px; }
+            .ab-art-tiny { width: 64px; height: 64px; }
+            .ab-art-bubble { font-size: .72rem; max-width: 160px; padding: .45rem .6rem; }
         }
     </style>
     <script>
@@ -565,6 +597,38 @@
                     </div>
                 </div>
                 <p class="ab-note"><i class="fas fa-shield-alt"></i> Private: your clip is analyzed and then immediately discarded — nothing is stored. A 10–30 second, clear recording gives the best match.</p>
+            </div>
+
+            <!-- Listen to your audiobooks -->
+            <div class="ab-card" id="listen">
+                <div class="ab-card-head">
+                    <span class="ab-card-icon teal"><i class="fas fa-headphones"></i></span>
+                    <div>
+                        <h2 class="ab-card-title">Listen to Your Audiobooks</h2>
+                        <p class="ab-card-sub">Play your recent narrated MP3s right here — no need to leave.</p>
+                    </div>
+                </div>
+
+                {% if recent_audio %}
+                <div class="listen-list">
+                    {% for a in recent_audio %}
+                    <div class="listen-item">
+                        <div class="listen-info">
+                            <span class="listen-name" title="{{ a.filename }}"><i class="fas fa-file-audio"></i> {{ a.filename }}</span>
+                            <span class="listen-meta">MP3</span>
+                        </div>
+                        <audio controls preload="none" src="{{ a.audio_url }}"></audio>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="ab-note"><i class="fas fa-history"></i> Showing your {{ recent_audio|length }} most recent audiobook{% if recent_audio|length != 1 %}s{% endif %}. Older MP3s live in My Downloads.</p>
+                {% else %}
+                <div class="listen-empty">
+                    <span class="listen-empty-icon"><i class="fas fa-music"></i></span>
+                    <p>No audiobooks yet — convert a PDF or paste some text and it will appear here, ready to play instantly.</p>
+                    <a href="#pdf2audio" class="ab-btn" style="text-decoration:none;"><i class="fas fa-book-open"></i> Make your first audiobook</a>
+                </div>
+                {% endif %}
             </div>
 
             <!-- MP3 Downloads -->
@@ -1113,6 +1177,9 @@
 
             var primary = document.querySelector('.ab-actions .primary');
             if (primary) anime({ targets: primary, scale: [1, 1.03, 1], direction: 'alternate', loop: true, duration: 1800, easing: 'easeInOutSine' });
+
+            var listens = document.querySelectorAll('.listen-item');
+            if (listens.length) anime({ targets: listens, translateX: [-18, 0], opacity: [0, 1], delay: anime.stagger(90), duration: 550, easing: 'easeOutExpo' });
         });
     </script>
 

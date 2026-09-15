@@ -13,7 +13,7 @@
                     anime({ targets: p, translateX: [0, (Math.random() - 0.5) * 160], translateY: [0, -(Math.random() * 110 + 40)], rotate: [0, Math.random() * 360 - 180], opacity: [1, 0], duration: 800 + Math.random() * 500, easing: 'easeOutQuad', complete: function () { p.remove(); } });
                 })(i);
             }
-            document.querySelectorAll('.submit-btn, .cta-btn, a[href="/"]').forEach(function (el) {
+            document.querySelectorAll('.submit-btn, .cta-btn, .ab-submit, .ab-btn, .ab-dl, .tts-go, a[href="/"]').forEach(function (el) {
                 el.addEventListener('click', function (ev) { pawBurst(ev.clientX, ev.clientY); });
             });
             var driftEm = ['🐾', '🐱', '⭐', '✨'];
