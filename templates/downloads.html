@@ -142,6 +142,8 @@
                             <td class="col-type">
                                 {%- if d.translating -%}
                                 <span class="st-translate"><i class="fas fa-language"></i> Translation</span>
+                                {%- elif d.translate_only and d.status == 'completed' -%}
+                                {{ d.file_type.upper() }}<br><span class="st-translate"><i class="fas fa-language"></i> Translated → {{ d.translated_to_name }}</span>
                                 {%- elif d.make_audio and d.child_audio_status == 'completed' -%}
                                 {{ d.file_type.upper() }}<br><span class="st-good"><i class="fas fa-headphones"></i> Audiobook</span>
                                 {%- elif d.make_audio and d.child_audio_status -%}

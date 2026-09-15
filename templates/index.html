@@ -269,19 +269,32 @@
                 </div>
 
                 <div class="options-grid audiobook-options" id="audiobook-options" style="grid-template-columns: 1fr; gap: .6rem;">
-                    <div style="display:flex; align-items:center; gap:.6rem; flex-wrap:wrap;">
-                        <input type="checkbox" id="make-audio" name="make_audio" value="1" style="width:18px; height:18px; cursor:pointer;">
-                        <label for="make-audio" style="cursor:pointer; font-size:.95rem; color:var(--dark);"><i class="fas fa-headphones" style="margin-right:.4rem; color:#6c3483;"></i> Also create audiobook (MP3) — auto-saved to My Downloads</label>
-                    </div>
-                    <div class="options-grid" id="audiobook-controls" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; display: none;">
-                        <div class="option-group">
-                            <label class="option-label"><i class="fas fa-cat"></i> Voice</label>
-                            <select name="audio_voice" id="audio-voice-select" class="select-input">
-                                <option value="">Auto-pick (match language)</option>
-                            </select>
+                    <div class="option-group">
+                        <label class="option-label"><i class="fas fa-sliders-h"></i> Output</label>
+                        <div class="pipeline-picker" id="pipeline-picker">
+                            <label class="pipeline-option active" data-mode="text">
+                                <input type="radio" name="output_mode" value="text" checked>
+                                <span class="pipe-icon"><i class="fas fa-file-alt"></i></span>
+                                <span class="pipe-title">Extract Text</span>
+                                <span class="pipe-sub">OCR text only</span>
+                            </label>
+                            <label class="pipeline-option" data-mode="translate">
+                                <input type="radio" name="output_mode" value="translate">
+                                <span class="pipe-icon"><i class="fas fa-language"></i></span>
+                                <span class="pipe-title">Translate Only</span>
+                                <span class="pipe-sub">OCR + translation (no audio)</span>
+                            </label>
+                            <label class="pipeline-option" data-mode="audio">
+                                <input type="radio" name="output_mode" value="audio">
+                                <span class="pipe-icon"><i class="fas fa-headphones"></i></span>
+                                <span class="pipe-title">Audiobook (MP3)</span>
+                                <span class="pipe-sub">OCR + optional translation + voice</span>
+                            </label>
                         </div>
+                    </div>
+                    <div class="options-grid" id="chain-translate-row" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; display: none;">
                         <div class="option-group">
-                            <label class="option-label"><i class="fas fa-globe"></i> Translate to (optional)</label>
+                            <label class="option-label"><i class="fas fa-globe"></i> Translate to <span class="req-star" id="chain-req-star" style="display:none;">*</span></label>
                             <select name="chain_translate" id="chain-translate-select" class="select-input">
                                 <option value="">No translation</option>
                                 <option value="en">English</option>
@@ -318,6 +331,20 @@
                                 <option value="uk">Ukrainian</option>
                                 <option value="hu">Hungarian</option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="options-grid" id="audiobook-controls" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; display: none;">
+                        <div class="option-group">
+                            <label class="option-label"><i class="fas fa-cat"></i> Voice</label>
+                            <select name="audio_voice" id="audio-voice-select" class="select-input">
+                                <option value="">Auto-pick (match language)</option>
+                            </select>
+                        </div>
+                        <div class="option-group">
+                            <label class="option-label"><i class="fas fa-volume-up"></i> Test voice</label>
+                            <button type="button" id="voice-test-btn" class="test-voice-btn"><i class="fas fa-play"></i> Hear sample</button>
+                            <span class="voice-test-msg" id="voice-test-msg"></span>
+                            <audio id="voice-test-player" style="display:none; margin-top:.5rem; width:100%;" controls preload="none"></audio>
                         </div>
                     </div>
                 </div>
@@ -1067,6 +1094,15 @@
                 e.preventDefault();
                 batchUpload(files);
                 return;
+            }
+            var om = document.querySelector('input[name="output_mode"]:checked');
+            if (om && om.value === 'translate') {
+                var cs = document.getElementById('chain-translate-select');
+                if (!cs || !cs.value) {
+                    e.preventDefault();
+                    alert('Please choose a language to translate to.');
+                    return;
+                }
             }
             submitBtn.disabled = true;
             btnText.textContent = currentTab === 'translate' ? 'Translating...' : 'Processing...';
@@ -2060,11 +2096,16 @@
 
     <script>
         (function () {
-            var cb = document.getElementById('make-audio');
-            var ctrl = document.getElementById('audiobook-controls');
+            var picker = document.getElementById('pipeline-picker');
+            var chainRow = document.getElementById('chain-translate-row');
+            var audiobookCtrl = document.getElementById('audiobook-controls');
             var voiceSel = document.getElementById('audio-voice-select');
             var chainSel = document.getElementById('chain-translate-select');
-            if (!cb) return;
+            var reqStar = document.getElementById('chain-req-star');
+            var testBtn = document.getElementById('voice-test-btn');
+            var testMsg = document.getElementById('voice-test-msg');
+            var testPlayer = document.getElementById('voice-test-player');
+            if (!picker) return;
 
             var LANG_LABELS = {
                 en:'English', tam:'Tamil', hin:'Hindi', tel:'Telugu', ben:'Bengali',
@@ -2078,10 +2119,31 @@
                 nld:'Dutch', fil:'Filipino', pan:'Punjabi'
             };
 
-            cb.addEventListener('change', function () {
-                ctrl.style.display = cb.checked ? 'grid' : 'none';
-                if (cb.checked && voiceSel.options.length <= 1) loadVoices();
+            function setMode(mode) {
+                var cards = picker.querySelectorAll('.pipeline-option');
+                cards.forEach(function (c) {
+                    c.classList.toggle('active', c.getAttribute('data-mode') === mode);
+                });
+                var translations = mode === 'translate' || mode === 'audio';
+                chainRow.style.display = translations ? 'grid' : 'none';
+                if (reqStar) reqStar.style.display = mode === 'translate' ? 'inline' : 'none';
+                audiobookCtrl.style.display = mode === 'audio' ? 'grid' : 'none';
+                if (mode === 'audio' && voiceSel.options.length <= 1) loadVoices();
+                if (testPlayer) { testPlayer.pause(); testPlayer.style.display = 'none'; if (testMsg) testMsg.textContent = ''; }
+            }
+
+            picker.querySelectorAll('.pipeline-option').forEach(function (label) {
+                var input = label.querySelector('input[name="output_mode"]');
+                input.addEventListener('change', function () {
+                    if (!input.checked) return;
+                    setMode(label.getAttribute('data-mode'));
+                });
+                label.addEventListener('click', function () {
+                    input.checked = true;
+                    setMode(label.getAttribute('data-mode'));
+                });
             });
+            setMode('text');
 
             function loadVoices() {
                 fetch('/api/text2audio/voices')
@@ -2105,6 +2167,39 @@
                     })
                     .catch(function () {});
             }
+
+            if (testBtn) testBtn.addEventListener('click', function () {
+                if (!voiceSel.value) {
+                    if (testMsg) testMsg.textContent = 'Pick a voice first.';
+                    return;
+                }
+                var url = '/api/text2audio/preview?voice=' + encodeURIComponent(voiceSel.value)
+                    + '&rate=100&pitch=0';
+                if (testMsg) testMsg.textContent = 'Generating sample...';
+                testBtn.disabled = true;
+                fetch(url)
+                    .then(function (r) { if (!r.ok) throw new Error('bad status ' + r.status); return r.blob(); })
+                    .then(function (blob) {
+                        if (testPlayer.__previewUrl) URL.revokeObjectURL(testPlayer.__previewUrl);
+                        testPlayer.__previewUrl = URL.createObjectURL(blob);
+                        testPlayer.src = testPlayer.__previewUrl;
+                        testPlayer.oncanplay = function () {
+                            testBtn.disabled = false;
+                            if (testMsg) testMsg.textContent = '';
+                            testPlayer.style.display = 'block';
+                            testPlayer.play().catch(function(){});
+                        };
+                        testPlayer.onerror = function () {
+                            testBtn.disabled = false;
+                            if (testMsg) testMsg.textContent = 'Could not generate sample.';
+                        };
+                        testPlayer.load();
+                    })
+                    .catch(function () {
+                        testBtn.disabled = false;
+                        if (testMsg) testMsg.textContent = 'Could not generate sample.';
+                    });
+            });
         })();
     </script>
 

@@ -1652,23 +1652,53 @@ def process_file_background(task_id, file_path, filename, temp_dir, selected_lan
             progress_tracker[task_id]["download_count"] = progress_tracker[task_id].get("download_count", 0)
         _save_progress(True)
 
-        # ---- Audiobook pipeline (optional chain: OCR -> translate -> TTS MP3) ----
-        # Runs after the OCR task is marked complete. Creates a separate t2a_* MP3
-        # task that appears in My Downloads, exactly like the "speak the translation"
-        # feature. Failures here must NOT flip the OCR task back to error.
+        # ---- Optional chains after OCR completes (translate-only, or audiobook MP3) ----
+        # Translate-only replaces the OCR result file with the translated text.
+        # Audiobook creates a separate t2a_* MP3 task shown in My Downloads.
+        # Failures here must NOT flip the OCR task back to error.
         try:
             with progress_lock:
                 _ab_pipe = {
+                    "output_mode": progress_tracker[task_id].get("output_mode", "text"),
                     "make_audio": progress_tracker[task_id].get("make_audio", False),
+                    "translate_only": progress_tracker[task_id].get("translate_only", False) or progress_tracker[task_id].get("output_mode", "") == "translate",
                     "audio_voice": progress_tracker[task_id].get("audio_voice", ""),
                     "chain_translate": progress_tracker[task_id].get("chain_translate", ""),
                     "detected_language": progress_tracker[task_id].get("detected_language", "eng"),
                     "owner_token": progress_tracker[task_id].get("owner_token"),
                     "output_filename": progress_tracker[task_id].get("output_filename") or output_filename,
                 }
-            if not _ab_pipe["make_audio"]:
-                pass  # No audiobook requested.
-            else:
+
+            # ---------- Translate-only: OCR -> translated text (no audio) ----------
+            if _ab_pipe["translate_only"] and _ab_pipe["chain_translate"]:
+                try:
+                    with open(output_path, 'r', encoding='utf-8') as f:
+                        text = f.read()
+                except Exception as read_err:
+                    logger.warning(f"Task {task_id}: translate-only could not read OCR output: {read_err}")
+                    text = ""
+                text = (text or "").strip()
+                if text:
+                    target_lang = _ab_pipe["chain_translate"]
+                    logger.info(f"Task {task_id}: translating OCR result ({len(text)} chars) to '{target_lang}' (translate-only)")
+                    translated = translate_text(text, target_lang, source_lang="auto")
+                    base = os.path.splitext(_ab_pipe["output_filename"])[0].rsplit("_ocr", 1)[0]
+                    new_name = f"{base}_translated_{target_lang}.txt"
+                    new_path = os.path.join(os.path.dirname(output_path) or temp_dir, new_name)
+                    with open(new_path, 'w', encoding='utf-8') as f:
+                        f.write(translated)
+                    with progress_lock:
+                        progress_tracker[task_id]["output_path"] = new_path
+                        progress_tracker[task_id]["output_filename"] = new_name
+                        progress_tracker[task_id]["translated_to"] = target_lang
+                    persist_output(task_id)
+                    _save_progress(force=True)
+                    logger.info(f"Task {task_id}: translate-only result saved as {new_name}")
+                else:
+                    logger.warning(f"Task {task_id}: translate-only skipped - OCR text empty")
+
+            # ---------- Audiobook: OCR -> (optional translate) -> TTS MP3 ----------
+            elif _ab_pipe["make_audio"]:
                 try:
                     with open(output_path, 'r', encoding='utf-8') as f:
                         text = f.read()
@@ -2941,9 +2971,18 @@ def index():
             auto_delete_days = AUTO_DELETE_DAYS
 
         # Audiobook pipeline options (optional chain: OCR -> translate -> TTS MP3)
-        make_audio = request.form.get('make_audio') == '1'
+        # output_mode: text | translate | audio
+        output_mode = (request.form.get('output_mode') or 'text').strip().lower()
+        if output_mode not in ('text', 'translate', 'audio'):
+            output_mode = 'text'
+        make_audio = output_mode == 'audio'
+        translate_only = output_mode == 'translate'
         audio_voice = (request.form.get('audio_voice') or '').strip()
         chain_translate = (request.form.get('chain_translate') or '').strip()
+        if translate_only and not chain_translate:
+            # Translate-only needs a target; fall back to plain text if none given.
+            output_mode = 'text'
+            translate_only = False
 
         # Save uploaded file to temp location
         filename = secure_filename(file.filename)
@@ -2985,7 +3024,9 @@ def index():
                 "cancelled": False,
                 "auto_delete_days": auto_delete_days,
                 "owner_token": owner_token,
+                "output_mode": output_mode,
                 "make_audio": make_audio,
+                "translate_only": translate_only,
                 "audio_voice": audio_voice,
                 "chain_translate": chain_translate,
             }
@@ -3109,6 +3150,9 @@ def get_progress(task_id):
                 "total_words": task.get("total_words", 0),
                 "voice_name": (_cat[0] if _cat else _voice),
                 "make_audio": bool(task.get("make_audio")),
+                "output_mode": task.get("output_mode", "text"),
+                "translate_only": bool(task.get("translate_only")),
+                "translated_to": task.get("translated_to", ""),
                 "chain_translate": task.get("chain_translate", ""),
                 "child_audio_token": _child_token,
                 "child_audio_status": _child_status,
@@ -3870,6 +3914,10 @@ def downloads_page():
                 "audio": task.get("audio", False),
                 "audio_url": (f"/download/tts/{task_id}" if task.get("audio") else ""),
                 "can_cancel": _owns_task(task),
+                "output_mode": task.get("output_mode", "text"),
+                "translate_only": bool(task.get("translate_only")),
+                "translated_to": task.get("translated_to", ""),
+                "translated_to_name": TRANSLATOR_TARGET_LANGS.get(task.get("translated_to", ""), task.get("translated_to", "")),
                 "make_audio": bool(task.get("make_audio")),
                 "child_audio_token": task.get("child_audio_token", ""),
             }
