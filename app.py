@@ -1663,6 +1663,8 @@ def process_file_background(task_id, file_path, filename, temp_dir, selected_lan
                     "make_audio": progress_tracker[task_id].get("make_audio", False),
                     "translate_only": progress_tracker[task_id].get("translate_only", False) or progress_tracker[task_id].get("output_mode", "") == "translate",
                     "audio_voice": progress_tracker[task_id].get("audio_voice", ""),
+                    "audio_rate": progress_tracker[task_id].get("audio_rate", 100),
+                    "audio_pitch": progress_tracker[task_id].get("audio_pitch", 0),
                     "chain_translate": progress_tracker[task_id].get("chain_translate", ""),
                     "detected_language": progress_tracker[task_id].get("detected_language", "eng"),
                     "owner_token": progress_tracker[task_id].get("owner_token"),
@@ -1725,7 +1727,10 @@ def process_file_background(task_id, file_path, filename, temp_dir, selected_lan
                             logger.info(f"Task {task_id}: audiobook truncated to {TTS_MAX_WORDS} words")
                         audio_base = os.path.splitext(_ab_pipe["output_filename"])[0]
                         child_token, _owner = _start_text2audio_task(
-                            text, voice, 100, 0, base_name=audio_base,
+                            text, voice,
+                            int(_ab_pipe.get("audio_rate", 100) or 100),
+                            int(_ab_pipe.get("audio_pitch", 0) or 0),
+                            base_name=audio_base,
                             owner_token=_ab_pipe["owner_token"],
                         )
                         with progress_lock:
@@ -2979,6 +2984,16 @@ def index():
         translate_only = output_mode == 'translate'
         audio_voice = (request.form.get('audio_voice') or '').strip()
         chain_translate = (request.form.get('chain_translate') or '').strip()
+        try:
+            audio_rate = int(float(request.form.get('audio_rate') or '100'))
+            audio_rate = max(TTS_RATE_MIN, min(TTS_RATE_MAX, audio_rate))
+        except (TypeError, ValueError):
+            audio_rate = 100
+        try:
+            audio_pitch = int(float(request.form.get('audio_pitch') or '0'))
+            audio_pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, audio_pitch))
+        except (TypeError, ValueError):
+            audio_pitch = 0
         if translate_only and not chain_translate:
             # Translate-only needs a target; fall back to plain text if none given.
             output_mode = 'text'
@@ -3028,6 +3043,8 @@ def index():
                 "make_audio": make_audio,
                 "translate_only": translate_only,
                 "audio_voice": audio_voice,
+                "audio_rate": audio_rate,
+                "audio_pitch": audio_pitch,
                 "chain_translate": chain_translate,
             }
         _save_progress(True)
@@ -4805,24 +4822,38 @@ def _save_my_voices(data):
 
 @app.route('/api/voice/preset', methods=['GET'])
 def voice_preset_get():
-    """Return the saved My Voice preset for the signed-in user (cross-device)."""
+    """Return the saved My Voice preset for the current visitor (guest device
+    or signed-in user) so it works across sessions/restarts on this device."""
     uid = session.get("uid")
-    if not uid:
-        return jsonify({"error": "Not signed in"}), 401
-    with my_voices_lock:
-        rec = _load_my_voices().get(uid)
-    if not rec:
-        return jsonify({"error": "No My Voice preset yet"}), 404
-    return jsonify(rec)
+    if uid:
+        with my_voices_lock:
+            rec = _load_my_voices().get(uid)
+    else:
+        dev = request.cookies.get(_OWNER_COOKIE) or ""
+        if not dev:
+            return jsonify({"error": "No My Voice preset yet"}), 404
+        with my_voices_lock:
+            rec = _load_my_voices().get("dev_" + dev)
+        if not rec:
+            return jsonify({"error": "No My Voice preset yet"}), 404
+    return jsonify({"preset": rec, "guest": not uid})
 
 
 @app.route('/api/voice/preset', methods=['POST'])
 @_rate_limit(5, 60)
 def voice_preset_set():
-    """Save/update the signed-in user's My Voice preset."""
+    """Save/update the current visitor's My Voice preset. Guests are stored
+    under their anonymous device token (never the audio sample), signed-in
+    users under their uid."""
     uid = session.get("uid")
-    if not uid:
-        return jsonify({"error": "Not signed in"}), 401
+    if uid:
+        key = uid
+        resp = None
+    else:
+        dev = _get_device_token()
+        key = "dev_" + dev
+        resp = make_response(jsonify({"ok": True}))
+        resp.set_cookie(_OWNER_COOKIE, dev, max_age=30 * 86400, httponly=True, samesite="Lax", secure=_IS_PRODUCTION)
     data = request.get_json(silent=True) or {}
     voice = (data.get("voice") or "").strip()
     if not voice or not _looks_like_cat_voice(voice):
@@ -4840,9 +4871,11 @@ def voice_preset_set():
            "hz": hz, "saved_at": time.time()}
     with my_voices_lock:
         m = _load_my_voices()
-        m[uid] = rec
+        m[key] = rec
         _save_my_voices(m)
-    return jsonify({"ok": True})
+    if resp is None:
+        return jsonify({"ok": True})
+    return resp
 
 
 class _T2ACancelled(Exception):

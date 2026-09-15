@@ -340,6 +340,8 @@
                             <select name="audio_voice" id="audio-voice-select" class="select-input">
                                 <option value="">Auto-pick (match language)</option>
                             </select>
+                            <input type="hidden" name="audio_rate" id="audio-rate-input" value="100">
+                            <input type="hidden" name="audio_pitch" id="audio-pitch-input" value="0">
                         </div>
                         <div class="option-group">
                             <label class="option-label"><i class="fas fa-volume-up"></i> Test voice</label>
@@ -496,7 +498,7 @@
 
                 <div class="myvoice-card" id="myvoice-card" style="display:none; margin-top:.9rem; padding:1rem 1.1rem; background:#fffdf6; border:1px dashed #e0b94a; border-radius:12px;">
                     <div style="display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-bottom:.55rem;">
-                        <h4 style="margin:0; color:#7d6608; font-size:.98rem;"><i class="fas fa-microphone-alt" style="margin-right:.25rem;"></i>My Voice <span style="font-weight:400; color:#8a8a8a;">— tune the voice to sound like you</span></h4>
+                        <h4 style="margin:0; color:#7d6608; font-size:.98rem;"><i class="fas fa-microphone-alt" style="margin-right:.25rem;"></i>Your voice, matched <span style="font-weight:400; color:#8a8a8a;">— tune the voice to sound like you</span></h4>
                         <span id="myvoice-badge" style="display:none; font-size:.72rem; background:#eaf6e6; color:#2e7d32; padding:.18rem .55rem; border-radius:20px;">💾 Saved</span>
                     </div>
                     <div style="display:flex; gap:.6rem; flex-wrap:wrap; align-items:center;">
@@ -2051,13 +2053,11 @@
                 };
                 try { localStorage.setItem(myVoice.storageKey, JSON.stringify(preset)); } catch (e) {}
                 if (mvBadge) { mvBadge.textContent = '💾 Saved · ' + preset.label; mvBadge.style.display = ''; }
-                if (signedIn()) {
-                    fetch('/api/voice/preset', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(preset)
-                    }).catch(function () {});
-                }
+                fetch('/api/voice/preset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(preset)
+                }).catch(function () {});
                 setMvMsg('Saved as "' + preset.label + '" — available below any time.');
             }
             if (mvSaveBtn) mvSaveBtn.addEventListener('click', function () {
@@ -2093,13 +2093,14 @@
             (function mvInit() {
                 var p = mvLoadLocal();
                 if (p && mvBadge) { mvBadge.textContent = '💾 Saved · ' + (p.label || 'My Voice'); mvBadge.style.display = ''; }
-                if (signedIn()) {
+                if (signedIn() || navigator.cookieEnabled) {
                     fetch('/api/voice/preset')
                         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
                         .then(function (res) {
-                            if (res.ok && res.d && res.d.voice && !localStorage.getItem(myVoice.storageKey)) {
-                                try { localStorage.setItem(myVoice.storageKey, JSON.stringify(res.d)); } catch (e) {}
-                                if (mvBadge) { mvBadge.textContent = '💾 Saved · ' + (res.d.label || 'My Voice'); mvBadge.style.display = ''; }
+                            var saved = res.ok ? (res.d && res.d.preset) : null;
+                            if (saved && saved.voice && !localStorage.getItem(myVoice.storageKey)) {
+                                try { localStorage.setItem(myVoice.storageKey, JSON.stringify(saved)); } catch (e) {}
+                                if (mvBadge) { mvBadge.textContent = '💾 Saved · ' + (saved.label || 'My Voice'); mvBadge.style.display = ''; }
                             }
                         })
                         .catch(function () {});
@@ -2116,6 +2117,8 @@
             var chainRow = document.getElementById('chain-translate-row');
             var audiobookCtrl = document.getElementById('audiobook-controls');
             var voiceSel = document.getElementById('audio-voice-select');
+            var audioRateInput = document.getElementById('audio-rate-input');
+            var audioPitchInput = document.getElementById('audio-pitch-input');
             var chainSel = document.getElementById('chain-translate-select');
             var reqStar = document.getElementById('chain-req-star');
             var testBtn = document.getElementById('voice-test-btn');
@@ -2172,6 +2175,10 @@
                         dflt.value = '';
                         dflt.textContent = 'Auto-pick (match language)';
                         voiceSel.appendChild(dflt);
+                        var mvOpt = document.createElement('option');
+                        mvOpt.value = '__my_voice__';
+                        mvOpt.textContent = 'My Voice (matched)';
+                        voiceSel.appendChild(mvOpt);
                         Object.keys(data).forEach(function (code) {
                             var langName = LANG_LABELS[code] || code;
                             (data[code] || []).forEach(function (v) {
@@ -2181,17 +2188,87 @@
                                 voiceSel.appendChild(opt);
                             });
                         });
+                        var saved = mvPipeLoadLocal();
+                        if (saved && saved.voice && setUpByValue(saved.voice)) {
+                            audioRateInput.value = parseInt(saved.rate, 10) || 100;
+                            audioPitchInput.value = parseInt(saved.pitch, 10) || 0;
+                            mvOptSelected = true;
+                        }
                     })
                     .catch(function () {});
             }
+
+            function mvPipeLoadLocal() {
+                try {
+                    var raw = localStorage.getItem('meow_myvoice_v1');
+                    return raw ? JSON.parse(raw) : null;
+                } catch (e) { return null; }
+            }
+
+            function setUpByValue(v) {
+                var found = false;
+                voiceSel.querySelectorAll('option').forEach(function (opt) {
+                    if (opt.value === v) { opt.selected = true; found = true; }
+                });
+                return found;
+            }
+
+            var mvOptSelected = false;
+
+            function mvPipeCurrent() {
+                /* Return {voice, rate, pitch} for the selected audiobook voice.
+                   When "My Voice (matched)" is active, the resolved voice is
+                   selected and its saved rate/pitch (in the hidden inputs) are
+                   used; any manual voice uses neutral 100/0. */
+                if (voiceSel.value && mvOptSelected) {
+                    return {
+                        voice: voiceSel.value,
+                        rate: parseInt(audioRateInput.value, 10) || 100,
+                        pitch: parseInt(audioPitchInput.value, 10) || 0
+                    };
+                }
+                return { voice: voiceSel.value, rate: 100, pitch: 0 };
+            }
+
+            voiceSel.addEventListener('change', function () {
+                if (voiceSel.value === '__my_voice__') {
+                    var p = mvPipeLoadLocal();
+                    audioRateInput.value = '100';
+                    audioPitchInput.value = '0';
+                    mvOptSelected = false;
+                    if (!p || !p.voice) {
+                        if (testMsg) testMsg.textContent = 'No saved My Voice yet — record/upload your voice on the Text to Audio tab first.';
+                        voiceSel.value = '';
+                        return;
+                    }
+                    audioRateInput.value = parseInt(p.rate, 10) || 100;
+                    audioPitchInput.value = parseInt(p.pitch, 10) || 0;
+                    if (setUpByValue(p.voice)) {
+                        mvOptSelected = true;
+                        if (testMsg) testMsg.textContent = 'Matched voice applied: ' + p.voice + ' · ' + (parseInt(p.rate, 10) || 100) + '% · ' + (parseInt(p.pitch, 10) || 0) + 'Hz';
+                    } else {
+                        voiceSel.value = '';
+                        if (testMsg) testMsg.textContent = 'Your saved voice is not in the audiobook list — pick a voice manually.';
+                    }
+                    return;
+                }
+                mvOptSelected = false;
+                audioRateInput.value = '100';
+                audioPitchInput.value = '0';
+            });
 
             if (testBtn) testBtn.addEventListener('click', function () {
                 if (!voiceSel.value) {
                     if (testMsg) testMsg.textContent = 'Pick a voice first.';
                     return;
                 }
-                var url = '/api/text2audio/preview?voice=' + encodeURIComponent(voiceSel.value)
-                    + '&rate=100&pitch=0';
+                var cur = mvPipeCurrent();
+                if (!cur || !cur.voice) {
+                    if (testMsg) testMsg.textContent = 'Pick a voice first.';
+                    return;
+                }
+                var url = '/api/text2audio/preview?voice=' + encodeURIComponent(cur.voice)
+                    + '&rate=' + (cur.rate || 100) + '&pitch=' + (cur.pitch || 0);
                 if (testMsg) testMsg.textContent = 'Generating sample...';
                 testBtn.disabled = true;
                 fetch(url)

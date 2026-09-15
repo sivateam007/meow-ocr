@@ -4,6 +4,7 @@ Pure numpy + ffmpeg — no heavy audio deps. Used by app.py endpoints and by
 the one-time calibrate_voices.py job that measures each built-in voice's
 average fundamental frequency.
 """
+import math
 import shutil
 import subprocess
 
@@ -148,28 +149,50 @@ def gender_from_hz(hz):
 
 def suggest_voice(median_hz, gender, lang, profiles, lang_gender_voices):
     """Pick the built-in voice (in ``lang`` + ``gender``) whose measured pitch
-    is closest to the user's. Returns a dict or None. Clamps pitch to +/-50Hz."""
+    is closest to the user's. Returns a dict or None. Clamps pitch to +/-50Hz.
+
+    Matching is done on a perceptual (log2) frequency scale and region voices
+    are preferred on near-ties for the user's selected language. (Cadence is
+    handled separately by suggest_rate() from the measured wpm.)
+    """
     cands = (lang_gender_voices.get(lang) or {}).get(gender, [])
     if not cands:
         return None
-    scored = []
-    for v in cands:
+    scored = []  # (perceptual_diff, region_rank, list_index, voice, measured_hz)
+    for idx, v in enumerate(cands):
         prof = profiles.get(v) or {}
         hz = prof.get("hz")
         if hz:
-            scored.append((abs(median_hz - hz), v, hz))
+            diff = abs(math.log2(max(float(median_hz), 1.0) / max(float(hz), 1.0)))
+            scored.append((diff, _region_rank(v, lang), idx, v, hz))
     if not scored:
         return None
-    scored.sort(key=lambda x: x[0])
-    diff, voice, voice_hz = scored[0]
+    # Stable sort: perceptual distance first, then region preference for
+    # English (prefer the Indian-English family for our audience), then the
+    # curated list order (female-first) as the final tie-break.
+    scored.sort(key=lambda x: (x[0], x[1], x[2], x[3]))
+    diff, _r, _idx, voice, voice_hz = scored[0]
     pitch = int(round(median_hz - voice_hz))
     pitch = max(-50, min(50, pitch))
     return {
         "voice": voice,
         "pitch": pitch,
         "voice_hz": round(voice_hz, 1),
-        "match_diff": round(diff, 1),
+        "match_diff": round(diff, 3),
     }
+
+
+def _region_rank(voice, lang):
+    """Tie-break region preference for English.
+
+    All non-English built-in voices already belong to the language the user
+    selected, so no regional signal exists there beyond the curated list order
+    (female-first). For English, multiple regional families exist; prefer the
+    Indian-English family (en-IN) which matches Meow OCR's core audience.
+    """
+    if str(lang).lower() == "en":
+        return 0 if voice.lower().startswith("en-in") else 1
+    return 0
 
 
 def suggest_rate(wpm):
