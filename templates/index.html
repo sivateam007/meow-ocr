@@ -94,6 +94,7 @@
             <nav class="nav-links">
                 <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
                 <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/audiobook" class="nav-link"><i class="fas fa-headphones"></i> Audiobook</a>
                 <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
                 <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
                 <span class="user-badge" id="user-badge" style="display:none;">
@@ -121,17 +122,18 @@
                 <div class="hero-text-wrap">
                     <div class="hero-eyebrow"><i class="fas fa-paw"></i> Free Online OCR Tool <i class="fas fa-paw"></i></div>
                     <h1 class="hero-title"><span class="title-line">Extract Text From</span> <span class="gradient-text title-line" id="gradient-word">Any Document</span><span class="meow-paw">🐾</span></h1>
-                    <p class="hero-sub">Meow OCR converts PDF, images &amp; documents to editable text in seconds — or into a full narrated audiobook MP3. 19+ languages, no watermark, auto-delete in 2 days.</p>
+                    <p class="hero-sub">Meow OCR converts PDF, images &amp; documents to editable text in seconds — or into a full <strong class="hero-audio-strong">narrated audiobook MP3</strong>. 19+ languages, no watermark, auto-delete in 2 days.</p>
 <div class="hero-badges">
                         <span class="hero-badge"><i class="fas fa-check-circle"></i> 100% Free OCR</span>
                         <span class="hero-badge"><i class="fas fa-check-circle"></i> No Watermark</span>
                         <span class="hero-badge"><i class="fas fa-check-circle"></i> Private &amp; Secure</span>
                         <span class="hero-badge"><i class="fas fa-shield-alt"></i> Auto-Delete 2 Days</span>
                         <span class="hero-badge"><i class="fas fa-headphones"></i> Text to Audio</span>
-                        <span class="hero-badge"><i class="fas fa-book-open"></i> PDF → Narrated Audiobook</span>
+                        <span class="hero-badge audio-highlight"><i class="fas fa-book-open"></i> PDF → Narrated Audiobook</span>
                     </div>
                     <div class="hero-actions">
                         <a href="#upload" class="hero-cta"><i class="fas fa-arrow-down"></i> Get Started — It's Free <span class="cat-dance">🐱</span></a>
+                        <a href="/audiobook" class="hero-cta audio"><i class="fas fa-headphones"></i> Make an Audiobook</a>
                         <a href="/how-to-use" class="hero-cta ghost"><i class="fas fa-graduation-cap"></i> How It Works</a>
                     </div>
                     <div class="hero-stats">
@@ -828,7 +830,6 @@
     </main>
 
     <footer class="site-footer">
-        {% include 'footer_ad.html' %}
         <div class="footer-inner">
             <div class="footer-brand">
                 <h4>Meow OCR</h4>
@@ -844,9 +845,9 @@
             </div>
             <div class="footer-links">
                 <h4>Audiobook Tools</h4>
-                <a href="/"><i class="fas fa-headphones"></i> PDF to Audiobook</a>
-                <a href="/#tts-section"><i class="fas fa-volume-up"></i> Text to Speech</a>
-                <a href="/#myvoice-card"><i class="fas fa-microphone"></i> My Voice</a>
+                <a href="/audiobook"><i class="fas fa-headphones"></i> PDF to Audiobook</a>
+                <a href="/audiobook#tts"><i class="fas fa-volume-up"></i> Text to Speech</a>
+                <a href="/audiobook#myvoice"><i class="fas fa-microphone"></i> My Voice</a>
                 <a href="/downloads"><i class="fas fa-file-audio"></i> MP3 Downloads</a>
             </div>
             <div class="footer-links">

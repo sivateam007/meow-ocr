@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Online Audiobook Maker — PDF to MP3, Text to Speech | Meow OCR</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="canonical" href="{{ canonical_url }}">
+    {% include 'analytics.html' %}
+    {% include 'adsense.html' %}
+    {% include 'monetag.html' %}
+    <!-- ads removed -->
+    <meta name="description" content="Turn any PDF, image or document into a narrated audiobook MP3, for free. Paste text for instant text-to-speech, or tune the voice to sound like you with My Voice. 19+ languages, no signup.">
+    <meta property="og:title" content="Free Online Audiobook Maker — PDF to MP3 &amp; Text to Speech | Meow OCR">
+    <meta property="og:description" content="Convert PDFs, images and documents into narrated MP3 audiobooks with natural cat voices. 19+ languages, free, no signup. Auto-deletes after 2 days.">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/animejs@3.2.2/lib/anime.min.js"></script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Meow OCR Audiobook Maker",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Web",
+      "url": "{{ canonical_url or 'https://www.meowocr.work.gd/audiobook' }}",
+      "provider": { "@type": "Organization", "name": "Meow OCR" },
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "description": "Free online audiobook generator. Convert PDF, images and documents to narrated MP3 audiobooks, read pasted text aloud, or match the voice to sound like you. 19+ languages, 45+ voices."
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is the Meow OCR audiobook maker really free?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Converting documents, images or pasted text into narrated MP3 audiobooks is completely free — no signup, no watermark, no hidden limits on your files or voices." }
+        },
+        {
+          "@type": "Question",
+          "name": "Which languages can audiobooks be created in?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Meow OCR supports 19+ languages for OCR and 45+ natural neural voices, including English, Tamil, Hindi, Telugu, Bengali, Kannada, Malayalam, Gujarati, Marathi, Arabic, and more." }
+        },
+        {
+          "@type": "Question",
+          "name": "Where are my generated audiobooks saved?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Every MP3 is saved to your My Downloads page automatically, where you can listen, download or delete it. For your privacy, files are auto-deleted after 2 days." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can the audiobook voice sound like me?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Use the My Voice tool to upload a short audio clip of yourself. Meow OCR matches the closest built-in voice and tune it to your pitch and speaking speed automatically." }
+        }
+      ]
+    }
+    </script>
+    <style>
+        .ab-hero {
+            position: relative;
+            overflow: hidden;
+            border-radius: 18px;
+            padding: 3rem 2rem;
+            margin: 1.2rem 0 2rem;
+            background: linear-gradient(135deg, #2b144d 0%, #5b2a86 45%, #0f766e 100%);
+            color: #fff;
+            box-shadow: 0 18px 40px rgba(60, 20, 90, 0.35);
+        }
+        .ab-hero::before {
+            content: "";
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(circle at 12% 18%, rgba(255, 234, 167, 0.18), transparent 40%),
+                radial-gradient(circle at 88% 24%, rgba(56, 239, 125, 0.22), transparent 42%),
+                radial-gradient(circle at 60% 96%, rgba(142, 68, 173, 0.4), transparent 50%);
+        }
+        .ab-hero > * { position: relative; z-index: 1; }
+        .ab-hero-eyebrow {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 30px; padding: .35rem 1rem;
+            font-size: .82rem; font-weight: 700; letter-spacing: .04em;
+            backdrop-filter: blur(4px);
+        }
+        .ab-hero-title { font-size: 2.2rem; line-height: 1.2; margin: .9rem 0 .8rem; color: #fff; }
+        .ab-grad {
+            background: linear-gradient(120deg, #ffeaa7 0%, #38ef7d 55%, #81ecec 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .ab-hero-sub { max-width: 720px; font-size: 1.02rem; line-height: 1.65; color: #e9e2f5; margin-bottom: 1.2rem; }
+        .ab-badges { display: flex; flex-wrap: wrap; gap: .55rem; margin-bottom: 1.4rem; }
+        .ab-badge {
+            display: inline-flex; align-items: center; gap: .4rem;
+            background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
+            border-radius: 24px; padding: .32rem .8rem; font-size: .8rem; font-weight: 600;
+        }
+        .ab-badge i { color: #ffeaa7; }
+        .ab-actions { display: flex; flex-wrap: wrap; gap: .7rem; }
+        .ab-btn {
+            display: inline-flex; align-items: center; gap: .5rem;
+            padding: .72rem 1.25rem; border-radius: 12px; font-weight: 700; font-size: .93rem;
+            text-decoration: none; border: 1px solid rgba(255,255,255,.3); color: #fff;
+            background: rgba(255,255,255,.12); transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+            cursor: pointer;
+        }
+        .ab-btn:hover { transform: translateY(-2px); background: rgba(255,255,255,.2); }
+        .ab-btn.primary {
+            background: linear-gradient(135deg, #ffeaa7 0%, #ffa345 100%);
+            color: #3b2a05; border: none;
+            box-shadow: 0 10px 24px rgba(255, 170, 60, .35);
+        }
+
+        .steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 0 0 2rem; }
+        .ab-step {
+            background: #fff; border: 1px solid #ece6f5; border-radius: 14px; padding: 1.15rem 1.25rem;
+            box-shadow: 0 6px 18px rgba(30, 20, 60, .05);
+        }
+        .ab-step .step-no {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px; border-radius: 50%;
+            background: linear-gradient(135deg, #6c3483, #11998e); color: #fff;
+            font-weight: 800; font-size: .9rem; margin-bottom: .55rem;
+        }
+        .ab-step h3 { margin: 0 0 .3rem; font-size: 1rem; color: #2d2142; }
+        .ab-step p { margin: 0; font-size: .85rem; color: #6b6b7b; line-height: 1.55; }
+
+        .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
+        .ab-card {
+            background: #fff; border: 1px solid #ece6f5; border-radius: 16px;
+            padding: 1.35rem 1.4rem; box-shadow: 0 8px 22px rgba(30, 20, 60, .06);
+        }
+        .ab-card.span-2 { grid-column: 1 / -1; }
+        .ab-card-head { display: flex; align-items: center; gap: .75rem; margin-bottom: .55rem; }
+        .ab-card-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 46px; height: 46px; border-radius: 13px; flex-shrink: 0;
+            background: linear-gradient(135deg, #6c3483, #8e44ad); color: #fff; font-size: 1.15rem;
+            box-shadow: 0 6px 14px rgba(108, 52, 131, .3);
+        }
+        .ab-card-icon.teal { background: linear-gradient(135deg, #0f766e, #11998e); box-shadow: 0 6px 14px rgba(17, 153, 142, .3); }
+        .ab-card-icon.amber { background: linear-gradient(135deg, #935116, #e67e22); box-shadow: 0 6px 14px rgba(230, 126, 34, .3); }
+        .ab-card-icon.blue { background: linear-gradient(135deg, #1f5f96, #2f7bc4); box-shadow: 0 6px 14px rgba(47, 123, 196, .3); }
+        .ab-card-title { margin: 0; font-size: 1.12rem; color: #2d2142; }
+        .ab-card-sub { margin: 0 0 1rem; font-size: .86rem; color: #76768a; }
+
+        .ab-dropzone {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: .35rem; min-height: 130px; text-align: center; cursor: pointer;
+            border: 2px dashed #d9cff0; border-radius: 14px; background: #faf8ff;
+            padding: 1.1rem 1rem; margin-bottom: 1rem; transition: border-color .15s ease, background .15s ease;
+        }
+        .ab-dropzone:hover, .ab-dropzone.drag { border-color: #8e44ad; background: #f4effa; }
+        .ab-dropzone .dz-icon { font-size: 1.6rem; color: #8e44ad; }
+        .ab-dropzone .dz-title { font-weight: 700; color: #3c3c4d; font-size: .95rem; }
+        .ab-dropzone .dz-hint { font-size: .8rem; color: #9a99ab; }
+        .ab-dropzone .dz-file { font-size: .82rem; font-weight: 600; color: #6c3483; }
+
+        .ab-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .9rem; }
+        .ab-range-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: .2rem 0 .6rem; }
+        .ab-lab { display: flex; justify-content: space-between; align-items: center; font-size: .84rem; font-weight: 700; color: #4a4a5a; margin-bottom: .3rem; }
+        .ab-val { font-weight: 800; color: #6c3483; }
+        .ab-test-row { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; margin: .6rem 0 .4rem; }
+        .ab-test-row audio { flex: 1; min-width: 200px; height: 38px; }
+        .ab-submit {
+            width: 100%; border: none; cursor: pointer; color: #fff; font-weight: 800; font-size: 1rem;
+            border-radius: 12px; padding: .85rem 1.2rem;
+            background: linear-gradient(135deg, #8e44ad 0%, #6c3483 100%);
+            box-shadow: 0 10px 22px rgba(108, 52, 131, .3);
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+        .ab-submit:hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(108, 52, 131, .4); }
+
+        .ab-note { display: flex; align-items: flex-start; gap: .45rem; font-size: .8rem; color: #8a8a9c; margin-top: .7rem; line-height: 1.5; }
+        .ab-note i { color: #11998e; margin-top: .1rem; }
+
+        .ab-status { min-height: 1.5em; color: #6c3483; font-size: .9rem; margin-top: .7rem; }
+        .ab-ready {
+            display: none; margin-top: .75rem; padding: 1rem; border-radius: 12px;
+            background: #faf8ff; border: 1px solid #e5d9f0;
+        }
+        .ab-ready .ab-dl {
+            display: block; text-align: center; text-decoration: none; color: #fff; font-weight: 700;
+            background: linear-gradient(135deg, #8e44ad 0%, #6c3483 100%); border-radius: 10px; padding: .7rem 1rem; margin-top: .6rem;
+        }
+        .ab-mv-result { display: none; margin-top: .8rem; padding: .9rem 1rem; border-radius: 12px; background: #fffdf6; border: 1px dashed #e0b94a; }
+        .mv-proof { display: inline-flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
+        .mv-proof .chip { background: #fdf2e3; color: #935116; font-size: .78rem; font-weight: 700; border-radius: 16px; padding: .25rem .7rem; }
+        .mv-proof .chip.green { background: #eaf6e6; color: #2e7d32; }
+        .mv-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .85rem; }
+
+        .dl-card {
+            display: flex; flex-direction: column; align-items: flex-start; gap: .9rem;
+            background: linear-gradient(135deg, #f4effa 0%, #e8fbf5 100%);
+            border: 1px solid #e2d6f1; border-radius: 16px; padding: 1.4rem;
+        }
+        .dl-card p { margin: 0; font-size: .9rem; color: #4a4a5a; line-height: 1.6; }
+        .dl-card ul { list-style: none; margin: 0 0 .2rem; padding: 0; display: grid; gap: .35rem; }
+        .dl-card li { font-size: .85rem; color: #5c5c6e; }
+        .dl-card li i { color: #11998e; margin-right: .45rem; }
+
+        .ab-faq { margin-top: 2rem; }
+        .ab-faq details {
+            background: #fff; border: 1px solid #ece6f5; border-radius: 12px; margin-bottom: .6rem;
+            box-shadow: 0 4px 12px rgba(30, 20, 60, .04);
+        }
+        .ab-faq summary {
+            cursor: pointer; list-style: none; padding: .95rem 1.15rem; font-weight: 700; color: #2d2142; font-size: .95rem;
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+        }
+        .ab-faq summary::-webkit-details-marker { display: none; }
+        .ab-faq summary::after { content: "\f078"; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: .8rem; color: #8e44ad; transition: transform .15s ease; }
+        .ab-faq details[open] summary::after { transform: rotate(180deg); }
+        .ab-faq .ab-answer { padding: 0 1.15rem 1rem; font-size: .88rem; color: #6b6b7b; line-height: 1.65; }
+
+        .cta-banner.audio-cta { margin-top: 2.2rem; }
+        .cta-banner.audio-cta .cta-btn { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: #06352e; }
+
+        @media (max-width: 900px) {
+            .tools-grid { grid-template-columns: 1fr; }
+            .steps-row { grid-template-columns: 1fr; }
+            .ab-hero { padding: 2rem 1.2rem; }
+            .ab-hero-title { font-size: 1.55rem; }
+        }
+    </style>
+    <script>
+        window.FIREBASE_CONFIG = {
+            apiKey: "{{ firebase_api_key }}",
+            authDomain: "{{ firebase_auth_domain }}",
+            projectId: "{{ firebase_project_id }}",
+            storageBucket: "{{ firebase_storage_bucket }}",
+            messagingSenderId: "",
+            appId: "{{ firebase_app_id }}",
+            measurementId: "{{ firebase_measurement_id }}"
+        };
+        window.SCANNER_USER = {{ current_user_json|safe }};
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="/"><img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/audiobook" class="nav-link active"><i class="fas fa-headphones"></i> Audiobook</a>
+                <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
+                <span class="user-badge" id="user-badge" style="display:none;">
+                    <img id="user-avatar" class="user-avatar" alt="" />
+                    <span id="user-name"></span>
+                    <a href="#" class="logout-btn" id="logout-btn" title="Sign out"><i class="fas fa-sign-out-alt"></i></a>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="ab-hero">
+            <div class="ab-hero-eyebrow"><i class="fas fa-headphones"></i> Meow OCR · Audiobook Studio · 100% Free</div>
+            <h1 class="ab-hero-title">Turn Any PDF or Document into a <span class="ab-grad">Narrated Audiobook</span></h1>
+            <p class="ab-hero-sub">Listen to your documents on the go. Upload a PDF, image or document and get a natural, narrated MP3 — or paste text and read it aloud instantly. Pick 45+ voices, or tune one to sound like you using My Voice.</p>
+            <div class="ab-badges">
+                <span class="ab-badge"><i class="fas fa-headphones"></i> 45+ Cat Voices</span>
+                <span class="ab-badge"><i class="fas fa-language"></i> 19+ Languages</span>
+                <span class="ab-badge"><i class="fas fa-check-circle"></i> No Signup</span>
+                <span class="ab-badge"><i class="fas fa-shield-alt"></i> Auto-Delete 2 Days</span>
+            </div>
+            <div class="ab-actions">
+                <a href="#pdf2audio" class="ab-btn primary"><i class="fas fa-book-open"></i> PDF → Audiobook</a>
+                <a href="#tts" class="ab-btn"><i class="fas fa-volume-up"></i> Text to Speech</a>
+                <a href="#myvoice" class="ab-btn"><i class="fas fa-microphone-alt"></i> Your Voice</a>
+            </div>
+        </section>
+
+        <section class="steps-row">
+            <div class="ab-step">
+                <span class="step-no">1</span>
+                <h3>Upload or paste</h3>
+                <p>Drop in a PDF, image or document — or just paste the text you want narrated.</p>
+            </div>
+            <div class="ab-step">
+                <span class="step-no">2</span>
+                <h3>Pick a voice</h3>
+                <p>Choose from 45+ natural neural voices in 19+ languages, or match your own with My Voice.</p>
+            </div>
+            <div class="ab-step">
+                <span class="step-no">3</span>
+                <h3>Listen anywhere</h3>
+                <p>Your MP3 saves to My Downloads automatically. Play it, share it or download it — it's yours.</p>
+            </div>
+        </section>
+
+        <section class="tools-grid">
+            <!-- PDF → Audiobook -->
+            <div class="ab-card span-2" id="pdf2audio">
+                <div class="ab-card-head">
+                    <span class="ab-card-icon"><i class="fas fa-book-open"></i></span>
+                    <div>
+                        <h2 class="ab-card-title">PDF &amp; Documents → Audiobook MP3</h2>
+                        <p class="ab-card-sub">Reads the text out of your file (OCR included), then narrates it in the language and voice you choose.</p>
+                    </div>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data" action="/" class="audio-upload-form">
+                    <label for="ab-file" class="ab-dropzone" id="ab-dropzone">
+                        <span class="dz-icon"><i class="fas fa-cloud-upload-alt"></i></span>
+                        <span class="dz-title">Click to upload or drag &amp; drop</span>
+                        <span class="dz-hint">PDF · JPG · PNG · DOCX · PPTX · XLSX · TXT and more</span>
+                        <span class="dz-file" id="ab-file-name"></span>
+                    </label>
+                    <input type="file" name="file" id="ab-file" accept=".pdf,.jpg,.jpeg,.png,.bmp,.tiff,.tif,.gif,.doc,.docx,.ppt,.pptx,.xlsx,.xls,.csv,.rtf,.odt,.ods,.odp,.html,.htm,.xml,.json,.txt,.md" multiple style="display:none;">
+
+                    <div class="ab-form-grid">
+                        <div>
+                            <label class="option-label"><i class="fas fa-globe"></i> Document Language</label>
+                            <select name="language" id="ab-language" class="select-input">
+                                <option value="auto">Auto-Detect</option>
+                                <option value="tam">Tamil</option>
+                                <option value="eng">English</option>
+                                <option value="hin">Hindi</option>
+                                <option value="tel">Telugu</option>
+                                <option value="ben">Bengali</option>
+                                <option value="kan">Kannada</option>
+                                <option value="mal">Malayalam</option>
+                                <option value="guj">Gujarati</option>
+                                <option value="pan">Punjabi</option>
+                                <option value="mar">Marathi</option>
+                                <option value="ara">Arabic</option>
+                                <option value="spa">Spanish</option>
+                                <option value="fra">French</option>
+                                <option value="deu">German</option>
+                                <option value="ita">Italian</option>
+                                <option value="rus">Russian</option>
+                                <option value="chi_sim">Chinese (Simplified)</option>
+                                <option value="jpn">Japanese</option>
+                                <option value="kor">Korean</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="option-label"><i class="fas fa-language"></i> Translate to</label>
+                            <select name="chain_translate" id="ab-translate" class="select-input">
+                                <option value="">No translation</option>
+                                <option value="en">English</option>
+                                <option value="ta">Tamil</option>
+                                <option value="hi">Hindi</option>
+                                <option value="te">Telugu</option>
+                                <option value="bn">Bengali</option>
+                                <option value="kn">Kannada</option>
+                                <option value="ml">Malayalam</option>
+                                <option value="gu">Gujarati</option>
+                                <option value="pa">Punjabi</option>
+                                <option value="mr">Marathi</option>
+                                <option value="ar">Arabic</option>
+                                <option value="es">Spanish</option>
+                                <option value="fr">French</option>
+                                <option value="de">German</option>
+                                <option value="it">Italian</option>
+                                <option value="ru">Russian</option>
+                                <option value="zh-cn">Chinese (Simplified)</option>
+                                <option value="ja">Japanese</option>
+                                <option value="ko">Korean</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="option-label"><i class="fas fa-cloud"></i> Auto-Delete</label>
+                            <select name="auto_delete" id="ab-autodelete" class="select-input">
+                                <option value="2">2 Days (Recommended)</option>
+                                <option value="1">1 Day</option>
+                                <option value="7">7 Days</option>
+                                <option value="0">Keep Forever</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="option-label"><i class="fas fa-cat"></i> Narrator Voice</label>
+                            <select name="audio_voice" id="ab-voice" class="select-input">
+                                <option value="">Auto-pick (match language)</option>
+                            </select>
+                            <input type="hidden" name="output_mode" value="audio">
+                            <input type="hidden" name="audio_rate" id="ab-rate-hidden" value="100">
+                            <input type="hidden" name="audio_pitch" id="ab-pitch-hidden" value="0">
+                        </div>
+                    </div>
+
+                    <div class="ab-range-row">
+                        <div>
+                            <label class="ab-lab">Speed <span class="ab-val" id="ab-rate-val">1.00x</span></label>
+                            <input type="range" id="ab-rate" min="50" max="200" step="5" value="100" style="width:100%;">
+                        </div>
+                        <div>
+                            <label class="ab-lab">Pitch <span class="ab-val" id="ab-pitch-val">0 Hz</span></label>
+                            <input type="range" id="ab-pitch" min="-50" max="50" step="5" value="0" style="width:100%;">
+                        </div>
+                    </div>
+
+                    <div class="ab-test-row">
+                        <button type="button" id="ab-test" class="ab-btn" style="padding:.55rem 1rem; font-size:.85rem;"><i class="fas fa-play"></i> Test voice</button>
+                        <audio id="ab-player" controls preload="none" style="display:none;"></audio>
+                        <span id="ab-test-msg" style="font-size:.82rem; color:#8a6d3b;"></span>
+                    </div>
+
+                    <button type="submit" class="ab-submit"><i class="fas fa-headphones"></i> Convert to Audiobook MP3</button>
+                    <p class="ab-note"><i class="fas fa-check-circle"></i> Your narrated MP3 is converted in the background and saved to My Downloads automatically — you can listen, replay or delete it there.</p>
+                </form>
+            </div>
+
+            <!-- Text to Speech -->
+            <div class="ab-card" id="tts">
+                <div class="ab-card-head">
+                    <span class="ab-card-icon teal"><i class="fas fa-volume-up"></i></span>
+                    <div>
+                        <h2 class="ab-card-title">Text to Speech</h2>
+                        <p class="ab-card-sub">Paste any text and read it aloud as a natural MP3.</p>
+                    </div>
+                </div>
+
+                <textarea id="tts-text" rows="8" spellcheck="false" style="width:100%; border:1px solid #ddd; border-radius:12px; padding:.8rem .9rem; font-size:.95rem; resize:vertical;" placeholder="Type or paste the text you want narrated..."></textarea>
+                <p class="tts-status" id="tts-count" style="font-size:.8rem; color:#8a6d3b; margin:.4rem 0 .7rem;">0 words</p>
+
+                <div class="ab-form-grid">
+                    <div>
+                        <label class="option-label"><i class="fas fa-globe"></i> Language</label>
+                        <select id="tts-lang" class="select-input"></select>
+                    </div>
+                    <div>
+                        <label class="option-label"><i class="fas fa-cat"></i> Voice</label>
+                        <select id="tts-voice" class="select-input"></select>
+                    </div>
+                </div>
+
+                <div class="ab-range-row">
+                    <div>
+                        <label class="ab-lab">Speed <span class="ab-val" id="tts-rate-val">1.00x</span></label>
+                        <input type="range" id="tts-rate" min="50" max="200" step="5" value="100" style="width:100%;">
+                    </div>
+                    <div>
+                        <label class="ab-lab">Pitch <span class="ab-val" id="tts-pitch-val">0 Hz</span></label>
+                        <input type="range" id="tts-pitch" min="-50" max="50" step="5" value="0" style="width:100%;">
+                    </div>
+                </div>
+
+                <div class="ab-test-row">
+                    <button type="button" id="tts-test" class="ab-btn" style="padding:.55rem 1rem; font-size:.85rem;"><i class="fas fa-play"></i> Test voice</button>
+                    <audio id="tts-player" controls preload="none" style="display:none;"></audio>
+                    <span id="tts-test-msg" style="font-size:.82rem; color:#8a6d3b;"></span>
+                </div>
+
+                <button type="button" id="tts-go" class="ab-submit" style="background:linear-gradient(135deg,#0f766e 0%,#11998e 100%); box-shadow:0 10px 22px rgba(17,153,142,.3);"><i class="fas fa-cog"></i> Convert to MP3</button>
+
+                <div class="ab-status" id="tts-status"></div>
+                <div class="ab-ready" id="tts-ready">
+                    <audio id="tts-ready-player" controls preload="none" style="width:100%; height:44px;"></audio>
+                    <a id="tts-download" class="ab-dl" href="#" download><i class="fas fa-download"></i> Download MP3</a>
+                    <p style="font-size:.8rem; color:#8a6d3b; margin:.6rem 0 0;"><i class="fas fa-shield-alt"></i> Saved to cloud &amp; My Downloads — auto-deleted after 2 days.</p>
+                </div>
+            </div>
+
+            <!-- My Voice -->
+            <div class="ab-card" id="myvoice">
+                <div class="ab-card-head">
+                    <span class="ab-card-icon amber"><i class="fas fa-microphone-alt"></i></span>
+                    <div>
+                        <h2 class="ab-card-title">My Voice</h2>
+                        <p class="ab-card-sub">Match the narrator to sound closer to you.</p>
+                    </div>
+                </div>
+
+                <label for="mv-file" class="ab-dropzone" style="min-height:110px;">
+                    <span class="dz-icon"><i class="fas fa-microphone-alt"></i></span>
+                    <span class="dz-title">Click to upload a short voice clip</span>
+                    <span class="dz-hint">WAV · MP3 · M4A · WEBM · OGG · FLAC · AAC · OPUS</span>
+                    <span class="dz-file" id="mv-file-name"></span>
+                </label>
+                <input type="file" id="mv-file" accept="audio/*,.wav,.mp3,.m4a,.webm,.ogg,.flac,.aac,.aiff,.opus" style="display:none;">
+                <div class="ab-status" id="mv-status"></div>
+
+                <div class="ab-mv-result" id="mv-result">
+                    <div style="font-size:.9rem; color:#4a235a; line-height:1.55;">Matched: <strong id="mv-label"></strong></div>
+                    <div class="mv-proof">
+                        <span class="chip" id="mv-gender"></span>
+                        <span class="chip green" id="mv-rate-chip"></span>
+                        <span class="chip" id="mv-pitch-chip"></span>
+                    </div>
+                    <div class="mv-actions">
+                        <button type="button" id="mv-apply" class="ab-btn" style="padding:.55rem 1rem; font-size:.85rem; background:#eef3ff; color:#3b5bdb; border:none;"><i class="fas fa-check-circle"></i> Use this voice</button>
+                        <button type="button" id="mv-clear" class="ab-btn" style="padding:.55rem 1rem; font-size:.85rem; background:#f1f2f6; color:#777; border:none;"><i class="fas fa-times"></i> Clear</button>
+                    </div>
+                </div>
+                <p class="ab-note"><i class="fas fa-shield-alt"></i> Private: your clip is analyzed and then immediately discarded — nothing is stored. A 10–30 second, clear recording gives the best match.</p>
+            </div>
+
+            <!-- MP3 Downloads -->
+            <div class="ab-card" id="downloads">
+                <div class="ab-card-head">
+                    <span class="ab-card-icon blue"><i class="fas fa-file-audio"></i></span>
+                    <div>
+                        <h2 class="ab-card-title">MP3 Downloads</h2>
+                        <p class="ab-card-sub">Every audiobook you create lands here automatically.</p>
+                    </div>
+                </div>
+                <div class="dl-card">
+                    <p>"All my narrated audiobooks appear on the My Downloads page."</p>
+                    <ul>
+                        <li><i class="fas fa-headphones"></i> Listen online anytime</li>
+                        <li><i class="fas fa-download"></i> Download to your device</li>
+                        <li><i class="fas fa-trash-alt"></i> Delete when you're done</li>
+                    </ul>
+                    <a href="/downloads" class="ab-btn primary" style="text-decoration:none;"><i class="fas fa-folder-open"></i> Open My Downloads</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="ab-faq" style="margin-top:2rem;">
+            <h2 class="page-main-title" style="font-size:1.4rem; margin-bottom:1rem;">Audiobook Maker — FAQs</h2>
+            <details open>
+                <summary>Is the Meow OCR audiobook maker really free?</summary>
+                <div class="ab-answer">Yes. Converting documents, images or pasted text into narrated MP3 audiobooks is completely free — no signup, no watermark, and no hidden limits on your files or voices.</div>
+            </details>
+            <details>
+                <summary>How do I convert a PDF into an audiobook?</summary>
+                <div class="ab-answer">In the <strong>PDF &amp; Documents → Audiobook MP3</strong> card above, upload your file, pick the document language and narrator voice, then press <em>Convert to Audiobook MP3</em>. Meow OCR reads the text out of your file (scanned pages are handled with built-in OCR) and narrates it in the background. When it's done, the MP3 appears in My Downloads.</div>
+            </details>
+            <details>
+                <summary>Which languages and voices are supported?</summary>
+                <div class="ab-answer">19+ languages for reading documents and 45+ natural neural voices — English, Tamil, Hindi, Telugu, Bengali, Kannada, Malayalam, Gujarati, Marathi, Arabic, Spanish, French, German and many more. Use <em>Auto-pick</em> and Meow OCR chooses the best voice for the detected language automatically.</div>
+            </details>
+            <details>
+                <summary>Can the narrator sound like me?</summary>
+                <div class="ab-answer">Yes. Upload a short voice clip in the <strong>My Voice</strong> card. Meow OCR detects your pitch and speaking speed, then matches the closest built-in voice and tunes its speed and pitch to you. Apply it to the Text to Speech tool and save it onto the PDF tool with one click.</div>
+            </details>
+        </section>
+
+        <div class="cta-banner audio-cta">
+            <div class="cta-inner">
+                <div>
+                    <h3>Hundreds of pages already listening (via earphones).</h3>
+                    <p>Start converting your first narrated audiobook now — it's free, private and takes seconds.</p>
+                </div>
+                <a href="#pdf2audio" class="cta-btn"><i class="fas fa-headphones"></i> Start Now</a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        {% include 'footer_ad.html' %}
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <h4>Meow OCR</h4>
+                <p>Free online OCR — extract text from PDF, images &amp; documents. 19+ languages. Built by Siva.</p>
+                <p class="meow-tagline"><i class="fas fa-cat"></i> Powered by curious cats <i class="fas fa-paw"></i></p>
+            </div>
+            <div class="footer-links">
+                <h4>OCR Tools</h4>
+                <a href="/tamil-ocr"><i class="fas fa-language"></i> Tamil OCR</a>
+                <a href="/hindi-ocr"><i class="fas fa-language"></i> Hindi OCR</a>
+                <a href="/english-ocr"><i class="fas fa-language"></i> English PDF to Text</a>
+                <a href="/"><i class="fas fa-home"></i> Full OCR Tool</a>
+            </div>
+            <div class="footer-links">
+                <h4>Audiobook Tools</h4>
+                <a href="/audiobook"><i class="fas fa-headphones"></i> PDF to Audiobook</a>
+                <a href="/audiobook#tts"><i class="fas fa-volume-up"></i> Text to Speech</a>
+                <a href="/audiobook#myvoice"><i class="fas fa-microphone"></i> My Voice</a>
+                <a href="/downloads"><i class="fas fa-file-audio"></i> MP3 Downloads</a>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <a href="/"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="/about"><i class="fas fa-info-circle"></i> About</a>
+                <a href="/blog"><i class="fas fa-rss"></i> Blog</a>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <a href="/privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                <a href="/terms"><i class="fas fa-file-contract"></i> Terms of Service</a>
+                <a href="/link-to-us"><i class="fas fa-link"></i> Link to Us</a>
+            </div>
+            <div class="footer-note">
+                <h4>Your Result</h4>
+                <p>Results are stored securely in the cloud and auto-deleted after 2 days by default.</p>
+                <p class="copyright">&copy; 2026 Meow OCR. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        (function () {
+            var LANG_LABELS = {
+                en: 'English', tam: 'Tamil', hin: 'Hindi', tel: 'Telugu', ben: 'Bengali',
+                kan: 'Kannada', mal: 'Malayalam', guj: 'Gujarati', mar: 'Marathi', urd: 'Urdu',
+                ara: 'Arabic', rus: 'Russian', ell: 'Greek', heb: 'Hebrew', tha: 'Thai',
+                tur: 'Turkish', por: 'Portuguese', ind: 'Indonesian', msa: 'Malay', vie: 'Vietnamese',
+                chi_sim: 'Chinese', jpn: 'Japanese', kor: 'Korean', spa: 'Spanish', fra: 'French',
+                deu: 'German', ita: 'Italian', pol: 'Polish', swe: 'Swedish', dan: 'Danish',
+                fin: 'Finnish', ces: 'Czech', ron: 'Romanian', ukr: 'Ukrainian', hun: 'Hungarian',
+                nob: 'Norwegian', hrv: 'Croatian', bul: 'Bulgarian', slk: 'Slovak', nld: 'Dutch'
+            };
+
+            var dropzone = document.getElementById('ab-dropzone');
+            var fileInput = document.getElementById('ab-file');
+            var fileName = document.getElementById('ab-file-name');
+            var voiceSel = document.getElementById('ab-voice');
+            var rateRange = document.getElementById('ab-rate');
+            var pitchRange = document.getElementById('ab-pitch');
+            var rateVal = document.getElementById('ab-rate-val');
+            var pitchVal = document.getElementById('ab-pitch-val');
+            var rateHidden = document.getElementById('ab-rate-hidden');
+            var pitchHidden = document.getElementById('ab-pitch-hidden');
+            var testBtn = document.getElementById('ab-test');
+            var testMsg = document.getElementById('ab-test-msg');
+            var player = document.getElementById('ab-player');
+
+            function syncRate() {
+                if (!rateRange) return;
+                rateVal.textContent = (parseInt(rateRange.value, 10) / 100).toFixed(2) + 'x';
+                if (rateHidden) rateHidden.value = rateRange.value;
+            }
+            function syncPitch() {
+                if (!pitchRange) return;
+                pitchVal.textContent = parseInt(pitchRange.value, 10) + ' Hz';
+                if (pitchHidden) pitchHidden.value = pitchRange.value;
+            }
+            if (rateRange) rateRange.addEventListener('input', syncRate);
+            if (pitchRange) pitchRange.addEventListener('input', syncPitch);
+            syncRate(); syncPitch();
+
+            if (fileInput) fileInput.addEventListener('change', function () {
+                var fs = Array.prototype.slice.call(fileInput.files || []);
+                if (!fs.length) { fileName.textContent = ''; return; }
+                fileName.textContent = fs.length === 1 ? fs[0].name : fs.length + ' files selected';
+            });
+            if (dropzone && fileInput) {
+                ['dragenter', 'dragover'].forEach(function (ev) {
+                    dropzone.addEventListener(ev, function (e) { e.preventDefault(); dropzone.classList.add('drag'); });
+                });
+                ['dragleave', 'drop'].forEach(function (ev) {
+                    dropzone.addEventListener(ev, function (e) { e.preventDefault(); dropzone.classList.remove('drag'); });
+                });
+                dropzone.addEventListener('drop', function (e) {
+                    if (e.dataTransfer && e.dataTransfer.files) {
+                        fileInput.files = e.dataTransfer.files;
+                        var ev2 = new Event('change', { bubbles: true });
+                        fileInput.dispatchEvent(ev2);
+                    }
+                });
+            }
+
+            var voices = {};
+            function loadVoices() {
+                fetch('/api/text2audio/voices')
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        voices = data || {};
+                        voiceSel.innerHTML = '';
+                        var dflt = document.createElement('option');
+                        dflt.value = '';
+                        dflt.textContent = 'Auto-pick (match language)';
+                        voiceSel.appendChild(dflt);
+                        var mvOpt = document.createElement('option');
+                        mvOpt.value = '__my_voice__';
+                        mvOpt.textContent = 'My Voice (matched)';
+                        voiceSel.appendChild(mvOpt);
+                        Object.keys(voices).forEach(function (code) {
+                            var langName = LANG_LABELS[code] || code;
+                            (voices[code] || []).forEach(function (v) {
+                                var opt = document.createElement('option');
+                                opt.value = v[0];
+                                opt.textContent = langName + ' — ' + v[1];
+                                voiceSel.appendChild(opt);
+                            });
+                        });
+                        window.abVoiceLoaded = true;
+                    })
+                    .catch(function () {});
+            }
+            loadVoices();
+
+            function currentVoice() {
+                if (voiceSel.value === '__my_voice__') {
+                    var m = window.abMatchedVoice;
+                    return m ? { voice: m.voice, rate: m.rate, pitch: m.pitch } : null;
+                }
+                return { voice: voiceSel.value || '', rate: rateRange ? rateRange.value : 100, pitch: pitchRange ? pitchRange.value : 0 };
+            }
+
+            if (testBtn) testBtn.addEventListener('click', function () {
+                var c = currentVoice();
+                if (!c || !c.voice) { testMsg.textContent = 'Pick a voice first.'; return; }
+                testMsg.textContent = 'Generating preview...';
+                var url = '/api/text2audio/preview?voice=' + encodeURIComponent(c.voice) + '&rate=' + c.rate + '&pitch=' + c.pitch;
+                fetch(url)
+                    .then(function (r) {
+                        if (!r.ok) throw new Error();
+                        return r.blob();
+                    })
+                    .then(function (blob) {
+                        var urlObj = URL.createObjectURL(blob);
+                        player.src = urlObj;
+                        player.style.display = '';
+                        testMsg.textContent = 'Done — press play.';
+                        player.play().catch(function () {});
+                    })
+                    .catch(function () { testMsg.textContent = 'Could not generate a preview. Please try again.'; });
+            });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            var textEl = document.getElementById('tts-text');
+            var langSel = document.getElementById('tts-lang');
+            var voiceSel = document.getElementById('tts-voice');
+            var rateRange = document.getElementById('tts-rate');
+            var pitchRange = document.getElementById('tts-pitch');
+            var rateVal = document.getElementById('tts-rate-val');
+            var pitchVal = document.getElementById('tts-pitch-val');
+            var countEl = document.getElementById('tts-count');
+            var statusEl = document.getElementById('tts-status');
+            var readyEl = document.getElementById('tts-ready');
+            var dlLink = document.getElementById('tts-download');
+            var readyPlayer = document.getElementById('tts-ready-player');
+            var goBtn = document.getElementById('tts-go');
+            var testBtn = document.getElementById('tts-test');
+            var testMsg = document.getElementById('tts-test-msg');
+            var player = document.getElementById('tts-player');
+            var voices = {};
+            var pollTimer = null;
+            var LABELS = {
+                tam: 'Tamil', en: 'English', hin: 'Hindi', tel: 'Telugu', kan: 'Kannada',
+                mal: 'Malayalam', ben: 'Bengali', guj: 'Gujarati', mar: 'Marathi', urd: 'Urdu',
+                ara: 'Arabic', rus: 'Russian', ell: 'Greek', heb: 'Hebrew', tha: 'Thai',
+                tur: 'Turkish', por: 'Portuguese', ind: 'Indonesian', msa: 'Malay', fil: 'Filipino',
+                vie: 'Vietnamese', chi_sim: 'Chinese', jpn: 'Japanese', kor: 'Korean', spa: 'Spanish',
+                fra: 'French', deu: 'German', ita: 'Italian', bul: 'Bulgarian', hrv: 'Croatian',
+                ces: 'Czech', dan: 'Danish', nld: 'Dutch', fin: 'Finnish', hun: 'Hungarian',
+                nob: 'Norwegian', pol: 'Polish', ron: 'Romanian', slk: 'Slovak', swe: 'Swedish', ukr: 'Ukrainian'
+            };
+            if (!textEl) return;
+
+            function show(el, on) { if (el) el.style.display = on ? '' : 'none'; }
+
+            function loadVoices() {
+                fetch('/api/text2audio/voices')
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        voices = data || {};
+                        populateLangs();
+                    })
+                    .catch(function () { if (statusEl) statusEl.textContent = 'Could not load voices. Please refresh.'; });
+            }
+
+            function populateLangs() {
+                langSel.innerHTML = '';
+                var keys = Object.keys(voices);
+                keys.forEach(function (code) {
+                    var opt = document.createElement('option');
+                    opt.value = code;
+                    opt.textContent = (LABELS[code] || code) + ' (' + code + ')';
+                    langSel.appendChild(opt);
+                });
+                var def = keys.indexOf('tam') >= 0 ? 'tam' : (keys[0] || 'en');
+                if (def) langSel.value = def;
+                populateVoices();
+            }
+
+            function populateVoices() {
+                voiceSel.innerHTML = '';
+                var list = voices[langSel.value] || [];
+                if (!list.length) {
+                    var o = document.createElement('option');
+                    o.value = '';
+                    o.textContent = 'Default cat voice';
+                    voiceSel.appendChild(o);
+                    return;
+                }
+                list.forEach(function (v) {
+                    var opt = document.createElement('option');
+                    opt.value = v[0];
+                    opt.textContent = v[1];
+                    voiceSel.appendChild(opt);
+                });
+                voiceSel.value = list[0][0];
+            }
+
+            function updateCount() {
+                var v = textEl.value || '';
+                var wc = v.trim() ? v.trim().split(/\s+/).length : 0;
+                var msg = wc + ' word' + (wc === 1 ? '' : 's');
+                if (wc > 2500) msg += ' · capped at 2500 words';
+                else if (wc) msg += ' · est. ~' + Math.round(wc / 160 * 2 * 10) / 10 + ' min audio';
+                countEl.textContent = msg;
+            }
+
+            function syncRate() { rateVal.textContent = (parseInt(rateRange.value, 10) / 100).toFixed(2) + 'x'; }
+            function syncPitch() { pitchVal.textContent = parseInt(pitchRange.value, 10) + ' Hz'; }
+            if (rateRange) rateRange.addEventListener('input', syncRate);
+            if (pitchRange) pitchRange.addEventListener('input', syncPitch);
+            syncRate(); syncPitch();
+            if (langSel) langSel.addEventListener('change', populateVoices);
+            if (textEl) textEl.addEventListener('input', updateCount);
+
+            if (testBtn) testBtn.addEventListener('click', function () {
+                if (!voiceSel.value) { testMsg.textContent = 'Pick a voice first.'; return; }
+                testMsg.textContent = 'Generating preview...';
+                var url = '/api/text2audio/preview?voice=' + encodeURIComponent(voiceSel.value)
+                    + '&rate=' + (rateRange ? rateRange.value : 100)
+                    + '&pitch=' + (pitchRange ? pitchRange.value : 0);
+                fetch(url)
+                    .then(function (r) { if (!r.ok) throw new Error(); return r.blob(); })
+                    .then(function (blob) {
+                        player.src = URL.createObjectURL(blob);
+                        player.style.display = '';
+                        testMsg.textContent = 'Done — press play.';
+                        player.play().catch(function () {});
+                    })
+                    .catch(function () { testMsg.textContent = 'Could not generate a preview. Please try again.'; });
+            });
+
+            if (goBtn) goBtn.addEventListener('click', function () {
+                var text = (textEl.value || '').trim();
+                if (!text) { statusEl.textContent = 'Please enter some text to convert.'; return; }
+                var body = {
+                    text: text.slice(0, 20000),
+                    voice: voiceSel.value || '',
+                    rate: parseInt(rateRange ? rateRange.value : 100, 10) || 100,
+                    pitch: parseInt(pitchRange ? pitchRange.value : 0, 10) || 0,
+                    filename: 'meow-audiobook'
+                };
+                goBtn.disabled = true;
+                statusEl.textContent = 'Starting conversion...';
+                show(readyEl, false);
+                fetch('/api/text2audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                })
+                    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { goBtn.disabled = false; statusEl.textContent = res.d.error || 'Could not start conversion.'; return; }
+                        statusEl.textContent = 'Converting... 0%';
+                        pollTimer = setInterval(function () { pollStatus(res.d.token); }, 1500);
+                    })
+                    .catch(function () { goBtn.disabled = false; statusEl.textContent = 'Network error. Please try again.'; });
+            });
+
+            function pollStatus(token) {
+                fetch('/api/text2audio/' + token)
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (d.status === 'done') {
+                            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                            statusEl.textContent = 'Ready! Your MP3 is saved.';
+                            var src = d.link || ('/download/text2audio/' + token);
+                            dlLink.href = src;
+                            readyPlayer.pause();
+                            readyPlayer.removeAttribute('src');
+                            readyPlayer.__audioSrc = src;
+                            readyPlayer.setAttribute('src', src);
+                            show(readyEl, true);
+                            goBtn.disabled = false;
+                        } else if (d.status === 'error') {
+                            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                            statusEl.textContent = d.error || 'Conversion failed.';
+                            goBtn.disabled = false;
+                        } else {
+                            var pct = d.progress || 0;
+                            var msg = 'Converting... ' + pct + '%';
+                            if (d.words_done && d.total_words) {
+                                msg = 'Generating word ' + (d.words_done > d.total_words ? d.total_words : d.words_done) + ' of ' + d.total_words + ' · ' + pct + '%';
+                            }
+                            statusEl.textContent = msg;
+                        }
+                    })
+                    .catch(function () {});
+            }
+
+            window.ttsApplyMatched = function (m) {
+                if (!m || !m.voice) return;
+                var found = false;
+                voiceSel.querySelectorAll('option').forEach(function (opt) {
+                    if (opt.value === m.voice) { opt.selected = true; found = true; }
+                });
+                if (!found) {
+                    var opt = document.createElement('option');
+                    opt.value = m.voice;
+                    opt.textContent = m.label || m.voice;
+                    voiceSel.appendChild(opt);
+                    opt.selected = true;
+                }
+                if (rateRange) rateRange.value = m.rate;
+                if (pitchRange) pitchRange.value = m.pitch;
+                syncRate(); syncPitch();
+                if (statusEl) statusEl.textContent = 'Using your matched voice: ' + (m.label || m.voice) + '.';
+            };
+
+            window.ttsResetMatched = function () {
+                if (statusEl) statusEl.textContent = '';
+            };
+
+            window.abMatchedVoice = null;
+            window.__abSyncRate = syncRate;
+            window.__abSyncPitch = syncPitch;
+            loadVoices();
+        })();
+    </script>
+
+    <script>
+        (function () {
+            var fileInput = document.getElementById('mv-file');
+            var fileName = document.getElementById('mv-file-name');
+            var dropzone = document.getElementById('mv-file');
+            var statusEl = document.getElementById('mv-status');
+            var resultEl = document.getElementById('mv-result');
+            var labelEl = document.getElementById('mv-label');
+            var genderEl = document.getElementById('mv-gender');
+            var rateChip = document.getElementById('mv-rate-chip');
+            var pitchChip = document.getElementById('mv-pitch-chip');
+            var applyBtn = document.getElementById('mv-apply');
+            var clearBtn = document.getElementById('mv-clear');
+
+            if (!fileInput) return;
+
+            fileInput.addEventListener('change', function () {
+                var f = fileInput.files && fileInput.files[0];
+                if (!f) return;
+                fileName.textContent = f.name;
+                analyze(f);
+            });
+
+            function analyze(file) {
+                var fd = new FormData();
+                fd.append('audio', file);
+                var langSel = document.getElementById('ab-language');
+                var lang = langSel && langSel.value && langSel.value !== 'auto' ? langSel.value : 'en';
+                fd.append('lang', lang);
+                statusEl.textContent = 'Analyzing your voice...';
+                show(resultEl, false);
+                fetch('/api/voice/analyze', { method: 'POST', body: fd })
+                    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { statusEl.textContent = res.d.error || 'Could not analyze that audio.'; return; }
+                        var m = res.d.match;
+                        if (!m || !m.voice) { statusEl.textContent = 'Could not match a close enough voice. Try a cleaner, longer clip.'; return; }
+                        window.abMatchedVoice = {
+                            voice: m.voice,
+                            rate: res.d.suggested_rate || 100,
+                            pitch: m.pitch || 0,
+                            label: m.label || m.voice,
+                            gender: res.d.gender || '',
+                            wpm: res.d.wpm || 0
+                        };
+                        labelEl.textContent = window.abMatchedVoice.label;
+                        genderEl.textContent = (window.abMatchedVoice.gender === 'male' ? 'Male voice' : 'Female voice') + ' · ' + Math.round(res.d.median_hz) + ' Hz';
+                        rateChip.textContent = 'Speed ' + (window.abMatchedVoice.rate / 100).toFixed(2) + 'x';
+                        pitchChip.textContent = 'Pitch ' + (window.abMatchedVoice.pitch > 0 ? '+' : '') + window.abMatchedVoice.pitch + ' Hz';
+                        statusEl.textContent = '';
+                        show(resultEl, true);
+                    })
+                    .catch(function () { statusEl.textContent = 'Network error. Please try again.'; });
+            }
+
+            function show(el, on) { if (el) el.style.display = on ? '' : 'none'; }
+
+            if (applyBtn) applyBtn.addEventListener('click', function () {
+                var m = window.abMatchedVoice;
+                if (!m) return;
+                if (window.ttsApplyMatched) window.ttsApplyMatched(m);
+                var abVoice = document.getElementById('ab-voice');
+                var abRate = document.getElementById('ab-rate');
+                var abPitch = document.getElementById('ab-pitch');
+                var abRateHidden = document.getElementById('ab-rate-hidden');
+                var abPitchHidden = document.getElementById('ab-pitch-hidden');
+                if (abVoice) {
+                    var found = false;
+                    abVoice.querySelectorAll('option').forEach(function (opt) {
+                        if (opt.value === '__my_voice__') { opt.selected = true; found = true; }
+                    });
+                    if (!found) {
+                        var opt = document.createElement('option');
+                        opt.value = '__my_voice__';
+                        opt.textContent = 'My Voice (' + m.label + ')';
+                        abVoice.appendChild(opt);
+                        opt.selected = true;
+                    }
+                }
+                window.abMatchedVoice._applied = true;
+                var abRate = document.getElementById('ab-rate');
+                var abPitch = document.getElementById('ab-pitch');
+                if (abRate) { abRate.value = m.rate; if (window.__abSyncRate) window.__abSyncRate(); }
+                if (abPitch) { abPitch.value = m.pitch; if (window.__abSyncPitch) window.__abSyncPitch(); }
+                if (abRateHidden) abRateHidden.value = m.rate;
+                if (abPitchHidden) abPitchHidden.value = m.pitch;
+                statusEl.textContent = 'Applied to Text to Speech & PDF tools. 🎧';
+            });
+
+            if (clearBtn) clearBtn.addEventListener('click', function () {
+                window.abMatchedVoice = null;
+                show(resultEl, false);
+                statusEl.textContent = '';
+                var abVoice = document.getElementById('ab-voice');
+                if (abVoice) {
+                    abVoice.querySelectorAll('option').forEach(function (opt) {
+                        if (opt.value === '__my_voice__') { opt.remove(); }
+                    });
+                    abVoice.value = '';
+                }
+                var ttsVoice = document.getElementById('tts-voice');
+                if (ttsVoice) {
+                    var first = ttsVoice.options[0];
+                    if (first) first.selected = true;
+                }
+                if (window.ttsResetMatched) window.ttsResetMatched();
+            });
+        })();
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            var hero = document.querySelector('.ab-hero');
+            if (hero) anime({ targets: hero, translateY: [26, 0], opacity: [0, 1], duration: 650, easing: 'easeOutExpo' });
+            var steps = document.querySelectorAll('.ab-step');
+            anime({ targets: steps, translateY: [22, 0], opacity: [0, 1], delay: anime.stagger(110), duration: 600, easing: 'easeOutExpo' });
+            var cards = document.querySelectorAll('.ab-card');
+            anime({ targets: cards, translateY: [24, 0], opacity: [0, 1], delay: anime.stagger(90), duration: 650, easing: 'easeOutExpo' });
+            var arrows = document.querySelectorAll('.ab-actions .ab-btn');
+            anime({ targets: arrows, translateY: [14, 0], opacity: [0, 1], delay: anime.stagger(80), duration: 500, easing: 'easeOutQuad' });
+        });
+    </script>
+
+    {% include 'paw_effects.html' %}
+
+{% include 'chatbot.html' %}
+</body>
+</html>

@@ -3707,6 +3707,12 @@ def clear_downloads():
     return jsonify({"cleared": cleared}), 200
 
 
+@app.route('/audiobook')
+def audiobook_page():
+    """Dedicated audiobook tools hub: PDF→MP3, text-to-speech and My Voice."""
+    return render_template('audiobook.html')
+
+
 @app.route('/how-to-use')
 def how_to_use():
     """Detailed user instructions page."""

@@ -2249,3 +2249,21 @@ body {
     border-radius: 20px;
     margin: 0.2rem 0.25rem 0 0;
 }
+
+/* ---- Hero audiobook highlight (home page) ---- */
+.hero-badge.audio-highlight {
+    background: linear-gradient(135deg, #6c3483 0%, #11998e 100%);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 6px 18px rgba(108, 52, 131, 0.35);
+}
+.hero-badge.audio-highlight i { color: #ffeaa7; }
+.hero-sub .hero-audio-strong {
+    color: #6c3483;
+    font-weight: 800;
+    border-bottom: 2px solid #e2d6f1;
+}
+.hero-cta.audio {
+    background: linear-gradient(135deg, #8e44ad 0%, #11998e 100%);
+    box-shadow: 0 10px 26px rgba(142, 68, 173, 0.35);
+}
