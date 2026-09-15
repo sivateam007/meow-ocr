@@ -12,9 +12,9 @@
     {% include 'adsense.html' %}
     {% include 'monetag.html' %}
     <!-- ads removed -->
-    <meta name="description" content="Learn how to use Meow OCR to extract text from PDF, images and documents in 3 easy steps. Supports 19+ languages, auto-delete in 2 days, free to use.">
+    <meta name="description" content="Learn how to use Meow OCR to extract text from PDF, images and documents in 3 easy steps — or turn any file into a narrated MP3 audiobook. Supports 19+ languages, auto-delete in 2 days, free to use.">
     <meta property="og:title" content="How to Use Meow OCR - Step by Step Guide (Free Online OCR)">
-    <meta property="og:description" content="Learn how to use Meow OCR to extract text from PDF, images and documents in 3 easy steps. Supports 19+ languages, auto-delete in 2 days, free to use.">
+    <meta property="og:description" content="Learn how to use Meow OCR to extract text from PDF, images and documents in 3 easy steps — or turn any file into a narrated MP3 audiobook. Supports 19+ languages, auto-delete in 2 days, free to use.">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
@@ -62,7 +62,7 @@
         <section class="content-section info-page">
             <h1 class="page-main-title"><i class="fas fa-graduation-cap"></i> How to Use Meow OCR</h1>
             <div class="page-cat-chip"><img src="{{ url_for('static', filename='images/cat-tabby.jpg') }}" alt="Meow OCR cat guide"><span class="heading-cat">Paw-fect guide by our senior cat engineer 🐱</span></div>
-            <p class="page-subtitle">Convert any PDF, image or document to editable text in under a minute. Follow these 3 simple steps.</p>
+            <p class="page-subtitle">Convert any PDF, image or document to editable text in under a minute — or turn it into a narrated MP3 audiobook. Follow these simple steps.</p>
 
             <div class="steps-grid">
                 <div class="step-card cat-step">
@@ -114,6 +114,64 @@
             <div class="info-page-box">
                 <h2><i class="fas fa-cloud"></i> Privacy Auto-Delete</h2>
                 <p>Your uploaded files and results are stored securely in the cloud. By default they are <b>automatically deleted after 2 days</b>. You can choose 1, 7 or 30 days, or keep them forever. This keeps your private documents safe.</p>
+            </div>
+
+            <div class="section-title"><i class="fas fa-headphones"></i> How to Use the Meow OCR Audiobook Maker</div>
+            <p class="page-subtitle">Turn any PDF, image or document into a narrated MP3 — or paste text and read it aloud in one click. Follow these 3 easy steps.</p>
+
+            <div class="steps-grid">
+                <div class="step-card cat-step">
+                    <div class="step-icon step-icon-audio"><i class="fas fa-book-open"></i></div>
+                    <img src="{{ url_for('static', filename='images/cat-working.jpg') }}" alt="Meow OCR cat uploading a PDF for audiobook" class="step-cat" loading="lazy">
+                    <h3>Step 1 — Upload or Paste</h3>
+                    <p>Open the <b>Audiobook Studio</b> and upload a PDF, scanned image or document — or paste plain text directly. We read and digitize every page, so even long reports and book chapters convert without crashing.</p>
+                    <div class="tip-box"><i class="fas fa-shield-alt"></i> Tip: Auto-Delete is on by default, so your files vanish after 2 days for privacy.</div>
+                </div>
+                <div class="step-card cat-step">
+                    <div class="step-icon step-icon-audio"><i class="fas fa-microphone-alt"></i></div>
+                    <img src="{{ url_for('static', filename='images/cat-thinking.jpg') }}" alt="Meow OCR cat choosing a voice" class="step-cat" loading="lazy">
+                    <h3>Step 2 — Pick a Voice</h3>
+                    <p>Choose from <b>45+ natural voices</b> across <b>19+ languages</b> and tune speed and pitch. Or use <b>My Voice</b>: upload a short clip of yourself and we match a voice tuned to your pitch and pace.</p>
+                    <div class="tip-box"><i class="fas fa-lightbulb"></i> Tip: Try My Voice for an audiobook that really sounds like you.</div>
+                </div>
+                <div class="step-card cat-step">
+                    <div class="step-icon step-icon-audio"><i class="fas fa-file-audio"></i></div>
+                    <img src="{{ url_for('static', filename='images/cat-reading.jpg') }}" alt="Meow OCR cat listening to an audiobook" class="step-cat" loading="lazy">
+                    <h3>Step 3 — Listen &amp; Download</h3>
+                    <p>Hit <b>Generate Audio</b> and your narrated <b>MP3</b> is ready in minutes. Listen online right away, or download it and enjoy your documents on the go.</p>
+                    <div class="tip-box"><i class="fas fa-paw"></i> Tip: Sign in with Google to keep all your MP3s in My Downloads.</div>
+                </div>
+            </div>
+
+            <div class="info-page-box">
+                <h2><i class="fas fa-file-audio"></i> What Can I Turn Into an Audiobook?</h2>
+                <div class="format-chip-row">
+                    <span class="format-chip"><i class="fas fa-file-pdf"></i> PDF</span>
+                    <span class="format-chip"><i class="fas fa-image"></i> JPG / JPEG</span>
+                    <span class="format-chip"><i class="fas fa-image"></i> PNG</span>
+                    <span class="format-chip"><i class="fas fa-image"></i> BMP / TIFF</span>
+                    <span class="format-chip"><i class="fas fa-file-word"></i> DOCX / DOC</span>
+                    <span class="format-chip"><i class="fas fa-file-alt"></i> TXT</span>
+                    <span class="format-chip"><i class="fas fa-file-powerpoint"></i> PPTX / PPT</span>
+                    <span class="format-chip"><i class="fas fa-file-excel"></i> XLSX / XLS / CSV</span>
+                    <span class="format-chip chip-audio"><i class="fas fa-headphones"></i> Output: MP3</span>
+                </div>
+                <p style="margin-top:1rem;">Every file converts to a single narrated <b>MP3</b> using <b>45+ voices</b> in <b>19+ languages</b> — English, Hindi, Tamil, Telugu, Spanish, French, German, Japanese and more.</p>
+            </div>
+
+            <div class="info-page-box">
+                <h2><i class="fas fa-microphone-alt"></i> My Voice — Make It Sound Like You</h2>
+                <p>Record a short clip (about 5–10 seconds is enough) and upload it to the <b>My Voice</b> tool. Meow OCR matches the closest built-in voice and automatically tunes it to your <b>pitch and speaking speed</b>, so your PDFs are narrated in a voice that feels like yours.</p>
+            </div>
+
+            <div class="cta-banner audio-cta">
+                <div class="cta-inner">
+                    <div>
+                        <h3>Ready to make your first audiobook?</h3>
+                        <p>Free, fast and private. No signup needed to get started.</p>
+                    </div>
+                    <a href="/audiobook" class="cta-btn"><i class="fas fa-headphones"></i> Open Audiobook Studio</a>
+                </div>
             </div>
 
             <div class="paw-divider" aria-hidden="true">🐾🐾🐾</div>

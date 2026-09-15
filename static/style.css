@@ -2274,3 +2274,105 @@ body {
     background: linear-gradient(135deg, #8e44ad 0%, #11998e 100%);
     box-shadow: 0 10px 26px rgba(142, 68, 173, 0.35);
 }
+
+/* =========================================================
+   Global responsive + layout polish (all pages, mobile & desktop)
+   ========================================================= */
+
+/* Images and media never force a page wider than the screen */
+img,
+video,
+iframe,
+canvas,
+svg {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Long words / urls wrap instead of overflowing cards & tables */
+h1, h2, h3, h4, h5, h6, p, li, td, th, label, a, span, small, figcaption, blockquote, pre, code {
+    overflow-wrap: break-word;
+}
+
+/* Info-page section titles (e.g. How It Works audiobook section) */
+.section-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--dark);
+    margin: 2.4rem 0 1rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    line-height: 1.35;
+}
+.section-title i { color: var(--teal); }
+.section-title::after {
+    content: "";
+    flex: 1 1 auto;
+    height: 2px;
+    min-width: 48px;
+    background: linear-gradient(90deg, rgba(13, 148, 136, 0.5), transparent);
+    border-radius: 2px;
+}
+
+/* Audiobook-teal step icons on info pages */
+.step-icon-audio {
+    background: linear-gradient(135deg, #0f766e 0%, #11998e 100%);
+    box-shadow: 0 8px 18px rgba(17, 153, 142, 0.35);
+}
+
+/* Audiobook chip + teal CTA banner (shared across pages) */
+.format-chip.chip-audio {
+    background: linear-gradient(135deg, #ecfdf9 0%, #d6f5ee 100%);
+    border-color: rgba(17, 153, 142, 0.4);
+    color: #0f766e;
+}
+.cta-banner.audio-cta {
+    background: linear-gradient(135deg, #0f766e 0%, #11998e 50%, #38ef7d 130%);
+    box-shadow: 0 12px 32px rgba(17, 153, 142, 0.28);
+}
+.cta-banner.audio-cta .cta-inner h3 { color: #fff; }
+.cta-banner.audio-cta .cta-inner p { color: #d5f5ec; }
+.cta-banner.audio-cta .cta-btn { color: #0f766e; }
+
+/* Every grid/row container protects against overflow and always fills its parent */
+.steps-grid,
+.feature-grid,
+.reviews-grid,
+.cat-gallery,
+.options-grid,
+.upload-tabs,
+.tools-grid,
+.steps-row,
+.hero-cats,
+.toast-row,
+.downloads-wrap,
+.heading-cat,
+.format-chip-row,
+.info-page-box,
+.footer-inner {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* Keep header nav tidy when it wraps on small screens */
+@media (max-width: 900px) {
+    .header-container { gap: 0.6rem; padding: 0 16px; }
+    .nav-links { justify-content: center; row-gap: 0.35rem; }
+    .cta-inner { text-align: left; }
+}
+@media (max-width: 480px) {
+    .logo { justify-content: center; width: 100%; }
+    .nav-links { width: 100%; }
+    .section-title { font-size: 1.3rem; }
+    .format-chip { font-size: 0.85rem; padding: 0.45rem 0.8rem; }
+    .tip-box { padding: 0.85rem 0.9rem; font-size: 0.9rem; }
+}
+
+/* Fast read-only blocks wrap rather than overflow */
+pre, code {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
