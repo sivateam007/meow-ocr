@@ -4017,10 +4017,11 @@ _GROQ_SYSTEM_PROMPT = (
     "text), 'Translate Only' (OCR + translation as a ready .txt file in "
     "30+ languages), or 'Audiobook (MP3)' (OCR, optional translation, then "
     "a narrated MP3 with a chosen voice).\n"
-    "- Audiobook: upload a PDF, image or document, optionally choose a "
-    "target language to translate it into, pick a voice (sample it first "
-    "with the 'Hear sample' button), and Meow OCR produces an MP3 in one "
-    "go — found in My Downloads.\n"
+    "- Audiobook: convert your ebook, PDF, image or document to an "
+    "audiobook — optionally choose a target language to translate it "
+    "into, pick a voice (sample it first with the 'Hear sample' button), "
+    "and Meow OCR produces a narrated MP3 in one go — found in My "
+    "Downloads.\n"
     "- Extracts editable text from PDF, images (JPG, PNG, TIFF), Word, "
     "Excel, PPT and documents; supports 19+ languages incl. Tamil, Hindi, "
     "Telugu, Bengali, English, with auto-detection.\n"
@@ -4057,13 +4058,14 @@ def _faq_reply(text):
                 "an MP3 with 110+ voices across 40+ languages, with speed & "
                 "pitch control, voice preview, inline listen and cloud saves. "
                 "When extracting from a file you can also choose Audiobook (MP3) "
-                "or Translate Only as your output.")
+                "to convert your ebook/document into a narrated audio, or "
+                "Translate Only as your output.")
     if any(k in t for k in ("audiobook", "audio book")):
-        return ("Yes! Meow OCR can make an audiobook from any file 🐱 On the PDF, "
-                "Image, Document or Data tab, pick 'Audiobook (MP3)' as your "
-                "output. Upload your file, optionally choose a target language "
-                "to translate it into, pick a voice (tap 'Hear sample' to "
-                "preview it), and Meow OCR returns a narrated MP3 — saved to "
+        return ("Yes! Meow OCR converts your ebook or document to an audiobook 🐱 "
+                "On the PDF, Image, Document or Data tab, pick 'Audiobook (MP3)' "
+                "as your output. Upload your file, optionally choose a target "
+                "language to translate it into, pick a voice (tap 'Hear sample' "
+                "to preview it), and Meow OCR returns a narrated MP3 — saved to "
                 "My Downloads.")
     if any(k in t for k in ("hi ", "hello", "hey", "vanakkam", "good morning", "good evening")):
         return ("Hi! 🐱 I'm Meow Assistant. Ask me how Meow OCR works, whether it's "

@@ -121,13 +121,14 @@
                 <div class="hero-text-wrap">
                     <div class="hero-eyebrow"><i class="fas fa-paw"></i> Free Online OCR Tool <i class="fas fa-paw"></i></div>
                     <h1 class="hero-title"><span class="title-line">Extract Text From</span> <span class="gradient-text title-line" id="gradient-word">Any Document</span><span class="meow-paw">🐾</span></h1>
-                    <p class="hero-sub">Meow OCR converts PDF, images &amp; documents to editable text in seconds. 19+ languages, no watermark, auto-delete in 2 days.</p>
+                    <p class="hero-sub">Meow OCR converts PDF, images &amp; documents to editable text in seconds — or into a full narrated audiobook MP3. 19+ languages, no watermark, auto-delete in 2 days.</p>
 <div class="hero-badges">
                         <span class="hero-badge"><i class="fas fa-check-circle"></i> 100% Free OCR</span>
                         <span class="hero-badge"><i class="fas fa-check-circle"></i> No Watermark</span>
                         <span class="hero-badge"><i class="fas fa-check-circle"></i> Private &amp; Secure</span>
                         <span class="hero-badge"><i class="fas fa-shield-alt"></i> Auto-Delete 2 Days</span>
                         <span class="hero-badge"><i class="fas fa-headphones"></i> Text to Audio</span>
+                        <span class="hero-badge"><i class="fas fa-book-open"></i> PDF → Narrated Audiobook</span>
                     </div>
                     <div class="hero-actions">
                         <a href="#upload" class="hero-cta"><i class="fas fa-arrow-down"></i> Get Started — It's Free <span class="cat-dance">🐱</span></a>
@@ -692,7 +693,7 @@
                 <div class="feature-card"><img src="{{ url_for('static', filename='images/meow-yawn.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-shield-alt"></i><h3>Private &amp; Secure</h3><p>No account needed for basic use. Files auto-delete after your chosen time.</p></div>
                 <div class="feature-card"><img src="{{ url_for('static', filename='images/meow-silly.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-th-list"></i><h3>Many Formats</h3><p>PDF, images, DOCX, PPTX, XLSX, CSV, RTF, ODT, HTML, XML, JSON &amp; more.</p></div>
                 <div class="feature-card"><img src="{{ url_for('static', filename='images/meow-footpath.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-globe"></i><h3>Translate Too</h3><p>Upload a text file and translate it between 30+ languages in one step.</p></div>
-                <div class="feature-card"><img src="{{ url_for('static', filename='images/cat-new1.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-headphones"></i><h3>Text to Audio</h3><p>Turn any text into a natural MP3 in 40+ languages with 110+ voices. Listen or download — no speaking needed.</p></div>
+                <div class="feature-card"><img src="{{ url_for('static', filename='images/cat-new1.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-headphones"></i><h3>Ebook to Audiobook</h3><p>Convert your ebook or document to an audiobook — PDF → translated → narrated MP3 in one go, saved to My Downloads.</p></div>
                 <div class="feature-card"><img src="{{ url_for('static', filename='images/cat-new2.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-music"></i><h3>Speed &amp; Pitch Control</h3><p>Choose a voice, tune speed and pitch, preview your text before converting, then save to cloud.</p></div>
                 <div class="feature-card"><img src="{{ url_for('static', filename='images/cat-thinking.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-mobile-alt"></i><h3>Works Everywhere</h3><p>Fully mobile-responsive. Use it on your phone, tablet or desktop.</p></div>
                 <div class="feature-card"><img src="{{ url_for('static', filename='images/cat-working.jpg') }}" alt="cat" class="feature-cat" loading="lazy"><i class="fas fa-cloud"></i><h3>Cloud Auto-Delete</h3><p>Results are stored securely in the cloud and automatically deleted after 2 days — total privacy.</p></div>
@@ -873,6 +874,14 @@
         const submitBtn = document.getElementById('submit-btn');
         const btnText = document.getElementById('btn-text');
         const loadingOverlay = document.getElementById('loading-overlay');
+
+        function updateBtnLabel() {
+            if (currentTab === 'translate') { btnText.textContent = 'Translate'; return; }
+            var checked = document.querySelector('input[name="output_mode"]:checked');
+            var mode = checked ? checked.value : 'text';
+            btnText.textContent = mode === 'audio' ? 'Convert to Audiobook (MP3)'
+                : (mode === 'translate' ? 'Translate Only' : 'Extract Text');
+        }
         const loadingText = document.getElementById('loading-text');
         const pageRangeSelect = document.getElementById('page-range-select');
         const startPageGroup = document.getElementById('start-page-group');
@@ -919,7 +928,7 @@
                 hint = 'Supports: PDF';
                 currentTab = 'pdf';
                 uploadForm.action = '/';
-                btnText.textContent = 'Extract Text';
+                updateBtnLabel();
                 ocrOptions.style.display = 'grid';
                 translateOptions.style.display = 'none';
                 ocrInfoBox.style.display = 'block';
@@ -936,7 +945,7 @@
                 hint = 'Supports: JPG, PNG, BMP, TIFF, GIF';
                 currentTab = 'image';
                 uploadForm.action = '/';
-                btnText.textContent = 'Extract Text';
+                updateBtnLabel();
                 ocrOptions.style.display = 'grid';
                 translateOptions.style.display = 'none';
                 ocrInfoBox.style.display = 'block';
@@ -953,7 +962,7 @@
                 hint = 'Supports: DOCX, DOC, PPTX, PPT, RTF, ODT, HTML, TXT';
                 currentTab = 'doc';
                 uploadForm.action = '/';
-                btnText.textContent = 'Extract Text';
+                updateBtnLabel();
                 ocrOptions.style.display = 'grid';
                 translateOptions.style.display = 'none';
                 ocrInfoBox.style.display = 'block';
@@ -970,7 +979,7 @@
                 hint = 'Supports: XLSX, XLS, CSV, XML, JSON';
                 currentTab = 'data';
                 uploadForm.action = '/';
-                btnText.textContent = 'Extract Text';
+                updateBtnLabel();
                 ocrOptions.style.display = 'grid';
                 translateOptions.style.display = 'none';
                 ocrInfoBox.style.display = 'block';
@@ -1105,8 +1114,15 @@
                 }
             }
             submitBtn.disabled = true;
-            btnText.textContent = currentTab === 'translate' ? 'Translating...' : 'Processing...';
-            loadingText.textContent = currentTab === 'translate' ? 'Translating file...' : 'Submitting for processing...';
+            if (currentTab === 'translate') {
+                btnText.textContent = 'Translating...';
+                loadingText.textContent = 'Translating file...';
+            } else {
+                var om = document.querySelector('input[name="output_mode"]:checked');
+                var mode = om ? om.value : 'text';
+                btnText.textContent = mode === 'audio' ? 'Creating your Audiobook...' : (mode === 'translate' ? 'Translating...' : 'Extracting Text...');
+                loadingText.textContent = mode === 'audio' ? 'Reading, translating & narrating your document...' : (mode === 'translate' ? 'Reading & translating your document...' : 'Submitting for processing...');
+            }
             loadingOverlay.classList.add('active');
         });
 
@@ -2130,6 +2146,7 @@
                 audiobookCtrl.style.display = mode === 'audio' ? 'grid' : 'none';
                 if (mode === 'audio' && voiceSel.options.length <= 1) loadVoices();
                 if (testPlayer) { testPlayer.pause(); testPlayer.style.display = 'none'; if (testMsg) testMsg.textContent = ''; }
+                updateBtnLabel();
             }
 
             picker.querySelectorAll('.pipeline-option').forEach(function (label) {
