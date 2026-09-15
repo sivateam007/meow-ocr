@@ -4005,19 +4005,28 @@ _GROQ_READ_CHUNK = 256 * 1024
 
 _GROQ_SYSTEM_PROMPT = (
     "You are 'Meow Assistant', the friendly cat mascot of Meow OCR "
-    "(https://www.meowocr.work.gd), a completely FREE online OCR tool "
-    "created by developer Siva. You answer in a warm, playful but "
-    "professional tone, using cat emojis sparingly (max one per message). "
-    "Keep answers short (max ~100 words) and match the user's language "
-    "(e.g. reply in Tamil or Hindi if they write in it). Answer only from "
-    "these facts about Meow OCR:\n"
+    "(https://www.meowocr.work.gd), a completely FREE online toolkit "
+    "created by developer Siva: OCR, translation, handwriting AI and "
+    "text-to-audio. You answer in a warm, playful but professional tone, "
+    "using cat emojis sparingly (max one per message). Keep answers short "
+    "(max ~100 words) and match the user's language (e.g. reply in Tamil "
+    "or Hindi if they write in it). Answer only from these facts about "
+    "Meow OCR:\n"
+    "- One-shot pipelines: on the PDF, Image, Document and Data tabs users "
+    "pick an output mode before converting: 'Extract Text' (plain editable "
+    "text), 'Translate Only' (OCR + translation as a ready .txt file in "
+    "30+ languages), or 'Audiobook (MP3)' (OCR, optional translation, then "
+    "a narrated MP3 with a chosen voice).\n"
+    "- Audiobook: upload a PDF, image or document, optionally choose a "
+    "target language to translate it into, pick a voice (sample it first "
+    "with the 'Hear sample' button), and Meow OCR produces an MP3 in one "
+    "go — found in My Downloads.\n"
     "- Extracts editable text from PDF, images (JPG, PNG, TIFF), Word, "
-    "Excel, PPT and documents, plus translate.\n"
-    "- Supports 19+ languages incl. Tamil, Hindi, Telugu, Bengali, "
-    "English, with auto-detection.\n"
+    "Excel, PPT and documents; supports 19+ languages incl. Tamil, Hindi, "
+    "Telugu, Bengali, English, with auto-detection.\n"
     "- 100% free. First scan needs no signup; guests get one free scan, "
-    "signing in with Google unlocks unlimited conversions.\n"
-    "- No watermark, no credit card.\n"
+    "signing in with Google unlocks unlimited conversions. No watermark, "
+    "no credit card.\n"
     "- Files stored securely in the cloud, auto-deleted after 2 days by "
     "default; users can pick 1/7/30 days or keep forever and delete "
     "manually from My Downloads.\n"
@@ -4025,10 +4034,11 @@ _GROQ_SYSTEM_PROMPT = (
     "homepage to read photos of handwriting with AI.\n"
     "- Text to Audio: on the 'Text to Audio' tab of the homepage you can "
     "turn any typed or uploaded text into a natural MP3 — choose a voice "
-    "from 110+ across 40+ languages (many with cat names), tune speed and "
-    "pitch, preview the voice and even listen to your text before "
-    "converting, then generate an MP3, play it inline, or download it. "
-    "Audio is saved to cloud and appears in My Downloads.\n"
+    "from 110+ across 40+ languages, tune speed and pitch, preview the "
+    "voice, listen to your text before converting, and batch-convert "
+    "several files at once. Audio is saved to cloud and appears in My "
+    "Downloads.\n"
+    "- Has a Meow Apps blog (link in the footer) with guides and updates.\n"
     "- Built by developer Siva.\n"
     "For anything outside these facts, honestly say you're not sure and "
     "suggest visiting the homepage help section."
@@ -4045,7 +4055,16 @@ def _faq_reply(text):
                 "text files between 30+ languages. 3) Handwritten Notes — AI "
                 "reads photos of handwriting. 4) Text to Audio — turn text into "
                 "an MP3 with 110+ voices across 40+ languages, with speed & "
-                "pitch control, voice preview, inline listen and cloud saves.")
+                "pitch control, voice preview, inline listen and cloud saves. "
+                "When extracting from a file you can also choose Audiobook (MP3) "
+                "or Translate Only as your output.")
+    if any(k in t for k in ("audiobook", "audio book")):
+        return ("Yes! Meow OCR can make an audiobook from any file 🐱 On the PDF, "
+                "Image, Document or Data tab, pick 'Audiobook (MP3)' as your "
+                "output. Upload your file, optionally choose a target language "
+                "to translate it into, pick a voice (tap 'Hear sample' to "
+                "preview it), and Meow OCR returns a narrated MP3 — saved to "
+                "My Downloads.")
     if any(k in t for k in ("hi ", "hello", "hey", "vanakkam", "good morning", "good evening")):
         return ("Hi! 🐱 I'm Meow Assistant. Ask me how Meow OCR works, whether it's "
                 "free, which languages it supports, or how your files stay private.")
@@ -4071,26 +4090,34 @@ def _faq_reply(text):
     if any(k in t for k in ("how", "use", "upload", "works", "step", "convert", "start")):
         return ("Easy! 🐾 1) Go to the homepage. 2) Drag & drop your PDF, image or "
                 "document (or tap the 'Handwritten Notes' card for handwriting). "
-                "3) Hit 'Extract Text' — the engine reads it, then you can view, "
-                "copy or download the .txt result. That's it.")
+                "3) Pick your output — Extract Text, Translate Only, or Audiobook "
+                "(MP3) — then hit the convert button. Your result appears in My "
+                "Downloads, ready to view, copy or download.")
     if any(k in t for k in ("image", "jpg", "png", "photo", "picture", "pdf", "word", "excel", "format", "file type")):
         return ("You can upload PDFs, images (JPG, PNG, BMP, TIFF, GIF), Word, "
                 "Excel, PPT, and more 🐾 For handwriting, use the 'Handwritten "
                 "Notes' AI scanner instead — it's built for photos of written notes.")
+    if any(k in t for k in ("blog", "article", "read", "news", "guide", "tips", "latest")):
+        return ("Meow OCR has a blog! 🐱 You'll find how-to guides, feature "
+                "updates and OCR tips — it's called 'Meow Apps' and there's a "
+                "link in the footer of every page.")
     if any(k in t for k in ("contact", "siva", "who", "about", "developer", "created", "built", "email")):
         return ("Meow OCR was built by developer Siva 🐱 He keeps it free because "
                 "he believes OCR should be simple. You can read more on the About "
                 "page — there's a link at the bottom of every page.")
     if any(k in t for k in ("rule", "translate", "translation", "translate")):
-        return ("Yes, Meow OCR can translate too! 🐾 Switch to the 'Translate' tab "
-                "on the homepage, upload a .txt file, pick source and target "
-                "languages, and download your translated file.")
+        return ("Yes, Meow OCR can translate too! 🐾 Two ways: switch to the "
+                "'Translate' tab with a .txt file to convert it between 30+ "
+                "languages, or in the OCR tabs choose 'Translate Only' output — "
+                "the engine reads your PDF/image/document, translates it, and "
+                "hands you a ready .txt file.")
     if any(k in t for k in ("audio", "listen", "voice", "mp3", "speak", "tts", "text to audio", "speech")):
         return ("Yes! Meow OCR has Text to Audio 🐱 Go to the 'Text to Audio' tab, "
                 "type or upload text, pick a voice from 110+ across 40+ languages, "
                 "and tune speed & pitch. You can preview the voice, listen to your "
                 "own text, then convert to an MP3 — play it inline or download it. "
-                "Saves to cloud & My Downloads too.")
+                "Saves to cloud & My Downloads too, and you can batch-convert "
+                "several files at once.")
     if any(k in t for k in ("error", "not working", "fail", "problem", "issue", "bug")):
         return ("Sorry about that! 🐱 Try a smaller file, use a clear high-quality "
                 "scan, and pick the language manually for speedier results. If it "
