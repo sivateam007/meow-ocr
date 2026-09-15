@@ -1882,16 +1882,16 @@ header {
 }
 
 /* =========================================================
-    Global responsive + layout polish (desktop & mobile)
+   Global responsive + layout polish (desktop & mobile)
    ========================================================= */
 
-html, body {
+/* Prevent horizontal scroll on narrow screens */
+body {
     overflow-x: hidden;
-    scroll-behavior: smooth;
 }
 
-body {
-    -webkit-tap-highlight-color: transparent;
+html {
+    scroll-behavior: smooth;
 }
 
 /* Info page boxes & tips scale nicely on phones */
@@ -1938,16 +1938,6 @@ body {
     .nav-link, .cta-btn, .hero-cta, .format-chip, .submit-btn, .tab-btn, .logout-btn {
         padding-top: 0.65rem;
         padding-bottom: 0.65rem;
-    }
-}
-
-/* Reduce excessive motion if the user prefers it */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
     }
 }
 
