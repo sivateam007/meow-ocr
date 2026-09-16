@@ -430,6 +430,15 @@
             </div>
         </section>
 
+        <div class="sample-audio-card">
+            <div class="sample-audio-ico"><i class="fas fa-volume-up"></i></div>
+            <div class="sample-audio-meta">
+                <strong>Hear Meow OCR</strong>
+                <span>Sample narration · Jenny (Female) · 45+ voices available</span>
+            </div>
+            <audio controls preload="metadata" src="{{ url_for('static', filename='audio/sample-audiobook.mp3') }}"></audio>
+        </div>
+
         <section class="ab-studio">
             <div class="ab-studio-head">
                 <img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="Meow OCR logo" class="ab-studio-logo">
@@ -532,6 +541,10 @@
                         </div>
                     </div>
 
+                    <div class="ab-range-tools">
+                        <span class="ab-lab" style="margin:0;">Voice speed &amp; pitch</span>
+                        <button type="button" class="ab-reset-btn" id="ab-reset"><i class="fas fa-undo-alt"></i> Reset</button>
+                    </div>
                     <div class="ab-range-row">
                         <div>
                             <label class="ab-lab">Speed <span class="ab-val" id="ab-rate-val">1.00x</span></label>
@@ -572,6 +585,10 @@
                     </div>
                 </div>
 
+                <div class="ab-range-tools">
+                    <span class="ab-lab" style="margin:0;">Voice speed &amp; pitch</span>
+                    <button type="button" class="ab-reset-btn" id="tts-reset"><i class="fas fa-undo-alt"></i> Reset</button>
+                </div>
                 <div class="ab-range-row">
                     <div>
                         <label class="ab-lab">Speed <span class="ab-val" id="tts-rate-val">1.00x</span></label>
@@ -782,6 +799,14 @@
             if (pitchRange) pitchRange.addEventListener('input', syncPitch);
             syncRate(); syncPitch();
 
+            var abResetBtn = document.getElementById('ab-reset');
+            if (abResetBtn) abResetBtn.addEventListener('click', function () {
+                if (rateRange) { rateRange.value = 100; syncRate(); }
+                if (pitchRange) { pitchRange.value = 0; syncPitch(); }
+                if (player) player.pause();
+                if (testMsg) testMsg.textContent = '';
+            });
+
             if (fileInput) fileInput.addEventListener('change', function () {
                 var fs = Array.prototype.slice.call(fileInput.files || []);
                 if (!fs.length) { fileName.textContent = ''; return; }
@@ -954,6 +979,15 @@
             if (rateRange) rateRange.addEventListener('input', syncRate);
             if (pitchRange) pitchRange.addEventListener('input', syncPitch);
             syncRate(); syncPitch();
+
+            var ttsResetBtn = document.getElementById('tts-reset');
+            if (ttsResetBtn) ttsResetBtn.addEventListener('click', function () {
+                if (rateRange) { rateRange.value = 100; syncRate(); }
+                if (pitchRange) { pitchRange.value = 0; syncPitch(); }
+                if (player) player.pause();
+                if (testMsg) testMsg.textContent = '';
+            });
+
             if (langSel) langSel.addEventListener('change', populateVoices);
             if (textEl) textEl.addEventListener('input', updateCount);
 

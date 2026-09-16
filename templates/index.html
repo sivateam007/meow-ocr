@@ -128,8 +128,8 @@
                         <span class="hero-badge"><i class="fas fa-check-circle"></i> No Watermark</span>
                         <span class="hero-badge"><i class="fas fa-check-circle"></i> Private &amp; Secure</span>
                         <span class="hero-badge"><i class="fas fa-shield-alt"></i> Auto-Delete 2 Days</span>
-                        <span class="hero-badge audio-highlight-teal"><i class="fas fa-headphones"></i> Text to Audio</span>
-                        <span class="hero-badge audio-highlight"><i class="fas fa-book-open"></i> PDF → Narrated Audiobook</span>
+                        <span class="hero-badge"><i class="fas fa-headphones"></i> Text to Audio</span>
+                        <span class="hero-badge"><i class="fas fa-book-open"></i> PDF → Narrated Audiobook</span>
                     </div>
                     <div class="hero-actions">
                         <a href="#upload" class="hero-cta"><i class="fas fa-arrow-down"></i> Get Started — It's Free <span class="cat-dance">🐱</span></a>
@@ -687,6 +687,70 @@
                     <h3>3. Download</h3>
                     <p>Grab your editable .txt file instantly. Results auto-delete from the cloud after 2 days by default.</p>
                     <div class="tip-box"><i class="fas fa-paw"></i> Miss Extract hand-delivers your file.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== ABOUT YOUR AUDIOBOOK ===== -->
+        <section class="content-section info-page" id="about-audiobook">
+            <div class="section-title"><i class="fas fa-headphones"></i> About Your Audiobook</div>
+            <p class="page-subtitle">Turn any PDF, image or document into a narrated MP3 you can listen to anywhere — no signup needed.</p>
+
+            <div class="steps-grid audiobook-steps">
+                <div class="step-card cat-step">
+                    <div class="step-icon step-icon-audio"><i class="fas fa-book-open"></i></div>
+                    <img src="{{ url_for('static', filename='images/cat-working.jpg') }}" alt="Meow OCR cat uploading a PDF for audiobook" class="step-cat" loading="lazy">
+                    <h3>Step 1 — Upload or Paste</h3>
+                    <p>Drop in a PDF, scanned image or document — or simply paste plain text. Every page is read and digitized, so long reports and book chapters convert without crashing.</p>
+                    <div class="tip-box"><i class="fas fa-shield-alt"></i> Auto-Delete is on by default — files vanish after 2 days for privacy.</div>
+                </div>
+                <div class="step-card cat-step">
+                    <div class="step-icon step-icon-audio"><i class="fas fa-microphone-alt"></i></div>
+                    <img src="{{ url_for('static', filename='images/cat-thinking.jpg') }}" alt="Meow OCR cat choosing a narrator voice" class="step-cat" loading="lazy">
+                    <h3>Step 2 — Pick a Voice</h3>
+                    <p>Choose from <b>45+ natural voices</b> in <b>19+ languages</b> and tune speed and pitch to taste. Or use <b>My Voice</b> — upload a short clip and we match a voice tuned to your pitch and pace.</p>
+                    <div class="tip-box"><i class="fas fa-lightbulb"></i> Try My Voice for an audiobook that really sounds like you.</div>
+                </div>
+                <div class="step-card cat-step">
+                    <div class="step-icon step-icon-audio"><i class="fas fa-file-audio"></i></div>
+                    <img src="{{ url_for('static', filename='images/cat-reading.jpg') }}" alt="Meow OCR cat listening to an audiobook" class="step-cat" loading="lazy">
+                    <h3>Step 3 — Listen &amp; Download</h3>
+                    <p>Hit <b>Generate Audio</b> and your narrated <b>MP3</b> is ready in minutes. Listen online right away, or download it and enjoy your documents on the go.</p>
+                    <div class="tip-box"><i class="fas fa-paw"></i> Sign in with Google to keep all your MP3s in My Downloads.</div>
+                </div>
+            </div>
+
+            <div class="info-page-box audiobook-info-grid">
+                <div class="audiobook-info-col">
+                    <h2><i class="fas fa-file-audio"></i> What Can I Turn Into an Audiobook?</h2>
+                    <div class="format-chip-row">
+                        <span class="format-chip"><i class="fas fa-file-pdf"></i> PDF</span>
+                        <span class="format-chip"><i class="fas fa-image"></i> JPG / PNG / BMP</span>
+                        <span class="format-chip"><i class="fas fa-file-word"></i> DOCX / DOC</span>
+                        <span class="format-chip"><i class="fas fa-file-powerpoint"></i> PPTX / PPT</span>
+                        <span class="format-chip"><i class="fas fa-file-excel"></i> XLSX / CSV</span>
+                        <span class="format-chip"><i class="fas fa-file-alt"></i> TXT</span>
+                        <span class="format-chip chip-audio"><i class="fas fa-headphones"></i> Output: MP3</span>
+                    </div>
+                    <p>Every file converts to a single narrated <b>MP3</b> in the voice you pick. Works offline-free, right in your browser-friendly studio.</p>
+                </div>
+                <div class="audiobook-info-col">
+                    <ul class="audiobook-perks">
+                        <li><i class="fas fa-check-circle"></i> 45+ natural voices &amp; 19+ languages</li>
+                        <li><i class="fas fa-check-circle"></i> My Voice — narration that sounds like you</li>
+                        <li><i class="fas fa-check-circle"></i> Speed &amp; pitch controls for every listen</li>
+                        <li><i class="fas fa-check-circle"></i> No signup, free and auto-deleted in 2 days</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="cta-banner audio-cta">
+                <div class="cta-inner">
+                    <div>
+                        <h3>Ready to make your first audiobook?</h3>
+                        <p>Free, fast and private. No signup needed to get started.</p>
+                    </div>
+                    <a href="/audiobook" class="cta-btn"><i class="fas fa-headphones"></i> Open Audiobook Studio</a>
                 </div>
             </div>
         </section>
