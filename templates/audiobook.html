@@ -139,7 +139,6 @@
         }
         .ab-art-tiny.one { left: 2%; top: 2%; }
         .ab-art-tiny.two { right: 0; bottom: 6%; }
-        .ab-art-tiny.three { right: 24%; top: 0; }
         .ab-art-chip {
             position: absolute; right: 0; top: 10%;
             background: #fff; border-radius: 12px; padding: .5rem .8rem; font-size: .78rem; font-weight: 700; color: #2d2142;
@@ -168,6 +167,25 @@
         .ab-step p { margin: 0; font-size: .85rem; color: #6b6b7b; line-height: 1.55; }
 
         .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
+        .ab-studio {
+            background: #fff; border: 1px solid #ece6f5; border-radius: 20px;
+            padding: 1.9rem 2.1rem 2.2rem; box-shadow: 0 12px 30px rgba(30, 20, 60, .08);
+            max-width: 1080px; margin: 0 auto 2rem;
+        }
+        .ab-studio-head { display: flex; align-items: center; gap: .9rem; margin-bottom: 1.5rem; }
+        .ab-studio-logo {
+            width: 58px; height: 58px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+            border: 2px solid #fff; box-shadow: 0 6px 16px rgba(84, 42, 136, .25);
+        }
+        .ab-studio-title { margin: 0 0 .15rem; font-size: 1.35rem; color: #251737; display: flex; align-items: center; gap: .55rem; }
+        .ab-studio-title i { color: #8e44ad; }
+        .ab-studio-sub { margin: 0; font-size: .9rem; color: #76768a; }
+        .ab-sec { border-top: 1px dashed #e6dcf3; margin-top: 1.5rem; padding-top: 1.5rem; }
+        .ab-sec-title { display: flex; align-items: center; gap: .55rem; margin: 0 0 1rem; font-size: 1.1rem; color: #2d2142; }
+        .ab-sec-title i { color: #8e44ad; }
+        .ab-sec.teal .ab-sec-title i { color: #11998e; }
+        .ab-sec.amber .ab-sec-title i { color: #e67e22; }
+        .ab-sec.blue .ab-sec-title i { color: #2f7bc4; }
         .ab-card {
             background: #fff; border: 1px solid #ece6f5; border-radius: 16px;
             padding: 1.35rem 1.4rem; box-shadow: 0 8px 22px rgba(30, 20, 60, .06);
@@ -299,6 +317,13 @@
             .ab-test-row audio { min-width: 0; width: 100%; }
         }
         @media (max-width: 600px) {
+            .ab-studio { padding: 1.3rem 1rem 1.4rem; border-radius: 16px; }
+            .ab-studio-head { align-items: flex-start; }
+            .ab-studio-logo { width: 46px; height: 46px; }
+            .ab-studio-title { font-size: 1.15rem; }
+            .ab-studio-sub { font-size: .84rem; }
+            .ab-sec { margin-top: 1.15rem; padding-top: 1.15rem; }
+            .ab-sec-title { font-size: 1.02rem; }
             .tools-grid { grid-template-columns: 1fr; gap: 1rem; }
             .ab-form-grid { grid-template-columns: 1fr; gap: .7rem; }
             .ab-range-row { grid-template-columns: 1fr; gap: .6rem; }
@@ -309,7 +334,6 @@
             .ab-art-tiny { width: 62px; height: 62px; }
             .ab-art-tiny.one { left: 2%; top: 2%; }
             .ab-art-tiny.two { right: -2px; bottom: 4%; }
-            .ab-art-tiny.three { right: 22%; top: 16%; }
             .ab-art-chip { right: 0; top: 2%; font-size: .7rem; padding: .4rem .6rem; }
             .ab-art-bubble { left: 2%; bottom: 0; font-size: .72rem; max-width: 168px; padding: .45rem .6rem; }
             .ab-test-row { flex-direction: column; align-items: stretch; }
@@ -383,7 +407,6 @@
                 <img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo" class="ab-art-main" loading="eager">
                 <img src="{{ url_for('static', filename='images/cat-reading.jpg') }}" alt="Cat listening to an audiobook" class="ab-art-tiny one" loading="lazy">
                 <img src="{{ url_for('static', filename='images/meow-cute.jpg') }}" alt="Happy cat" class="ab-art-tiny two" loading="lazy">
-                <img src="{{ url_for('static', filename='images/cat-grey.jpg') }}" alt="Grey cat" class="ab-art-tiny three" loading="lazy">
                 <div class="ab-art-chip"><i class="fas fa-magic"></i> 45+ voices · 19+ languages</div>
                 <div class="ab-art-bubble">"Turned my PDF into an audiobook in minutes!"</div>
             </div>
@@ -407,16 +430,18 @@
             </div>
         </section>
 
-        <section class="tools-grid">
-            <!-- PDF → Audiobook -->
-            <div class="ab-card span-2" id="pdf2audio">
-                <div class="ab-card-head">
-                    <span class="ab-card-icon"><i class="fas fa-book-open"></i></span>
-                    <div>
-                        <h2 class="ab-card-title">PDF &amp; Documents → Audiobook MP3</h2>
-                        <p class="ab-card-sub">Reads the text out of your file (OCR included), then narrates it in the language and voice you choose.</p>
-                    </div>
+        <section class="ab-studio">
+            <div class="ab-studio-head">
+                <img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="Meow OCR logo" class="ab-studio-logo">
+                <div>
+                    <h2 class="ab-studio-title"><i class="fas fa-headphones"></i> Audiobook Studio</h2>
+                    <p class="ab-studio-sub">Upload a PDF, paste your own text, or tune a voice to sound like you — everything you need to make a narrated MP3, right here.</p>
                 </div>
+            </div>
+
+            <!-- PDF → Audiobook -->
+            <div class="ab-sec" id="pdf2audio">
+                <h3 class="ab-sec-title"><i class="fas fa-book-open"></i> PDF &amp; Documents → Audiobook MP3</h3>
 
                 <form method="POST" enctype="multipart/form-data" action="/" class="audio-upload-form">
                     <label for="ab-file" class="ab-dropzone" id="ab-dropzone">
@@ -530,14 +555,8 @@
             </div>
 
             <!-- Text to Speech -->
-            <div class="ab-card" id="tts">
-                <div class="ab-card-head">
-                    <span class="ab-card-icon teal"><i class="fas fa-volume-up"></i></span>
-                    <div>
-                        <h2 class="ab-card-title">Text to Speech</h2>
-                        <p class="ab-card-sub">Paste any text and read it aloud as a natural MP3.</p>
-                    </div>
-                </div>
+            <div class="ab-sec teal" id="tts">
+                <h3 class="ab-sec-title"><i class="fas fa-volume-up"></i> Text to Speech</h3>
 
                 <textarea id="tts-text" rows="8" spellcheck="false" style="width:100%; border:1px solid #ddd; border-radius:12px; padding:.8rem .9rem; font-size:.95rem; resize:vertical;" placeholder="Type or paste the text you want narrated..."></textarea>
                 <p class="tts-status" id="tts-count" style="font-size:.8rem; color:#8a6d3b; margin:.4rem 0 .7rem;">0 words</p>
@@ -584,14 +603,8 @@
             </div>
 
             <!-- My Voice -->
-            <div class="ab-card" id="myvoice">
-                <div class="ab-card-head">
-                    <span class="ab-card-icon amber"><i class="fas fa-microphone-alt"></i></span>
-                    <div>
-                        <h2 class="ab-card-title">My Voice</h2>
-                        <p class="ab-card-sub">Match the narrator to sound closer to you.</p>
-                    </div>
-                </div>
+            <div class="ab-sec amber" id="myvoice">
+                <h3 class="ab-sec-title"><i class="fas fa-microphone-alt"></i> My Voice</h3>
 
 <label for="mv-file" class="ab-dropzone" style="position:relative; min-height:110px;">
                         <img src="{{ url_for('static', filename='images/cat-thinking.jpg') }}?v=3" alt="" class="dz-cat">
@@ -619,14 +632,8 @@
             </div>
 
             <!-- Your Audiobooks: recent players + downloads -->
-            <div class="ab-card span-2" id="listen">
-                <div class="ab-card-head">
-                    <span class="ab-card-icon blue"><i class="fas fa-headphones"></i></span>
-                    <div>
-                        <h2 class="ab-card-title">Your Audiobooks</h2>
-                        <p class="ab-card-sub">Every narrated MP3 you create lands here — play it right away or open My Downloads.</p>
-                    </div>
-                </div>
+            <div class="ab-sec blue" id="listen">
+                <h3 class="ab-sec-title"><i class="fas fa-headphones"></i> Your Audiobooks</h3>
 
                 {% if recent_audio %}
                 <div class="listen-list">
@@ -668,7 +675,7 @@
             </details>
             <details>
                 <summary>How do I convert a PDF into an audiobook?</summary>
-                <div class="ab-answer">In the <strong>PDF &amp; Documents → Audiobook MP3</strong> card above, upload your file, pick the document language and narrator voice, then press <em>Convert to Audiobook MP3</em>. Meow OCR reads the text out of your file (scanned pages are handled with built-in OCR) and narrates it in the background. When it's done, the MP3 appears in My Downloads.</div>
+                <div class="ab-answer">In the <strong>PDF &amp; Documents → Audiobook MP3</strong> section above, upload your file, pick the document language and narrator voice, then press <em>Convert to Audiobook MP3</em>. Meow OCR reads the text out of your file (scanned pages are handled with built-in OCR) and narrates it in the background. When it's done, the MP3 appears in My Downloads.</div>
             </details>
             <details>
                 <summary>Which languages and voices are supported?</summary>
@@ -676,7 +683,7 @@
             </details>
             <details>
                 <summary>Can the narrator sound like me?</summary>
-                <div class="ab-answer">Yes. Upload a short voice clip in the <strong>My Voice</strong> card. Meow OCR detects your pitch and speaking speed, then matches the closest built-in voice and tunes its speed and pitch to you. Apply it to the Text to Speech tool and save it onto the PDF tool with one click.</div>
+                <div class="ab-answer">Yes. Upload a short voice clip in the <strong>My Voice</strong> section below. Meow OCR detects your pitch and speaking speed, then matches the closest built-in voice and tunes its speed and pitch to you. Apply it to the Text to Speech tool and save it onto the PDF tool with one click.</div>
             </details>
         </section>
 
@@ -1172,7 +1179,7 @@
             if (hero) anime({ targets: hero, translateY: [26, 0], opacity: [0, 1], duration: 650, easing: 'easeOutExpo' });
             var steps = document.querySelectorAll('.ab-step');
             anime({ targets: steps, translateY: [22, 0], opacity: [0, 1], delay: anime.stagger(110), duration: 600, easing: 'easeOutExpo' });
-            var cards = document.querySelectorAll('.ab-card');
+            var cards = document.querySelectorAll('.ab-sec');
             anime({ targets: cards, translateY: [24, 0], opacity: [0, 1], delay: anime.stagger(90), duration: 650, easing: 'easeOutExpo' });
             var arrows = document.querySelectorAll('.ab-actions .ab-btn');
             anime({ targets: arrows, translateY: [14, 0], opacity: [0, 1], delay: anime.stagger(80), duration: 500, easing: 'easeOutQuad' });
