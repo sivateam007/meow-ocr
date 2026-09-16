@@ -288,7 +288,7 @@ BLOG_POSTS = [
         "slug": "how-to-turn-a-pdf-into-an-audiobook",
         "title": "How to Turn a PDF into an Audiobook for Free (Text-to-Speech)",
         "description": "Turn any PDF, Word doc or typed notes into an MP3 audiobook with free neural text-to-speech. No signup, no watermark. Step-by-step guide.",
-        "date": "2026-09-03",
+        "date": "2026-09-16",
         "updated": "2026-09-03",
         "category": "Guide",
         "read_time": "5 min",

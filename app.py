@@ -4710,7 +4710,8 @@ def text2audio_preview():
         pitch = max(TTS_PITCH_MIN, min(TTS_PITCH_MAX, int(request.args.get("pitch") or request.form.get("pitch") or 0)))
     except (TypeError, ValueError):
         pitch = 0
-    text = (request.args.get("text") or request.form.get("text") or "").strip()
+    text = (request.args.get("text") or request.form.get("text")
+            or (request.get_json(silent=True) or {}).get("text") or "").strip()
     if text:
         words = text.split()
         if len(words) > 120:
