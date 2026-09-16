@@ -1086,6 +1086,32 @@
                     .catch(function () { testMsg.textContent = 'Could not generate a preview. Please try again.'; });
             });
 
+            var listenBtn = document.getElementById('tts-listen');var listenMsg = testMsg;
+            if (listenBtn) listenBtn.addEventListener('click', function () {
+                if (!voiceSel.value) { if (listenMsg) listenMsg.textContent = 'Pick a voice first.'; return; }
+                var txt = (textEl ? textEl.value || '' : '').trim();
+                if (!txt) { if (listenMsg) listenMsg.textContent = 'Type or paste some text first.'; return; }
+                var words = txt.split(/\s+/);
+                if (words.length > 480) { words = words.slice(0, 480); txt = words.join(' '); }
+                if (listenMsg) { listenMsg.textContent = 'Generating — hold tight...'; }
+                var url = '/api/text2audio/preview?voice=' + encodeURIComponent(voiceSel.value)
+                    + '&rate=' + (rateRange ? rateRange.value : 100)
+                    + '&pitch=' + (pitchRange ? pitchRange.value : 0);
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: txt })
+                })
+                    .then(function (r) { if (!r.ok) throw new Error(); return r.blob(); })
+                    .then(function (blob) {
+                        player.src = URL.createObjectURL(blob);
+                        player.style.display = '';
+                        if (listenMsg) listenMsg.textContent = 'Done — press play to hear your text.';
+                        player.play().catch(function () {});
+                    })
+                    .catch(function () { if (listenMsg) listenMsg.textContent = 'Could not generate audio. Please try again.'; });
+            });
+
             if (goBtn) goBtn.addEventListener('click', function () {
                 var text = (textEl.value || '').trim();
                 if (!text) { statusEl.textContent = 'Please enter some text to convert.'; return; }
