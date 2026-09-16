@@ -1921,11 +1921,11 @@ html {
 }
 
 /* Make nav rows breathe on very narrow phones */
-@media (max-width: 520px) {
-    .container { padding: 0 12px; }
 @media (max-width: 720px) {
     .tools-grid { grid-template-columns: 1fr; }
 }
+@media (max-width: 520px) {
+    .container { padding: 0 12px; }
     .content-section { padding: 1.3rem; border-radius: 14px; }
     .page-main-title { font-size: 1.5rem !important; }
     .page-subtitle { font-size: 0.95rem; }

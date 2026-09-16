@@ -139,6 +139,7 @@
         }
         .ab-art-tiny.one { left: 2%; top: 2%; }
         .ab-art-tiny.two { right: 0; bottom: 6%; }
+        .ab-art-tiny.three { right: 24%; top: 0; }
         .ab-art-chip {
             position: absolute; right: 0; top: 10%;
             background: #fff; border-radius: 12px; padding: .5rem .8rem; font-size: .78rem; font-weight: 700; color: #2d2142;
@@ -243,12 +244,12 @@
         .mv-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .85rem; }
 
         .dl-card {
-            display: flex; flex-direction: column; align-items: flex-start; gap: .9rem;
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .9rem;
+            margin-top: .75rem;
             background: linear-gradient(135deg, #f4effa 0%, #e8fbf5 100%);
-            border: 1px solid #e2d6f1; border-radius: 16px; padding: 1.4rem;
+            border: 1px solid #e2d6f1; border-radius: 16px; padding: 1rem 1.1rem;
         }
-        .dl-card p { margin: 0; font-size: .9rem; color: #4a4a5a; line-height: 1.6; }
-        .dl-card ul { list-style: none; margin: 0 0 .2rem; padding: 0; display: grid; gap: .35rem; }
+        .dl-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .35rem 1.2rem; }
         .dl-card li { font-size: .85rem; color: #5c5c6e; }
         .dl-card li i { color: #11998e; margin-right: .45rem; }
 
@@ -298,15 +299,29 @@
             .ab-test-row audio { min-width: 0; width: 100%; }
         }
         @media (max-width: 600px) {
-            .tools-grid { grid-template-columns: 1fr; }
-            .ab-form-grid { grid-template-columns: 1fr 1fr; gap: .7rem; }
+            .tools-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .ab-form-grid { grid-template-columns: 1fr; gap: .7rem; }
             .ab-range-row { grid-template-columns: 1fr; gap: .6rem; }
             .ab-card { padding: 1rem 1rem; }
             .ab-hero { padding: 1.6rem 1rem; }
             .ab-hero-art { min-height: 200px; }
-            .ab-art-main { width: 170px; height: 170px; }
-            .ab-art-tiny { width: 64px; height: 64px; }
-            .ab-art-bubble { font-size: .72rem; max-width: 160px; padding: .45rem .6rem; }
+            .ab-art-main { width: 158px; height: 158px; }
+            .ab-art-tiny { width: 62px; height: 62px; }
+            .ab-art-tiny.one { left: 2%; top: 2%; }
+            .ab-art-tiny.two { right: -2px; bottom: 4%; }
+            .ab-art-tiny.three { right: 22%; top: 16%; }
+            .ab-art-chip { right: 0; top: 2%; font-size: .7rem; padding: .4rem .6rem; }
+            .ab-art-bubble { left: 2%; bottom: 0; font-size: .72rem; max-width: 168px; padding: .45rem .6rem; }
+            .ab-test-row { flex-direction: column; align-items: stretch; }
+            .ab-test-row audio { width: 100%; min-width: 0; height: 40px; }
+            .ab-card-head { flex-wrap: wrap; }
+            .ab-card-title { font-size: 1.02rem; }
+            .dl-card { flex-direction: column; align-items: stretch; padding: 1rem 1rem; }
+            .dl-card ul { flex-direction: column; gap: .35rem; }
+            .dl-card .ab-btn { margin-left: 0; justify-content: center; }
+            .listen-item { padding: .55rem .6rem; }
+            .ab-btn { padding: .7rem 1.05rem; font-size: .9rem; }
+            .ab-submit { padding: .8rem 1rem; font-size: .95rem; }
         }
     </style>
     <script>
@@ -365,9 +380,10 @@
                 </div>
             </div>
             <div class="ab-hero-art">
-                <img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR cat narrator" class="ab-art-main" loading="eager">
-                <img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR happy cat" class="ab-art-tiny one" loading="lazy">
-                <img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR reading cat" class="ab-art-tiny two" loading="lazy">
+                <img src="{{ url_for('static', filename='images/meow-logo.png') }}" alt="Meow OCR logo" class="ab-art-main" loading="eager">
+                <img src="{{ url_for('static', filename='images/cat-reading.jpg') }}" alt="Cat listening to an audiobook" class="ab-art-tiny one" loading="lazy">
+                <img src="{{ url_for('static', filename='images/meow-cute.jpg') }}" alt="Happy cat" class="ab-art-tiny two" loading="lazy">
+                <img src="{{ url_for('static', filename='images/cat-grey.jpg') }}" alt="Grey cat" class="ab-art-tiny three" loading="lazy">
                 <div class="ab-art-chip"><i class="fas fa-magic"></i> 45+ voices · 19+ languages</div>
                 <div class="ab-art-bubble">"Turned my PDF into an audiobook in minutes!"</div>
             </div>
@@ -404,7 +420,7 @@
 
                 <form method="POST" enctype="multipart/form-data" action="/" class="audio-upload-form">
                     <label for="ab-file" class="ab-dropzone" id="ab-dropzone">
-                        <img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="" class="dz-cat">
+                        <img src="{{ url_for('static', filename='images/cat-new1.jpg') }}?v=3" alt="" class="dz-cat">
                         <span class="dz-icon"><i class="fas fa-cloud-upload-alt"></i></span>
                         <span class="dz-title">Click to upload or drag &amp; drop</span>
                         <span class="dz-hint">PDF · JPG · PNG · DOCX · PPTX · XLSX · TXT and more</span>
@@ -578,7 +594,7 @@
                 </div>
 
 <label for="mv-file" class="ab-dropzone" style="position:relative; min-height:110px;">
-                        <img src="{{ url_for('static', filename='images/meow-logo.png') }}?v=3" alt="" class="dz-cat">
+                        <img src="{{ url_for('static', filename='images/cat-thinking.jpg') }}?v=3" alt="" class="dz-cat">
                         <span class="dz-mic"><i class="fas fa-microphone-alt"></i></span>
                         <span class="dz-title">Click to upload a short voice clip</span>
                         <span class="dz-hint">WAV · MP3 · M4A · WEBM · OGG · FLAC · AAC · OPUS</span>
@@ -602,13 +618,13 @@
                 <p class="ab-note"><i class="fas fa-shield-alt"></i> Private: your clip is analyzed and then immediately discarded — nothing is stored. A 10–30 second, clear recording gives the best match.</p>
             </div>
 
-            <!-- Listen to your audiobooks -->
-            <div class="ab-card" id="listen">
+            <!-- Your Audiobooks: recent players + downloads -->
+            <div class="ab-card span-2" id="listen">
                 <div class="ab-card-head">
-                    <span class="ab-card-icon teal"><i class="fas fa-headphones"></i></span>
+                    <span class="ab-card-icon blue"><i class="fas fa-headphones"></i></span>
                     <div>
-                        <h2 class="ab-card-title">Listen to Your Audiobooks</h2>
-                        <p class="ab-card-sub">Play your recent narrated MP3s right here — no need to leave.</p>
+                        <h2 class="ab-card-title">Your Audiobooks</h2>
+                        <p class="ab-card-sub">Every narrated MP3 you create lands here — play it right away or open My Downloads.</p>
                     </div>
                 </div>
 
@@ -632,19 +648,8 @@
                     <a href="#pdf2audio" class="ab-btn" style="text-decoration:none;"><i class="fas fa-book-open"></i> Make your first audiobook</a>
                 </div>
                 {% endif %}
-            </div>
 
-            <!-- MP3 Downloads -->
-            <div class="ab-card" id="downloads">
-                <div class="ab-card-head">
-                    <span class="ab-card-icon blue"><i class="fas fa-file-audio"></i></span>
-                    <div>
-                        <h2 class="ab-card-title">MP3 Downloads</h2>
-                        <p class="ab-card-sub">Every audiobook you create lands here automatically.</p>
-                    </div>
-                </div>
                 <div class="dl-card">
-                    <p>"All my narrated audiobooks appear on the My Downloads page."</p>
                     <ul>
                         <li><i class="fas fa-headphones"></i> Listen online anytime</li>
                         <li><i class="fas fa-download"></i> Download to your device</li>
