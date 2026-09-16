@@ -3573,7 +3573,7 @@ def ads_txt():
 
 
 # Canonical public address of the site. Keep in sync with Render custom domain.
-SITE_URL = os.environ.get("SITE_URL", "https://www.meowocr.work.gd").rstrip("/")
+SITE_URL = os.environ.get("SITE_URL", "https://meowocr.onrender.com").rstrip("/")
 
 
 @app.route('/sitemap.xml')
