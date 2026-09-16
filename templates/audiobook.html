@@ -433,11 +433,41 @@
         <div class="sample-audio-card">
             <div class="sample-audio-ico"><i class="fas fa-volume-up"></i></div>
             <div class="sample-audio-meta">
-                <strong>Hear Meow OCR</strong>
-                <span>Sample narration · Jenny (Female) · 45+ voices available</span>
+                <strong>Hear Meow OCR <span class="heading-cat">🐾</span></strong>
+                <span id="sample-audio-label">Misty 🐱 (Female) · English</span>
             </div>
-            <audio controls preload="metadata" src="{{ url_for('static', filename='audio/sample-audiobook.mp3') }}"></audio>
+            <div class="sample-audio-langs" id="sample-audio-langs">
+                <button type="button" class="sample-chip active" data-src="{{ url_for('static', filename='audio/sample-en.mp3') }}" data-label="Misty 🐱 (Female) · English"><i class="fas fa-paw"></i> Misty</button>
+                <button type="button" class="sample-chip" data-src="{{ url_for('static', filename='audio/sample-en-guy.mp3') }}" data-label="Tiger 🐱 (Male) · English"><i class="fas fa-paw"></i> Tiger</button>
+                <button type="button" class="sample-chip" data-src="{{ url_for('static', filename='audio/sample-hi.mp3') }}" data-label="Sona 🐱 (Female) · Hindi"><i class="fas fa-paw"></i> Sona</button>
+                <button type="button" class="sample-chip" data-src="{{ url_for('static', filename='audio/sample-ta.mp3') }}" data-label="Whiskers 🐱 (Female) · Tamil"><i class="fas fa-paw"></i> Whiskers</button>
+                <button type="button" class="sample-chip" data-src="{{ url_for('static', filename='audio/sample-es.mp3') }}" data-label="Elvi 🐱 (Female) · Español"><i class="fas fa-paw"></i> Elvi</button>
+            </div>
+            <audio controls preload="metadata" id="sample-audio" src="{{ url_for('static', filename='audio/sample-en.mp3') }}"></audio>
         </div>
+        <script>
+            (function () {
+                var audio = document.getElementById('sample-audio');
+                var label = document.getElementById('sample-audio-label');
+                var chips = document.querySelectorAll('.sample-chip');
+                if (!audio || !chips.length) return;
+                function deactivateAll() {
+                    chips.forEach(function (c) { c.classList.remove('active'); });
+                }
+                chips.forEach(function (chip) {
+                    chip.addEventListener('click', function () {
+                        var src = chip.getAttribute('data-src');
+                        if (!src) return;
+                        var wasPlaying = !audio.paused;
+                        deactivateAll();
+                        chip.classList.add('active');
+                        if (label && chip.getAttribute('data-label')) label.textContent = chip.getAttribute('data-label');
+                        audio.src = src;
+                        if (wasPlaying) audio.play().catch(function () {});
+                    });
+                });
+            })();
+        </script>
 
         <section class="ab-studio">
             <div class="ab-studio-head">
@@ -520,6 +550,12 @@
                                 <option value="1">1 Day</option>
                                 <option value="7">7 Days</option>
                                 <option value="0">Keep Forever</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="option-label"><i class="fas fa-language"></i> Narrator Language</label>
+                            <select id="ab-narrator-lang" class="select-input">
+                                <option value="auto">Auto-pick (match document)</option>
                             </select>
                         </div>
                         <div>
@@ -829,30 +865,72 @@
             }
 
             var voices = {};
+            var narratorLangSel = document.getElementById('ab-narrator-lang');
+
+            function fillNarratorLang() {
+                if (!narratorLangSel) return;
+                var prev = narratorLangSel.value || 'auto';
+                narratorLangSel.innerHTML = '';
+                var auto = document.createElement('option');
+                auto.value = 'auto';
+                auto.textContent = 'Auto-pick (match document)';
+                narratorLangSel.appendChild(auto);
+                Object.keys(voices).forEach(function (code) {
+                    if (!(voices[code] || []).length) return;
+                    var o = document.createElement('option');
+                    o.value = code;
+                    o.textContent = LANG_LABELS[code] || code;
+                    narratorLangSel.appendChild(o);
+                });
+                if (prev && prev !== 'auto' && voices[prev]) narratorLangSel.value = prev;
+            }
+
+            function fillVoiceList() {
+                if (!voiceSel) return;
+                var chosen = narratorLangSel ? narratorLangSel.value : 'auto';
+                voiceSel.innerHTML = '';
+                var dflt = document.createElement('option');
+                dflt.value = '';
+                dflt.textContent = 'Auto-pick (match language)';
+                voiceSel.appendChild(dflt);
+                var mvOpt = document.createElement('option');
+                mvOpt.value = '__my_voice__';
+                mvOpt.textContent = 'My Voice (matched)';
+                voiceSel.appendChild(mvOpt);
+                var codes = (chosen && chosen !== 'auto') ? [chosen] : Object.keys(voices);
+                codes.forEach(function (code) {
+                    var list = voices[code] || [];
+                    if (!list.length) return;
+                    var g = document.createElement('optgroup');
+                    g.label = LANG_LABELS[code] || code;
+                    list.forEach(function (v) {
+                        var opt = document.createElement('option');
+                        opt.value = v[0];
+                        opt.textContent = v[1];
+                        g.appendChild(opt);
+                    });
+                    voiceSel.appendChild(g);
+                });
+                if (chosen && chosen !== 'auto') {
+                    var first = (voices[chosen] || [])[0];
+                    if (first) voiceSel.value = first[0];
+                }
+                window.abVoiceLoaded = true;
+                window.__abFillVoiceList = fillVoiceList;
+            }
+
             function loadVoices() {
                 fetch('/api/text2audio/voices')
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
                         voices = data || {};
-                        voiceSel.innerHTML = '';
-                        var dflt = document.createElement('option');
-                        dflt.value = '';
-                        dflt.textContent = 'Auto-pick (match language)';
-                        voiceSel.appendChild(dflt);
-                        var mvOpt = document.createElement('option');
-                        mvOpt.value = '__my_voice__';
-                        mvOpt.textContent = 'My Voice (matched)';
-                        voiceSel.appendChild(mvOpt);
-                        Object.keys(voices).forEach(function (code) {
-                            var langName = LANG_LABELS[code] || code;
-                            (voices[code] || []).forEach(function (v) {
-                                var opt = document.createElement('option');
-                                opt.value = v[0];
-                                opt.textContent = langName + ' — ' + v[1];
-                                voiceSel.appendChild(opt);
-                            });
+                        fillNarratorLang();
+                        fillVoiceList();
+                        if (narratorLangSel) narratorLangSel.addEventListener('change', function () {
+                            fillVoiceList();
+                            if (player) player.pause();
+                            if (testMsg) testMsg.textContent = '';
                         });
-                        window.abVoiceLoaded = true;
                     })
                     .catch(function () {});
             }
@@ -1190,6 +1268,8 @@
                 show(resultEl, false);
                 statusEl.textContent = '';
                 var abVoice = document.getElementById('ab-voice');
+                var nlSel = document.getElementById('ab-narrator-lang');
+                if (nlSel) { nlSel.value = 'auto'; if (window.__abFillVoiceList) window.__abFillVoiceList(); }
                 if (abVoice) {
                     abVoice.querySelectorAll('option').forEach(function (opt) {
                         if (opt.value === '__my_voice__') { opt.remove(); }

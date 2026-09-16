@@ -2344,6 +2344,31 @@ html {
 .sample-audio-card .sample-audio-meta strong { display: block; font-size: 0.95rem; color: var(--dark); }
 .sample-audio-card .sample-audio-meta span { font-size: 0.8rem; color: #6b7280; }
 .sample-audio-card audio { flex: 1 1 200px; min-width: 200px; height: 38px; }
+.sample-audio-langs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    flex: 1 1 100%;
+}
+.sample-chip {
+    border: 1px solid #e2d6f1;
+    background: #fff;
+    color: #6c3483;
+    border-radius: 20px;
+    padding: 0.28rem 0.7rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+.sample-chip i { margin-right: 0.25rem; color: #8e44ad; }
+.sample-chip:hover { background: #f5ecfb; transform: translateY(-1px); }
+.sample-chip.active {
+    background: linear-gradient(135deg, #8e44ad 0%, #11998e 100%);
+    color: #fff;
+    border-color: transparent;
+}
+.sample-chip.active i { color: #ffeaa7; }
 
 /* =========================================================
    Global responsive + layout polish (all pages, mobile & desktop)
