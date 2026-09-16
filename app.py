@@ -3580,14 +3580,14 @@ SITE_URL = os.environ.get("SITE_URL", "https://www.meowocr.work.gd").rstrip("/")
 def sitemap():
     """XML sitemap so Google can discover and index every static page."""
     from blog_data import get_all_posts
-    pages = ["", "/how-to-use", "/privacy", "/terms", "/downloads", "/about", "/tamil-ocr", "/hindi-ocr", "/english-ocr", "/link-to-us", "/blog"]
+    pages = ["", "/how-to-use", "/privacy", "/terms", "/downloads", "/about", "/tamil-ocr", "/hindi-ocr", "/english-ocr", "/audiobook", "/link-to-us", "/blog"]
     today = "2026-09-09"
     urls = "".join(
         f"  <url>\n"
         f"    <loc>{SITE_URL}{p}</loc>\n"
         f"    <lastmod>{today}</lastmod>\n"
         f"    <changefreq>weekly</changefreq>\n"
-        f"    <priority>{'1.0' if p == '' else '0.7'}</priority>\n"
+        f"    <priority>{'1.0' if p == '' else ('0.9' if p == '/audiobook' else '0.7')}</priority>\n"
         f"  </url>\n"
         for p in pages
     )
