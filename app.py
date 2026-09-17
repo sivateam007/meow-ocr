@@ -2636,6 +2636,12 @@ def _translate_mymemory(text, target_lang, source_lang='auto', timeout=10):
     Independent of Google's free endpoint, so a hard 429 on the shared egress IP
     doesn't stall the pipeline. Returns translated text on success, or None on
     failure (never raises) so the caller can keep its own retry flow.
+
+    Note: MyMemory hard-caps every request at 500 characters. The translation
+    worker feeds us 2000-char chunks, so we split each incoming chunk into <=450
+    char, sentence-bounded sub-chunks and translate them one at a time; otherwise
+    MyMemory answers with "query length limit exceeded, max allowed query: 500"
+    and the UI shows that as an error. Sub-chunking removes that ceiling entirely.
     """
     try:
         # MyMemory needs a concrete source pair; resolve 'auto' with one bounded
@@ -2648,22 +2654,57 @@ def _translate_mymemory(text, target_lang, source_lang='auto', timeout=10):
             logger.debug(f"MyMemory fallback resolving source '{source_lang}' -> '{sl}'")
         pair = f"{sl}|{target_lang}"
         url = "https://api.mymemory.translated.net/get"
-        params = {"q": text, "langpair": pair}
-        resp = requests.get(url, params=params, timeout=timeout)
-        if resp.status_code != 200:
-            logger.warning(f"MyMemory HTTP {resp.status_code}")
-            return None
-        # MyMemory sometimes mis-advertises the charset; force utf-8 so accents
-        # ('ó', 'ã', 'é', …) don't come back as U+FFFD replacement chars.
-        if "charset=" not in resp.headers.get("Content-Type", ""):
-            resp.encoding = "utf-8"
-        data = resp.json()
-        translated = (data.get("responseData") or {}).get("translatedText") or ""
-        if not translated:
-            logger.warning("MyMemory returned empty translation")
-            return None
-        # MyMemory marks unmatched/quota phrases with a marker we scrub.
-        return translated.replace("#QUOTA_ERROR#", "").strip()
+
+        def _one_request(segment):
+            params = {"q": segment, "langpair": pair}
+            resp = requests.get(url, params=params, timeout=timeout)
+            if resp.status_code != 200:
+                logger.warning(f"MyMemory HTTP {resp.status_code}")
+                return None
+            # MyMemory sometimes mis-advertises the charset; force utf-8 so
+            # accents ('ó', 'ã', 'é', …) don't come back as U+FFFD chars.
+            if "charset=" not in resp.headers.get("Content-Type", ""):
+                resp.encoding = "utf-8"
+            data = resp.json()
+            translated = (data.get("responseData") or {}).get("translatedText") or ""
+            if not translated:
+                return None
+            # MyMemory marks unmatched/quota phrases with a marker we scrub.
+            return translated.replace("#QUOTA_ERROR#", "").strip()
+
+        # Hard cap guard: never send more than 450 chars per request (MyMemory
+        # limit is 500; stay under it with a safety margin).
+        MAX = 450
+
+        def _subchunks(s, limit=MAX):
+            # Split on sentence boundaries first so translated pieces read
+            # naturally; only fall back to hard breaks for very long sentences.
+            parts, buf = [], ""
+            for sent in chomp(s):
+                if len(sent) > limit:
+                    # Long (often sentence-detector-insensitive) runnoff: cut.
+                    buf = ""
+                    for i in range(0, len(sent), limit):
+                        parts.append(sent[i:i + limit])
+                    continue
+                if buf and len(buf) + len(sent) > limit:
+                    parts.append(buf)
+                    buf = ""
+                buf += sent
+            if buf:
+                parts.append(buf)
+            return parts
+
+        translated_parts = []
+        for sub in _subchunks(text):
+            piece = _one_request(sub)
+            if piece is None:
+                # Don't lose a whole book over one bad segment; keep the original
+                # text for that piece only and continue.
+                piece = sub
+            translated_parts.append(piece)
+        result = "".join(translated_parts)
+        return result if result.strip() else None
     except Exception as e:
         logger.warning(f"MyMemory fallback failure: {e}")
         return None
@@ -2882,9 +2923,14 @@ def translate_file_background(task_id, file_path, filename, temp_dir, source_lan
                         _save_progress(True)
                         return
 
+                _chunk_t0 = time.time()
                 try:
                     translated = translate_text(chunk, target_lang)
                     logger.info(f"Task {task_id}: Chunk {i+1}/{total_chunks} OK (len={len(translated)})")
+                    _chunk_ms = int((time.time() - _chunk_t0) * 1000)
+                    with progress_lock:
+                        _times = progress_tracker[task_id].setdefault("chunk_times", [])
+                        _times.append(_chunk_ms)
                     if translated == chunk:
                         logger.warning(f"Task {task_id}: Chunk {i+1}/{total_chunks} returned SAME, retrying...")
                         time.sleep(5)
@@ -3157,8 +3203,32 @@ def get_progress(task_id):
                 target = task.get("target_lang", "en")
                 source_display = TRANSLATOR_TARGET_LANGS.get(source, source)
                 target_display = TRANSLATOR_TARGET_LANGS.get(target, target)
+
+                # Map worker statuses to the UI's 'processing' branch so the
+                # progress page actually refreshes %/bar/ETA for .txt files
+                # (previously translate tasks never matched a status branch and
+                # the page froze at 0%).
+                raw_status = task.get("status", "processing")
+                ui_status = "processing" if raw_status in (
+                    "processing", "translating", "resuming", "detecting_language",
+                    "extracting", "extracting_pages", "starting", "getting_page_count",
+                ) else raw_status
+
+                # Chunk-based ETA for translation (PDF/audio ETA math below
+                # never applied to .txt, so ETA was always null on this page).
+                eta = None
+                if ui_status == "processing":
+                    chunk_times = task.get("chunk_times")
+                    cur = task.get("current_chunk", 0)
+                    total = task.get("total_chunks")
+                    if chunk_times and total and cur > 0:
+                        avg = sum(chunk_times) / len(chunk_times)
+                        eta = int(avg * max(0, total - cur))
+                    elif task.get("eta_seconds"):
+                        eta = task.get("eta_seconds")
+
                 return jsonify({
-                    "status": task["status"],
+                    "status": ui_status,
                     "percentage": task.get("percentage", 0),
                     "error": task["error"],
                     "filename": task["filename"],
@@ -3170,6 +3240,9 @@ def get_progress(task_id):
                     "current_chunk": task.get("current_chunk", 0),
                     "total_chunks": task.get("total_chunks"),
                     "total_chars": task.get("total_chars"),
+                    "language_name": source_display,
+                    "detected_language": source,
+                    "eta": eta,
                     "translating": True
                 })
             
