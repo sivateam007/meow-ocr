@@ -2876,6 +2876,7 @@ def translate_file_background(task_id, file_path, filename, temp_dir, source_lan
         with progress_lock:
             progress_tracker[task_id]["status"] = "translating"
             progress_tracker[task_id]["detected_language"] = source_lang
+            progress_tracker[task_id]["started_at"] = progress_tracker[task_id].get("started_at") or time.time()
 
         output_filename = f"{os.path.splitext(filename)[0]}_translated_{target_lang}.txt"
         output_path = os.path.join(temp_dir, output_filename)
@@ -3224,6 +3225,12 @@ def get_progress(task_id):
                     if chunk_times and total and cur > 0:
                         avg = sum(chunk_times) / len(chunk_times)
                         eta = int(avg * max(0, total - cur))
+                    elif task.get("percentage", 0) > 5 and task.get("created_at"):
+                        # Proportional fallback so ETA is never blank while in-flight:
+                        # elapsed / done% * remaining%.
+                        elapsed = time.time() - task["created_at"]
+                        done = task["percentage"] / 100.0
+                        eta = int(elapsed / done * (1 - done)) if done < 1 else 0
                     elif task.get("eta_seconds"):
                         eta = task.get("eta_seconds")
 
