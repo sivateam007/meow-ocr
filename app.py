@@ -2630,6 +2630,60 @@ def handle_translate_post():
     return resp
 
 
+def _translate_mymemory(text, target_lang, source_lang='auto', timeout=10):
+    """Free fallback translation engine (MyMemory, api.mymemory.translated.net).
+
+    Independent of Google's free endpoint, so a hard 429 on the shared egress IP
+    doesn't stall the pipeline. Returns translated text on success, or None on
+    failure (never raises) so the caller can keep its own retry flow.
+    """
+    try:
+        # MyMemory needs a concrete source pair; resolve 'auto' with one bounded
+        # detect call (fall back to a default on any error so we never block).
+        sl = source_lang
+        if not sl or sl == 'auto':
+            sl = _detect_lang_quick(text)
+            if not sl:
+                sl = 'en'
+            logger.debug(f"MyMemory fallback resolving source '{source_lang}' -> '{sl}'")
+        pair = f"{sl}|{target_lang}"
+        url = "https://api.mymemory.translated.net/get"
+        params = {"q": text, "langpair": pair}
+        resp = requests.get(url, params=params, timeout=timeout)
+        if resp.status_code != 200:
+            logger.warning(f"MyMemory HTTP {resp.status_code}")
+            return None
+        # MyMemory sometimes mis-advertises the charset; force utf-8 so accents
+        # ('ó', 'ã', 'é', …) don't come back as U+FFFD replacement chars.
+        if "charset=" not in resp.headers.get("Content-Type", ""):
+            resp.encoding = "utf-8"
+        data = resp.json()
+        translated = (data.get("responseData") or {}).get("translatedText") or ""
+        if not translated:
+            logger.warning("MyMemory returned empty translation")
+            return None
+        # MyMemory marks unmatched/quota phrases with a marker we scrub.
+        return translated.replace("#QUOTA_ERROR#", "").strip()
+    except Exception as e:
+        logger.warning(f"MyMemory fallback failure: {e}")
+        return None
+
+
+def _detect_lang_quick(text, timeout=8):
+    """One-shot language detect via Google's free endpoint; returns code or None."""
+    try:
+        detect_url = "https://translate.google.com/m"
+        resp = requests.get(detect_url, params={"q": text, "sl": "auto", "tl": "en"}, timeout=timeout)
+        if resp.status_code != 200:
+            return None
+        # The mobile page returns the detected lang as sl=a;;-d and in 'tl'-html attributes.
+        m = re.search(r'name="tl"\s+value="([a-z\-]+)"', resp.text)
+        return m.group(1) if m else None
+    except Exception as e:
+        logger.debug(f"Lang detect skipped: {e}")
+        return None
+
+
 def translate_text(text, target_lang, source_lang='auto', chunk_size=2000):
     """Translate text using Google Translate's unofficial API with retries."""
     from bs4 import BeautifulSoup
@@ -2647,8 +2701,15 @@ def translate_text(text, target_lang, source_lang='auto', chunk_size=2000):
                 params = {'q': text, 'sl': source_lang, 'tl': target_lang}
                 resp = session.get(base_url, params=params, timeout=15)
                 if resp.status_code == 429:
-                    wait = 30 * (attempt + 1)
-                    logger.warning(f"Translate 429, waiting {wait}s (attempt {attempt+1}/{max_retries})")
+                    # Google's free endpoint rate-limits shared cloud egress hard.
+                    # Before burning a long sleep, try MyMemory (independent free API).
+                    _fallback = _translate_mymemory(text, target_lang, source_lang)
+                    if _fallback is not None:
+                        return _fallback
+                    if attempt >= 2:
+                        raise Exception(f"HTTP 429 after fallback attempts ({max_retries}/{max_retries})")
+                    wait = 10 * (attempt + 1)
+                    logger.warning(f"Translate 429, falling back to MyMemory (attempt {attempt+1}/{max_retries})")
                     time.sleep(wait)
                     continue
                 if resp.status_code != 200:
