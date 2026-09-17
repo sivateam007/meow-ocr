@@ -4394,6 +4394,30 @@ def tts_voices():
     return jsonify(TTS_VOICES)
 
 
+def _embed_lyrics_into_mp3(mp3_path, text, title=None):
+    """Write ID3v2 'lyrics' (USLT) metadata into an MP3 this app synthesized.
+
+    Most players (VLC, Windows Media Player, music apps, in-car players) surface this
+    as scrollable "Lyrics" — so the document text travels inside the MP3. This is a
+    fast, in-place metadata write (no re-encode). Returns True on success; never throws
+    so a tag failure can't break the synthesis pipeline.
+    """
+    try:
+        from mutagen.id3 import ID3, USLT, TIT2, TXXX
+        tags = ID3(mp3_path)
+        if tags is None:
+            tags = ID3()
+        name = title or os.path.splitext(os.path.basename(mp3_path))[0]
+        tags.add(TIT2(encoding=3, text=name))
+        tags.add(USLT(encoding=3, lang="eng", desc="Meow OCR", text=text))
+        tags.add(TXXX(encoding=3, desc="Meow OCR feature", text="document-to-audio"))
+        tags.save(mp3_path)
+        return True
+    except Exception as e:
+        logger.warning("Could not write lyrics tag on %s: %s", mp3_path, e)
+        return False
+
+
 def _tts_run(task_id, text, voice, rate, pitch):
     """Background worker: synthesize MP3 via edge-tts, persist, upload to cloud."""
     import asyncio as _asyncio
@@ -4427,6 +4451,8 @@ def _tts_run(task_id, text, voice, rate, pitch):
 
         if not os.path.exists(mp3_path) or os.path.getsize(mp3_path) == 0:
             raise RuntimeError("TTS produced empty audio")
+
+        _embed_lyrics_into_mp3(mp3_path, text, title=os.path.splitext(mp3_filename)[0])
 
         with progress_lock:
             progress_tracker[task_id]["tts_status"] = "done"
