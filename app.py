@@ -2708,6 +2708,52 @@ def _translate_mymemory(text, target_lang, source_lang='auto', timeout=10):
         raise
 
 
+def _translate_libretranslate(text, target_lang, source_lang='auto', timeout=15):
+    """Free fallback translation engine (LibreTranslate).
+    
+    Uses public LibreTranslate instances as a last resort when both
+    Google and MyMemory fail. Tries multiple public instances.
+    """
+    # Map language codes for LibreTranslate
+    lib_map = {
+        'en': 'en', 'ta': 'ta', 'hi': 'hi', 'te': 'te', 'bn': 'bn',
+        'kn': 'kn', 'ml': 'ml', 'gu': 'gu', 'pa': 'pa', 'mr': 'mr',
+        'ar': 'ar', 'es': 'es', 'fr': 'fr', 'de': 'de', 'it': 'it',
+        'ru': 'ru', 'zh-cn': 'zh', 'ja': 'ja', 'ko': 'ko',
+        'pt': 'pt', 'tr': 'tr', 'vi': 'vi', 'id': 'id', 'ms': 'ms',
+        'nl': 'nl', 'pl': 'pl', 'sv': 'sv', 'da': 'da', 'fi': 'fi',
+        'cs': 'cs', 'ro': 'ro', 'uk': 'uk', 'hu': 'hu',
+        'el': 'el', 'he': 'he', 'th': 'th',
+    }
+    sl = lib_map.get(source_lang, 'en') if source_lang != 'auto' else 'en'
+    tl = lib_map.get(target_lang, target_lang)
+    
+    # Public LibreTranslate instances to try
+    instances = [
+        "https://libretranslate.de/translate",
+        "https://libretranslate.com/translate",
+        "https://translate.argent.sh/translate",
+    ]
+    
+    for url in instances:
+        try:
+            data = {"q": text, "source": sl, "target": tl, "format": "text"}
+            resp = requests.post(url, json=data, timeout=timeout)
+            if resp.status_code == 200:
+                data = resp.json()
+                translated = data.get("translatedText", "")
+                if translated:
+                    logger.info(f"LibreTranslate success via {url}")
+                    return translated
+            elif resp.status_code == 429:
+                logger.warning(f"LibreTranslate rate limited: {url}")
+                continue
+        except Exception as e:
+            logger.warning(f"LibreTranslate failed ({url}): {e}")
+            continue
+    return None
+
+
 def chomp(text):
     """Split text into sentences. Simple splitter for translation chunking."""
     if not text:
@@ -2754,10 +2800,14 @@ def translate_text(text, target_lang, source_lang='auto', chunk_size=2000):
                     _fallback = _translate_mymemory(text, target_lang, source_lang)
                     if _fallback is not None:
                         return _fallback
+                    # Try LibreTranslate as third fallback
+                    _fallback = _translate_libretranslate(text, target_lang, source_lang)
+                    if _fallback is not None:
+                        return _fallback
                     if attempt >= 2:
                         raise Exception(f"HTTP 429 after fallback attempts ({max_retries}/{max_retries})")
                     wait = 10 * (attempt + 1)
-                    logger.warning(f"Translate 429, falling back to MyMemory (attempt {attempt+1}/{max_retries})")
+                    logger.warning(f"Translate 429, falling back to MyMemory/LibreTranslate (attempt {attempt+1}/{max_retries})")
                     time.sleep(wait)
                     continue
                 if resp.status_code != 200:

@@ -1,0 +1,700 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processing - Meow OCR</title>
+    <link rel="icon" href="/static/favicon.png" type="image/png">
+    <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="/static/favicon.png">
+    <link rel="canonical" href="https://meowocr.onrender.com/">
+    
+
+
+
+
+    
+
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2878912285255336" crossorigin="anonymous"></script>
+
+    
+
+    <!-- ads removed -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <script>
+        window.FIREBASE_CONFIG = {
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: "",
+            measurementId: ""
+        };
+        window.SCANNER_USER = {};
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="/static/firebase-auth.js"></script>
+    <script src="https://unpkg.com/animejs@3.2.2/lib/anime.min.js"></script>
+    <style>
+        .task-id-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+        .task-id-box p {
+            margin: 0;
+            font-size: 13px;
+            color: #666;
+        }
+        .task-id-box strong {
+            color: var(--git-color);
+        }
+        .task-id-hint {
+            margin-top: 4px !important;
+            font-size: 12px !important;
+            color: #999 !important;
+        }
+        .progress-link {
+            color: var(--git-color);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .progress-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="/"><img src="/static/images/meow-logo.png?v=3" alt="Meow OCR logo"><h1>Meow OCR</h1></a>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use" class="nav-link"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/audiobook" class="nav-link"><i class="fas fa-headphones"></i> Audiobook</a>
+                <a href="/downloads" class="nav-link"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="#" class="nav-link auth-btn" id="google-login-btn" style="display:none;"><i class="fab fa-google"></i> Sign in</a>
+                <span class="user-badge" id="user-badge" style="display:none;">
+                    <img id="user-avatar" class="user-avatar" alt="" />
+                    <span id="user-name"></span>
+                    <a href="#" class="logout-btn" id="logout-btn" title="Sign out"><i class="fas fa-sign-out-alt"></i></a>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="content-section processing-section">
+            <p class="page-info" id="filename"></p>
+
+            <div id="status-box">
+                <img src="/static/images/meow-hero.jpg" alt="Meow OCR" class="cat-loader-photo" style="margin-bottom: 1rem;">
+                <div class="loading-spinner" id="spinner"></div>
+                <div class="progress-text" id="percentage-text">0%</div>
+                <div class="progress-status" id="status-text">Starting processing... <span class="heading-cat">🐱</span></div>
+
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                </div>
+
+                <div class="status-info">
+                    <div class="status-card" id="lang-info-section">
+                        <h4>Language</h4>
+                        <p id="detected-lang">Detecting...</p>
+                    </div>
+                    <div class="status-card" id="page-info-section">
+                        <h4>Progress</h4>
+                        <p id="page-info">Page <span id="current-page">0</span> / <span id="total-pages">...</span></p>
+                    </div>
+                    <div class="status-card" id="chunk-info-section" style="display: none;">
+                        <h4>Chunks</h4>
+                        <p id="chunk-info">Chunk <span id="current-chunk">0</span> / <span id="total-chunks">...</span></p>
+                    </div>
+                    <div class="status-card" id="eta-section">
+                        <h4>ETA</h4>
+                        <p id="eta-text">--</p>
+                    </div>
+                </div>
+
+                <div class="audiobook-card" id="audiobook-card" style="display: none; margin-top: 1.25rem; padding: 1rem 1.25rem; background: linear-gradient(135deg, #f9f0ff 0%, #fff5f0 100%); border: 1px solid #e5d9f0; border-radius: 12px; text-align: left;">
+                    <p style="margin: 0 0 .5rem; font-size: 1rem; color: #6c3483;"><i class="fas fa-headphones"></i> <span id="audiobook-status-text">Creating audiobook (MP3)...</span></p>
+                    <div class="progress-container" style="margin-top: .4rem;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="audiobook-progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <p style="font-size: .85rem; color: #8a6d3b; margin: .6rem 0 0;" id="audiobook-meta-text"><i class="fas fa-info-circle"></i> Your document is being turned into a narrated MP3. It will be saved to My Downloads automatically.</p>
+                </div>
+
+                <div class="audiobook-done" id="audiobook-done" style="display: none; margin-top: 1.25rem; padding: 1rem 1.25rem; background: linear-gradient(135deg, #eafaf1 0%, #f0fdf4 100%); border: 1px solid #bbe8c8; border-radius: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap;">
+                        <span style="font-size: 1rem; color: #166534;"><i class="fas fa-check-circle"></i> Audiobook ready!</span>
+                        <a href="#" class="submit-btn" id="audiobook-download-btn" style="text-decoration: none; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);"><i class="fas fa-download"></i> Download MP3</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flash" id="error-box" style="display: none;">
+                <strong>Error:</strong> <span id="error-text"></span>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="/downloads" class="submit-btn" style="text-decoration: none; background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);">
+                    <i class="fas fa-download"></i> My Downloads
+                </a>
+                <a href="#" class="submit-btn" id="download-btn" style="display: none; text-decoration: none;">
+                    Download Result
+                </a>
+                <a href="#" class="submit-btn" id="view-btn" style="display: none; text-decoration: none; background: linear-gradient(135deg, #4f7cff 0%, #2563eb 100%);">
+                    <i class="fas fa-copy"></i> View &amp; Copy
+                </a>
+                <a href="/" class="submit-btn" id="back-btn" style="display: none; text-decoration: none; background: linear-gradient(135deg, #64748b 0%, #475569 100%);">
+                    Process Another File
+                </a>
+                
+                <button class="submit-btn" id="cancel-btn" onclick="cancelProcessing()" style="display: none; text-decoration: none; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border: none; cursor: pointer;">
+                    <i class="fas fa-times-circle"></i> Cancel
+                </button>
+                
+            </div>
+
+            <div class="task-id-box">
+                <p>
+                    <i class="fas fa-info-circle"></i>
+                    Task ID: <strong>db1d12ac-929a-407b-91d2-2ae83271f83e</strong>
+                </p>
+                <p class="task-id-hint">
+                    <i class="fas fa-bookmark"></i>
+                    <a href="/check/db1d12ac-929a-407b-91d2-2ae83271f83e" class="progress-link">Check Progress Page</a>
+                    &mdash; Bookmark this to return later.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const taskId = "db1d12ac-929a-407b-91d2-2ae83271f83e";
+        const statusBox = document.getElementById('status-box');
+        const statusText = document.getElementById('status-text');
+        const pageInfoSection = document.getElementById('page-info-section');
+        const chunkInfoSection = document.getElementById('chunk-info-section');
+        const currentPage = document.getElementById('current-page');
+        const totalPages = document.getElementById('total-pages');
+        const currentChunk = document.getElementById('current-chunk');
+        const totalChunks = document.getElementById('total-chunks');
+        const percentageText = document.getElementById('percentage-text');
+        const progressFill = document.getElementById('progress-fill');
+        const spinner = document.getElementById('spinner');
+        const errorBox = document.getElementById('error-box');
+        const errorText = document.getElementById('error-text');
+        const downloadBtn = document.getElementById('download-btn');
+        const viewBtn = document.getElementById('view-btn');
+        const backBtn = document.getElementById('back-btn');
+        const cancelBtn = document.getElementById('cancel-btn') || { style: {} };
+        const filenameEl = document.getElementById('filename');
+        const detectedLang = document.getElementById('detected-lang');
+        const etaText = document.getElementById('eta-text');
+        const etaSection = document.getElementById('eta-section');
+        const audiobookCard = document.getElementById('audiobook-card');
+        const audiobookStatus = document.getElementById('audiobook-status-text');
+        const audiobookMeta = document.getElementById('audiobook-meta-text');
+        const audiobookFill = document.getElementById('audiobook-progress-fill');
+        const audiobookDone = document.getElementById('audiobook-done');
+        const audiobookDownload = document.getElementById('audiobook-download-btn');
+
+        let pollInterval;
+        let simulatedProgress = 0;
+        const simulateInterval = 100;
+        let simulationTimer = null;
+        let currentFileType = null;
+        let isTranslation = false;
+        let currentETA = null;
+        let etaTimer = null;
+
+        function startETACountdown(seconds) {
+            currentETA = seconds;
+            if (etaTimer) clearInterval(etaTimer);
+            etaTimer = setInterval(() => {
+                currentETA = Math.max(0, currentETA - 1);
+                etaText.textContent = formatETA(currentETA);
+                if (currentETA <= 0) {
+                    clearInterval(etaTimer);
+                    etaTimer = null;
+                }
+            }, 1000);
+            etaText.textContent = formatETA(currentETA);
+            etaSection.style.display = 'block';
+        }
+
+        function stopETACountdown() {
+            if (etaTimer) {
+                clearInterval(etaTimer);
+                etaTimer = null;
+            }
+            currentETA = null;
+        }
+
+        function cancelProcessing() {
+            if (!confirm('Cancel this task?')) return;
+            fetch('/cancel/' + taskId, { method: 'POST' })
+                .then(r => r.json())
+                .then(d => {
+                    statusText.textContent = 'Cancelling...';
+                    cancelBtn.style.display = 'none';
+                })
+                .catch(() => {});
+        }
+
+        fetch(`/progress/${taskId}`)
+            .then(response => response.json())
+            .then(data => {
+                currentFileType = data.file_type || 'pdf';
+                isTranslation = data.translating === true;
+
+                if (isTranslation) {
+                    document.querySelector('.progress-status').textContent = 'Translating...';
+                    if (data.target_lang_name) {
+                        detectedLang.textContent = data.source_lang_name + ' → ' + data.target_lang_name;
+                    }
+                    pageInfoSection.style.display = 'none';
+                    chunkInfoSection.style.display = 'block';
+                    if (data.filename) {
+                        filenameEl.textContent = 'File: ' + data.filename;
+                    }
+                } else {
+                    if (data.detected_language && data.detected_language !== 'auto') {
+                        detectedLang.textContent = data.language_name || data.detected_language;
+                    }
+                    if (data.filename) {
+                        filenameEl.textContent = 'File: ' + data.filename;
+                    }
+                    if (currentFileType !== 'pdf') {
+                        pageInfoSection.style.display = 'none';
+                    }
+                }
+
+                if (data.status === 'getting_page_count' || data.status === 'starting' || data.status === 'detecting_language') {
+                    startSimulatedProgress();
+                }
+            })
+            .catch(err => console.error('Initial load error:', err));
+
+        function startSimulatedProgress() {
+            if (simulationTimer) return;
+            simulationTimer = setInterval(() => {
+                simulatedProgress += 1;
+                if (simulatedProgress > 90) {
+                    clearInterval(simulationTimer);
+                    return;
+                }
+                percentageText.textContent = `${simulatedProgress}%`;
+                progressFill.style.width = `${simulatedProgress}%`;
+            }, simulateInterval);
+        }
+
+        function stopSimulatedProgress() {
+            if (simulationTimer) {
+                clearInterval(simulationTimer);
+                simulationTimer = null;
+            }
+        }
+
+        function formatETA(seconds) {
+            if (!seconds || seconds <= 0) return '--';
+            if (seconds < 60) return `${seconds}s`;
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            return `${h}h ${m}m`;
+        }
+
+        function updateProgress() {
+            fetch(`/progress/${taskId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Task not found');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    isTranslation = data.translating === true;
+
+                    if (data.filename) {
+                        filenameEl.textContent = 'File: ' + data.filename;
+                    }
+
+                    if (isTranslation) {
+                        if (data.target_lang_name) {
+                            detectedLang.textContent = data.source_lang_name + ' → ' + data.target_lang_name;
+                        }
+                        pageInfoSection.style.display = 'none';
+                        chunkInfoSection.style.display = 'block';
+
+                        if (data.total_chunks) {
+                            currentChunk.textContent = data.current_chunk || 0;
+                            totalChunks.textContent = data.total_chunks;
+                        }
+
+                        if (data.status === 'starting') {
+                            statusText.textContent = 'Starting translation...';
+                            percentageText.textContent = '0%';
+                            progressFill.style.width = '0%';
+                            cancelBtn.style.display = 'inline-block';
+                        } else if (data.status === 'translating') {
+                            statusText.textContent = 'Translating... (' + data.source_lang_name + ' → ' + data.target_lang_name + ')';
+                            stopSimulatedProgress();
+                            cancelBtn.style.display = 'inline-block';
+                            if (data.percentage > 0) {
+                                percentageText.textContent = data.percentage + '%';
+                                progressFill.style.width = data.percentage + '%';
+                            }
+                        } else if (data.status === 'completed') {
+                            stopSimulatedProgress();
+                            stopETACountdown();
+                            etaSection.style.display = 'none';
+                            cancelBtn.style.display = 'none';
+                            statusText.textContent = 'Translation completed successfully!';
+                            percentageText.textContent = '100%';
+                            progressFill.style.width = '100%';
+                            spinner.style.display = 'none';
+                            errorBox.style.display = 'none';
+                            downloadBtn.style.display = 'inline-block';
+                            downloadBtn.href = `/download/${taskId}`;
+                            viewBtn.style.display = 'inline-block';
+                            viewBtn.href = `/result/${taskId}`;
+                            backBtn.style.display = 'inline-block';
+                            clearInterval(pollInterval);
+                        } else if (data.status === 'error') {
+                            statusText.textContent = 'Translation failed';
+                            spinner.style.display = 'none';
+                            errorBox.style.display = 'block';
+                            errorText.textContent = data.error || 'Unknown error occurred';
+                            backBtn.style.display = 'inline-block';
+                            cancelBtn.style.display = 'none';
+                            stopETACountdown();
+                            etaSection.style.display = 'none';
+                            clearInterval(pollInterval);
+                        } else if (data.status === 'cancelled') {
+                            statusText.textContent = 'Task cancelled';
+                            spinner.style.display = 'none';
+                            errorBox.style.display = 'block';
+                            errorText.textContent = data.error || 'Cancelled by user';
+                            backBtn.style.display = 'inline-block';
+                            cancelBtn.style.display = 'none';
+                            stopETACountdown();
+                            etaSection.style.display = 'none';
+                            clearInterval(pollInterval);
+                        }
+                        return;
+                    }
+
+                    if (data.language_name) {
+                        detectedLang.textContent = data.language_name;
+                    } else if (data.detected_language) {
+                        detectedLang.textContent = data.detected_language === 'tam' ? 'Tamil' : 'English';
+                    }
+
+                    if (currentFileType === 'pdf') {
+                        currentPage.textContent = data.current_page;
+                        if (data.pdf_total_pages && data.total_pages && data.pdf_total_pages !== data.total_pages) {
+                            totalPages.textContent = data.pdf_total_pages + ` (range: ${data.total_pages} pages)`;
+                        } else if (data.total_pages) {
+                            totalPages.textContent = data.total_pages;
+                        } else {
+                            totalPages.textContent = '...';
+                        }
+                    }
+
+                    if (data.status === 'detecting_language') {
+                        statusText.textContent = 'Detecting language...';
+                        percentageText.textContent = '...';
+                        progressFill.style.width = '5%';
+                        cancelBtn.style.display = 'inline-block';
+                    } else if (data.status === 'getting_page_count') {
+                        statusText.textContent = 'Getting page count...';
+                        percentageText.textContent = '...';
+                        progressFill.style.width = '10%';
+                        cancelBtn.style.display = 'inline-block';
+                    } else if (data.status === 'starting') {
+                        statusText.textContent = 'Starting processing...';
+                        percentageText.textContent = '0%';
+                        progressFill.style.width = '0%';
+                        cancelBtn.style.display = 'inline-block';
+                    } else if (data.status === 'resuming') {
+                        statusText.textContent = 'Resuming ' + currentFileType.toUpperCase() + ' from checkpoint...';
+                        stopSimulatedProgress();
+                        cancelBtn.style.display = 'inline-block';
+                        if (data.percentage > 0) {
+                            percentageText.textContent = data.percentage + '%';
+                            progressFill.style.width = data.percentage + '%';
+                        }
+                        if (data.eta) {
+                            startETACountdown(data.eta);
+                        } else {
+                            stopETACountdown();
+                            etaText.textContent = '--';
+                            etaSection.style.display = 'block';
+                        }
+                        if (data.current_page > 0 && data.total_pages) {
+                            currentPage.textContent = data.current_page;
+                            totalPages.textContent = data.total_pages;
+                        }
+                    } else if (data.status === 'processing') {
+                        statusText.textContent = 'Processing ' + currentFileType.toUpperCase() + '... (' + (data.language_name || 'Detected language') + ')';
+                        stopSimulatedProgress();
+                        cancelBtn.style.display = 'inline-block';
+                        if (data.percentage > 0) {
+                            percentageText.textContent = data.percentage + '%';
+                            progressFill.style.width = data.percentage + '%';
+                        }
+                        if (data.eta) {
+                            startETACountdown(data.eta);
+                        } else {
+                            stopETACountdown();
+                            etaText.textContent = '--';
+                            etaSection.style.display = 'block';
+                        }
+                        if (data.current_page > 0 && data.total_pages) {
+                            currentPage.textContent = data.current_page;
+                            totalPages.textContent = data.total_pages;
+                        }
+                    } else if (data.status === 'completed') {
+                        stopSimulatedProgress();
+                        stopETACountdown();
+                        etaSection.style.display = 'none';
+                        cancelBtn.style.display = 'none';
+                        statusText.textContent = 'Processing completed successfully!';
+                        percentageText.textContent = '100%';
+                        progressFill.style.width = '100%';
+                        spinner.style.display = 'none';
+                        errorBox.style.display = 'none';
+                        downloadBtn.style.display = 'inline-block';
+                        downloadBtn.href = `/download/${taskId}`;
+                        viewBtn.style.display = 'inline-block';
+                        viewBtn.href = `/result/${taskId}`;
+                        backBtn.style.display = 'inline-block';
+                        const childDone = data.child_audio_status === 'completed' || data.child_audio_status === 'error' || data.child_audio_status === 'cancelled';
+                        if (!(data.make_audio && !childDone)) {
+                            clearInterval(pollInterval);
+                        }
+                    } else if (data.status === 'interrupted') {
+                        statusText.textContent = 'Processing interrupted (server restarted)';
+                        spinner.style.display = 'none';
+                        cancelBtn.style.display = 'none';
+                        backBtn.style.display = 'inline-block';
+                        stopETACountdown();
+                        etaSection.style.display = 'none';
+                        clearInterval(pollInterval);
+                    } else if (data.status === 'error') {
+                        statusText.textContent = 'Processing failed';
+                        spinner.style.display = 'none';
+                        errorBox.style.display = 'block';
+                        errorText.textContent = data.error || 'Unknown error occurred';
+                        backBtn.style.display = 'inline-block';
+                        cancelBtn.style.display = 'none';
+                        stopETACountdown();
+                        etaSection.style.display = 'none';
+                        clearInterval(pollInterval);
+                    } else if (data.status === 'cancelling') {
+                        statusText.textContent = 'Cancelling...';
+                        spinner.style.display = 'none';
+                        cancelBtn.style.display = 'none';
+                        stopETACountdown();
+                        etaText.textContent = '--';
+                        etaSection.style.display = 'block';
+                    } else if (data.status === 'cancelled') {
+                        statusText.textContent = 'Task cancelled';
+                        spinner.style.display = 'none';
+                        errorBox.style.display = 'block';
+                        errorText.textContent = data.error || 'Cancelled by user';
+                        backBtn.style.display = 'inline-block';
+                        cancelBtn.style.display = 'none';
+                        stopETACountdown();
+                        etaSection.style.display = 'none';
+                        clearInterval(pollInterval);
+                    }
+
+                    if (data.make_audio && (data.status === 'completed' || data.child_audio_status)) {
+                        const childToken = data.child_audio_token || '';
+                        const childStatus = data.child_audio_status || '';
+                        const childPercent = data.child_audio_percentage || 0;
+                        if (childStatus === 'completed') {
+                            audiobookCard.style.display = 'none';
+                            audiobookDone.style.display = 'block';
+                            audiobookDownload.href = '/download/tts/t2a_' + childToken;
+                            clearInterval(pollInterval);
+                        } else if (childStatus === 'error' || childStatus === 'cancelled') {
+                            audiobookCard.style.display = 'block';
+                            audiobookDone.style.display = 'none';
+                            audiobookStatus.textContent = childStatus === 'cancelled' ? 'Audiobook cancelled' : 'Audiobook failed';
+                            audiobookMeta.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.child_audio_error || 'Could not create the audiobook. Your text result is still ready.');
+                            clearInterval(pollInterval);
+                        } else {
+                            audiobookCard.style.display = 'block';
+                            audiobookDone.style.display = 'none';
+                            audiobookFill.style.width = Math.min(100, childPercent || 5) + '%';
+                        }
+                    }
+                })
+                .catch(error => {
+                    statusText.textContent = 'Error checking progress';
+                    console.error('Progress check failed:', error);
+                });
+        }
+
+        pollInterval = setInterval(updateProgress, 1000);
+        updateProgress();
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            var box = document.getElementById('status-box');
+            if (box) anime({ targets: box, opacity: [0, 1], translateY: [18, 0], duration: 700, easing: 'easeOutExpo' });
+            var cat = document.querySelector('.cat-loader-photo');
+            if (cat) anime({ targets: cat, scale: [0.6, 1], opacity: [0, 1], duration: 700, easing: 'easeOutBack', complete: function () { cat.style.transform = ''; } });
+            var cards = document.querySelectorAll('.status-card');
+            anime({ targets: cards, translateY: [16, 0], opacity: [0, 1], delay: anime.stagger(90), duration: 500, easing: 'easeOutQuad' });
+        });
+    </script>
+
+    <footer class="site-footer">
+
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <h4>Meow OCR</h4>
+                <p>Free online OCR — extract text from PDF, images &amp; documents. 19+ languages. Built by Siva.</p>
+                <p class="meow-tagline"><i class="fas fa-cat"></i> Powered by curious cats <i class="fas fa-paw"></i></p>
+            </div>
+            <div class="footer-links">
+                <h4>OCR Tools</h4>
+                <a href="/tamil-ocr"><i class="fas fa-language"></i> Tamil OCR</a>
+                <a href="/hindi-ocr"><i class="fas fa-language"></i> Hindi OCR</a>
+                <a href="/english-ocr"><i class="fas fa-language"></i> English PDF to Text</a>
+                <a href="/"><i class="fas fa-home"></i> Full OCR Tool</a>
+            </div>
+            <div class="footer-links">
+                <h4>Audiobook Tools</h4>
+                <a href="/audiobook"><i class="fas fa-headphones"></i> PDF to Audiobook</a>
+                <a href="/audiobook#tts"><i class="fas fa-volume-up"></i> Text to Speech</a>
+                <a href="/audiobook#myvoice"><i class="fas fa-microphone"></i> My Voice</a>
+                <a href="/downloads"><i class="fas fa-file-audio"></i> MP3 Downloads</a>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <a href="/"><i class="fas fa-home"></i> Home</a>
+                <a href="/how-to-use"><i class="fas fa-question-circle"></i> How to Use</a>
+                <a href="/downloads"><i class="fas fa-download"></i> My Downloads</a>
+                <a href="/about"><i class="fas fa-info-circle"></i> About</a>
+                <a href="/blog"><i class="fas fa-rss"></i> Blog</a>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <a href="/privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                <a href="/terms"><i class="fas fa-file-contract"></i> Terms of Service</a>
+                <a href="/link-to-us"><i class="fas fa-link"></i> Link to Us</a>
+            </div>
+            <div class="footer-note">
+                <h4>Your Result</h4>
+                <p>Results are stored securely in the cloud and auto-deleted after 2 days by default.</p>
+                <p class="copyright">&copy; 2026 Meow OCR. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.anime) return;
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            var em = ['🐾', '🐱', '⭐', '✨'];
+            function pawBurst(x, y) {
+                for (var i = 0; i < 7; i++) (function (i) {
+                    var p = document.createElement('span');
+                    p.className = 'paw-confetti';
+                    p.textContent = em[i % em.length];
+                    p.style.left = x + 'px'; p.style.top = y + 'px';
+                    document.body.appendChild(p);
+                    anime({ targets: p, translateX: [0, (Math.random() - 0.5) * 160], translateY: [0, -(Math.random() * 110 + 40)], rotate: [0, Math.random() * 360 - 180], opacity: [1, 0], duration: 800 + Math.random() * 500, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+                })(i);
+            }
+            document.querySelectorAll('.submit-btn, .cta-btn, .ab-submit, .ab-btn, .ab-dl, .tts-go, a[href="/"]').forEach(function (el) {
+                el.addEventListener('click', function (ev) { pawBurst(ev.clientX, ev.clientY); });
+            });
+            var driftEm = ['🐾', '🐱', '⭐', '✨'];
+            function spawnDrift() {
+                var p = document.createElement('span');
+                p.className = 'paw-drift';
+                p.textContent = driftEm[Math.floor(Math.random() * driftEm.length)];
+                p.style.left = (Math.random() * 90 + 4) + '%';
+                p.style.animationDuration = (Math.random() * 5 + 7) + 's';
+                document.body.appendChild(p);
+                setTimeout(function () { p.remove(); }, 13000);
+            }
+            spawnDrift(); spawnDrift();
+            setInterval(spawnDrift, 2800);
+            // Cute paw prints stream along the cursor (throttled)
+            var lastPaw = 0;
+            document.addEventListener('mousemove', function (e) {
+                var n = Date.now(); if (n - lastPaw < 220) return; lastPaw = n;
+                var p = document.createElement('span');
+                p.className = 'paw-cursor'; p.textContent = '🐾';
+                p.style.left = (e.clientX - 14) + 'px'; p.style.top = (e.clientY - 14) + 'px';
+                document.body.appendChild(p);
+                anime({ targets: p, translateY: [-14, 0], opacity: [0.8, 0], scale: [0.6, 1.1], duration: 650, easing: 'easeOutQuad', complete: function () { p.remove(); } });
+            });
+        });
+    </script>
+<!-- ===== Meow Assistant chat widget — AI backend stays server-side ===== -->
+<link rel="stylesheet" href="/static/chatbot.css">
+<div id="meow-chat">
+    <button type="button" id="meow-chat-toggle" aria-label="Chat with Meow Assistant" title="Ask Meow Assistant">
+        <span class="meow-chat-toggle-img" style="background-image:url('/static/images/pix-cat-1.jpg')"></span>
+        <span class="meow-chat-toggle-dot" aria-hidden="true"></span>
+    </button>
+    <div id="meow-chat-panel" class="meow-chat-panel" role="dialog" aria-label="Meow Assistant chat">
+        <div class="meow-chat-header">
+            <span class="meow-chat-avatar" style="background-image:url('/static/images/pix-cat-1.jpg')" role="img" aria-label="Whiskers the Cute"></span>
+            <div class="meow-chat-heading">
+                <div class="meow-chat-title">Meow Assistant</div>
+                <div class="meow-chat-status"><span class="meow-chat-dot"></span> Whiskers the Cute — free &amp; online</div>
+            </div>
+            <button type="button" id="meow-chat-close" aria-label="Close chat"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="meow-chat-body" id="meow-chat-body">
+            <div class="meow-row row-bot">
+                <span class="meow-avatar"><img src="/static/images/pix-cat-1.jpg" alt="Whiskers the Cute" loading="lazy"></span>
+                <div class="meow-msg meow-msg-bot">Hi! I'm Whiskers the Cute 🐱 your free OCR helper. Tap a quick question below or ask me anything!</div>
+            </div>
+        </div>
+        <div class="meow-chat-chips" id="meow-chat-chips">
+            <button type="button" class="meow-chip" data-q="What features do you have?">Features</button>
+            <button type="button" class="meow-chip" data-q="How do I use Meow OCR?">How to use</button>
+            <button type="button" class="meow-chip" data-q="Is Meow OCR free?">Is it free?</button>
+            <button type="button" class="meow-chip" data-q="Which languages are supported?">Languages</button>
+            <button type="button" class="meow-chip" data-q="Are my files private?">Privacy</button>
+            <button type="button" class="meow-chip" data-q="Can you read handwritten notes?">Handwritten</button>
+            <button type="button" class="meow-chip" data-q="Can you turn text into audio?">Text to Audio</button>
+            <button type="button" class="meow-chip" data-q="Can you make an audiobook from a PDF?">Audiobook</button>
+            <button type="button" class="meow-chip" data-q="Who built Meow OCR?">About</button>
+        </div>
+        <form class="meow-chat-form" id="meow-chat-form">
+            <input type="text" id="meow-chat-input" placeholder="Type a message…" autocomplete="off" maxlength="500" aria-label="Message Meow Assistant">
+            <button type="submit" aria-label="Send"><i class="fas fa-paper-plane"></i></button>
+        </form>
+    </div>
+</div>
+<script>window.MEOW_AVATAR = "/static/images/pix-cat-1.jpg";</script>
+<script src="/static/chatbot.js"></script>
+</body>
+</html>
