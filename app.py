@@ -2799,12 +2799,14 @@ def translate_text(text, target_lang, source_lang='auto', chunk_size=2000):
                 resp = session.get(base_url, params=params, timeout=15)
                 if resp.status_code == 429:
                     # Google's free endpoint rate-limits shared cloud egress hard.
-                    # Before burning a long sleep, try MyMemory (independent free API).
-                    _fallback = _translate_mymemory(text, target_lang, source_lang)
+                    # Try LibreTranslate FIRST — no API key, effectively unlimited,
+                    # and per-request instances dodge the shared-IP 429 wall better
+                    # than the anonymous Google/MyMemory endpoints from this egress.
+                    _fallback = _translate_libretranslate(text, target_lang, source_lang)
                     if _fallback is not None:
                         return _fallback
-                    # Try LibreTranslate as third fallback
-                    _fallback = _translate_libretranslate(text, target_lang, source_lang)
+                    # Otherwise try MyMemory (independent free API).
+                    _fallback = _translate_mymemory(text, target_lang, source_lang)
                     if _fallback is not None:
                         return _fallback
                     if attempt >= 2:
