@@ -2708,6 +2708,15 @@ def _translate_mymemory(text, target_lang, source_lang='auto', timeout=10):
         raise
 
 
+def chomp(text):
+    """Split text into sentences. Simple splitter for translation chunking."""
+    if not text:
+        return []
+    # Split on sentence boundaries (., !, ?) followed by space or end
+    parts = re.split(r'(?<=[.!?])\s+', text.strip())
+    return [p.strip() for p in parts if p.strip()]
+
+
 def _detect_lang_quick(text, timeout=8):
     """One-shot language detect via Google's free endpoint; returns code or None."""
     try:
