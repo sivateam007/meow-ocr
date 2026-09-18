@@ -2699,7 +2699,10 @@ def _translate_mymemory(text, target_lang, source_lang='auto', timeout=10):
         for sub in _subchunks(text):
             piece = _one_request(sub)
             if piece is None:
-                raise Exception(f"MyMemory failed for segment: {sub[:50]}...")
+                # Don't abort the whole chunk — signal the caller so it can
+                # continue down the fallback chain (LibreTranslate/Google retry).
+                logger.warning(f"MyMemory returned no result for segment: {sub[:50]}...")
+                return None
             translated_parts.append(piece)
         result = "".join(translated_parts)
         return result if result.strip() else None
