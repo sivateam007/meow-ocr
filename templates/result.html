@@ -67,6 +67,14 @@
             </div>
             {% endif %}
 
+            {% if failed_chunks %}
+            <div id="browser-retry-wrap" style="max-width:820px; margin:0 auto 1rem; background:#fef3c7; border:1px solid #f59e0b; border-radius:10px; padding:0.8rem 1rem;">
+                <strong style="color:#92400e;"><i class="fas fa-sync-alt"></i> {{ failed_chunks|length }} chunk(s) couldn't be translated on the server</strong>
+                <span style="color:#78350f;"> — retrying now directly from your browser, no signup needed. This uses your own network quota, so it bypasses the server's shared limit.</span>
+                <div id="browser-retry-status" style="margin-top:0.5rem; color:#78350f; font-size:.9rem;">Retrying…</div>
+            </div>
+            {% endif %}
+
             <style>
                 .reader-wrap{ background:#fff; border:2px solid #ffd9b3; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.06); overflow:hidden; }
                 .reader-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.6rem .85rem; background:linear-gradient(135deg,#fff7ef 0%,#fef0e6 100%); border-bottom:1px solid #ffd9b3; }
@@ -991,6 +999,68 @@
             }
         })();
     </script>
+
+    {% if failed_chunks %}
+    <script>
+        // Browser-side retry for server-failed chunks.
+        // Runs ONLY when the server couldn't translate some chunks (status "partial").
+        // Uses the VISITOR's own network IP quota (MyMemory 5K chars/day/IP anonymous,
+        // 50K/day/IP with the `de` email tag below), so it bypasses the server's
+        // shared-IP 429 wall entirely. Completely inactive when nothing failed.
+        (function () {
+            var retryData = {{ failed_chunks|tojson }};
+            if (!retryData || !retryData.length) return;
+            var statusEl = document.getElementById('browser-retry-status');
+            var wrap = document.getElementById('browser-retry-wrap');
+            var textarea = document.getElementById('result-text');
+            if (!statusEl || !textarea) return;
+            // Optional MyMemory email tag -> raises the per-IP quota to 50K chars/day.
+            // Leave empty "" for anonymous 5K chars/day. Any non-empty string is fine
+            // (it is only a quota label, no signup/verification).
+            var DE_EMAIL = '';
+            if (typeof textarea.value !== 'string') return;
+
+            var done = 0, failed = 0, total = retryData.length;
+            statusEl.textContent = 'Retrying ' + total + ' chunk(s)…';
+            retryData.forEach(function (fc) {
+                var langpair = (fc.source_lang || 'en') + '|' + (fc.target_lang || 'ta');
+                var url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(fc.text) +
+                          '&langpair=' + encodeURIComponent(langpair);
+                if (DE_EMAIL) url += '&de=' + encodeURIComponent(DE_EMAIL);
+                fetch(url, { method: 'GET' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        var out = data && data.responseData && data.responseData.translatedText;
+                        if (out && out !== fc.text && typeof out === 'string') {
+                            // Replace every occurrence of the un-translated chunk with the real translation
+                            var parts = textarea.value.split(fc.text);
+                            if (parts.length > 1) textarea.value = parts.join(out);
+                        } else {
+                            failed++;
+                        }
+                        done++;
+                        statusEl.textContent = (done - failed) + '/' + total + ' recovered.';
+                        if (done === total) {
+                            if (failed === 0) {
+                                wrap.style.borderColor = '#48b04a';
+                                statusEl.innerHTML = '<span style="color:#1c8a1e;">All ' + total + ' chunk(s) recovered in your browser.</span>';
+                            } else {
+                                statusEl.innerHTML = '<span style="color:#b45309;">' + (done - failed) + ' recovered, ' + failed + ' still unavailable on this network. Try again later or reload.</span>';
+                            }
+                        }
+                    })
+                    .catch(function () {
+                        failed++;
+                        done++;
+                        statusEl.textContent = (done - failed) + '/' + total + ' recovered.';
+                        if (done === total) {
+                            statusEl.innerHTML = '<span style="color:#b45309;">' + (done - failed) + ' recovered, ' + failed + ' still unavailable on this network. Try again later or reload.</span>';
+                        }
+                    });
+            });
+        })();
+    </script>
+    {% endif %}
 
     {% include 'paw_effects.html' %}
 {% include 'chatbot.html' %}

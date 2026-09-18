@@ -479,6 +479,22 @@
                         if (!(data.make_audio && !childDone)) {
                             clearInterval(pollInterval);
                         }
+                    } else if (data.status === 'partial') {
+                        stopSimulatedProgress();
+                        stopETACountdown();
+                        etaSection.style.display = 'none';
+                        cancelBtn.style.display = 'none';
+                        statusText.textContent = 'Processing completed — some chunks need browser retry';
+                        percentageText.textContent = '100%';
+                        progressFill.style.width = '100%';
+                        spinner.style.display = 'none';
+                        errorBox.style.display = 'none';
+                        downloadBtn.style.display = 'inline-block';
+                        downloadBtn.href = `/download/${taskId}`;
+                        viewBtn.style.display = 'inline-block';
+                        viewBtn.href = `/result/${taskId}`;
+                        backBtn.style.display = 'inline-block';
+                        clearInterval(pollInterval);
                     } else if (data.status === 'interrupted') {
                         statusText.textContent = 'Processing interrupted (server restarted)';
                         spinner.style.display = 'none';

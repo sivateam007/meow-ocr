@@ -3081,12 +3081,16 @@ def translate_file_background(task_id, file_path, filename, temp_dir, source_lan
                     translated_parts.append(translated)
                 except Exception as e:
                     logger.error(f"Task {task_id}: Chunk {i+1}/{total_chunks} failed: {e}")
-                    # Don't silently append original - mark task as failed
                     with progress_lock:
-                        progress_tracker[task_id]["status"] = "error"
+                        _failed = progress_tracker[task_id].setdefault("failed_chunks", [])
+                        _failed.append({
+                            "index": i,
+                            "text": chunk,
+                            "source_lang": source_lang,
+                            "target_lang": target_lang
+                        })
                         progress_tracker[task_id]["error"] = f"Translation failed on chunk {i+1}: {e}"
-                    _save_progress(True)
-                    return
+                    translated_parts.append(chunk)
 
                 time.sleep(5)
 
@@ -3123,12 +3127,15 @@ def translate_file_background(task_id, file_path, filename, temp_dir, source_lan
         persist_output(task_id)
 
         with progress_lock:
-            progress_tracker[task_id]["status"] = "completed"
+            _n_failed = len(progress_tracker[task_id].get("failed_chunks", []))
+            progress_tracker[task_id]["status"] = "partial" if _n_failed else "completed"
             progress_tracker[task_id]["percentage"] = 100
             progress_tracker[task_id]["completed_at"] = time.time()
             progress_tracker[task_id]["source_lang"] = source_lang
             progress_tracker[task_id]["target_lang"] = target_lang
         _save_progress(True)
+        if _n_failed:
+            logger.warning(f"Task {task_id}: {_n_failed} of {total_chunks} chunks failed; saved as partial with browser-retry data")
         logger.info(f"Task {task_id}: Translation completed ({total_chunks} chunks, {total_chars} chars)")
 
         if speak and result_text:
@@ -3631,7 +3638,10 @@ def result_page(task_id):
         filename = progress_tracker[task_id].get("output_filename", "output.txt")
         display_name = progress_tracker[task_id].get("original_filename", filename) if progress_tracker[task_id].get("original_filename") else filename
         low_conf_words = progress_tracker[task_id].get("low_conf_words", [])
-    return render_template('result.html', task_id=task_id, text=text, filename=display_name, low_conf_words=low_conf_words)
+    with progress_lock:
+        failed_chunks = progress_tracker[task_id].get("failed_chunks", [])
+        result_status = progress_tracker[task_id].get("status")
+    return render_template('result.html', task_id=task_id, text=text, filename=display_name, low_conf_words=low_conf_words, failed_chunks=failed_chunks, result_status=result_status)
 
 
 @app.route('/refresh-cloud', methods=['POST'])

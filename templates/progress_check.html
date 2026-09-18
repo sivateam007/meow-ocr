@@ -352,6 +352,17 @@
                         stopETACountdown();
                         etaSection.style.display = 'none';
                         clearInterval(pollInterval);
+                    } else if (data.status === 'partial') {
+                        statusText.textContent = 'Processing completed with retryable chunks';
+                        percentageText.textContent = '100%';
+                        stopETACountdown();
+                        cancelBtn.style.display = 'none';
+                        etaSection.style.display = 'none';
+                        progressFill.style.width = '100%';
+                        spinner.style.display = 'none';
+                        errorBox.style.display = 'none';
+                        clearInterval(pollInterval);
+                        setTimeout(function () { window.location.href = '/result/' + taskId; }, 800);
                     } else if (data.status === 'error') {
                         statusText.textContent = 'Processing failed';
                         spinner.style.display = 'none';
