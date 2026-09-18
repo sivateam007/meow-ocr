@@ -2699,15 +2699,13 @@ def _translate_mymemory(text, target_lang, source_lang='auto', timeout=10):
         for sub in _subchunks(text):
             piece = _one_request(sub)
             if piece is None:
-                # Don't lose a whole book over one bad segment; keep the original
-                # text for that piece only and continue.
-                piece = sub
+                raise Exception(f"MyMemory failed for segment: {sub[:50]}...")
             translated_parts.append(piece)
         result = "".join(translated_parts)
         return result if result.strip() else None
     except Exception as e:
-        logger.warning(f"MyMemory fallback failure: {e}")
-        return None
+        logger.error(f"MyMemory fallback failure: {e}")
+        raise
 
 
 def _detect_lang_quick(text, timeout=8):
@@ -2804,8 +2802,8 @@ def translate_text(text, target_lang, source_lang='auto', chunk_size=2000):
             translated = _translate(subchunk)
             result_parts.append(translated)
         except Exception as e:
-            logger.warning(f"Translate subchunk {chunk_num} failed after all retries: {e}")
-            result_parts.append(subchunk)
+            logger.error(f"Translate subchunk {chunk_num} failed after all retries: {e}")
+            raise
         start = end
         chunk_num += 1
     return ''.join(result_parts)
@@ -2940,8 +2938,13 @@ def translate_file_background(task_id, file_path, filename, temp_dir, source_lan
                             logger.warning(f"Task {task_id}: Chunk {i+1}/{total_chunks} giving up, using original")
                     translated_parts.append(translated)
                 except Exception as e:
-                    logger.warning(f"Task {task_id}: Chunk {i+1}/{total_chunks} failed: {e}")
-                    translated_parts.append(chunk)
+                    logger.error(f"Task {task_id}: Chunk {i+1}/{total_chunks} failed: {e}")
+                    # Don't silently append original - mark task as failed
+                    with progress_lock:
+                        progress_tracker[task_id]["status"] = "error"
+                        progress_tracker[task_id]["error"] = f"Translation failed on chunk {i+1}: {e}"
+                    _save_progress(True)
+                    return
 
                 time.sleep(5)
 
