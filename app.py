@@ -2757,6 +2757,77 @@ def _translate_libretranslate(text, target_lang, source_lang='auto', timeout=15)
     return None
 
 
+def _translate_azure(text, target_lang, source_lang='auto', timeout=20):
+    """Keyed translation engine (Azure Cognitive / Translator v3).
+
+    Codepoint here is a proper subscription engine, NOT a keyless public
+    API, so it never runs into the shared-egress 429 wall that kills every
+    free fallback from Render's one IP. It is deliberately wired under the
+    free engines: when no key is configured, this returns None and the
+    keyless chain (LibreTranslate -> MyMemory) runs exactly as before. When
+    a key IS present it is tried FIRST on a 429, because it is the only
+    engine that reliably answers from this egress.
+
+    Env (Render env vars):
+        AZURE_TRANSLATOR_KEY    - Translator subscription key
+        AZURE_TRANSLATOR_REGION - service region, e.g. 'eastasia' (optional)
+
+    Returns translated text on success, or None on any failure (never
+    raises) so the caller keeps its own retry flow.
+    """
+    key = (os.environ.get('AZURE_TRANSLATOR_KEY') or '').strip()
+    if not key:
+        # No key configured: this is a no-op fallback, let the keyless
+        # chain proceed untouched.
+        logger.debug('Azure fallback skipped: no AZURE_TRANSLATOR_KEY set')
+        return None
+    region = (os.environ.get('AZURE_TRANSLATOR_REGION') or '').strip() or 'eastasia'
+
+    # Resolve source like the other engines do ('auto' -> quick detect).
+    sl = source_lang
+    if not sl or sl == 'auto':
+        sl = _detect_lang_quick(text)
+        if not sl:
+            sl = 'en'
+    pair_int = {  # mymemory/libretranslate use 2-letter codes; azure wants BCP-47
+        'en': 'en', 'ta': 'ta', 'hi': 'hi', 'te': 'te', 'bn': 'bn',
+        'kn': 'kn', 'ml': 'ml', 'gu': 'gu', 'pa': 'pa-IN', 'mr': 'mr',
+        'ar': 'ar', 'es': 'es', 'fr': 'fr', 'de': 'de', 'it': 'it',
+        'ru': 'ru', 'zh-CN': 'zh-Hans', 'ja': 'ja', 'ko': 'ko',
+        'pt': 'pt', 'tr': 'tr', 'vi': 'vi', 'id': 'id', 'ms': 'ms',
+        'nl': 'nl', 'pl': 'pl', 'sv': 'sv', 'da': 'da', 'fi': 'fi',
+        'cs': 'cs', 'ro': 'ro', 'uk': 'uk', 'hu': 'hu',
+        'el': 'el', 'he': 'he', 'th': 'th',
+    }
+    sl = pair_int.get(sl, sl)
+    tl = pair_int.get(target_lang, target_lang)
+
+    try:
+        url = "https://api.cognitive.microsofttranslator.com/translate"
+        params = {"api-version": "3.0", "from": sl, "to": tl}
+        headers = {
+            "Ocp-Apim-Subscription-Key": key,
+            "Ocp-Apim-Subscription-Region": region,
+            "Content-Type": "application/json; charset=UTF-8",
+        }
+        body = [{"Text": text}]
+        resp = requests.post(url, params=params, headers=headers, json=body, timeout=timeout)
+        if resp.status_code != 200:
+            # Log-but-skip: caller keeps trying the keyless engines.
+            logger.warning(f"Azure HTTP {resp.status_code}: {(resp.text or '')[:120]}")
+            return None
+        data = resp.json()
+        translations = (data or [{}])[0].get("translations") or []
+        if translations and translations[0].get("text"):
+            translated = translations[0]["text"]
+            return translated if translated.strip() else None
+        logger.warning("Azure returned no translation")
+        return None
+    except Exception as e:
+        logger.warning(f"Azure translation failed: {e}")
+        return None
+
+
 def chomp(text):
     """Split text into sentences. Simple splitter for translation chunking."""
     if not text:
@@ -2799,7 +2870,14 @@ def translate_text(text, target_lang, source_lang='auto', chunk_size=2000):
                 resp = session.get(base_url, params=params, timeout=15)
                 if resp.status_code == 429:
                     # Google's free endpoint rate-limits shared cloud egress hard.
-                    # Try LibreTranslate FIRST — no API key, effectively unlimited,
+                    # If an Azure key is configured, try the keyed engine FIRST:
+                    # it never 429s from this shared IP (subscription egress).
+                    # With no key it returns None instantly, so the keyless
+                    # LibreTranslate-first chain below runs exactly as before.
+                    _fallback = _translate_azure(text, target_lang, source_lang)
+                    if _fallback is not None:
+                        return _fallback
+                    # Try LibreTranslate — no API key, effectively unlimited,
                     # and per-request instances dodge the shared-IP 429 wall better
                     # than the anonymous Google/MyMemory endpoints from this egress.
                     _fallback = _translate_libretranslate(text, target_lang, source_lang)
